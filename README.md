@@ -49,7 +49,7 @@ Coming next: AI account research the Spectre agent team, then `$FIRM` and produc
 - Metrics include avg open-deal probability and industry/kind breakdowns
 - Pipeline supports closingBefore date filter
 - Accounts support researched=1/0 and minConfidence filters and show lastResearch time
-- Research facts include confidence and limited snippets; web_search has timeout; /api/research/status (with avg, low, high confidence and totalFacts) and /api/research/history available
+- Research facts include confidence and limited snippets; web_search has timeout; /api/research/status (with avg, low, high confidence and totalFacts), /api/research/history and /api/research/recommendations available
 
 ## Requirements
 
