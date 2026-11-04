@@ -16,3 +16,6 @@ Remaining:
 
 See root PRODUCT-DELIVERY.md.
 VEIL is ready for unpacked testing.
+
+## Sign-in
+Social sign-in (Google, GitHub, ChatGPT, etc.) is available via Cumulus://ID. Call `socialFromEnv()` from `@infinitum/cid` and pass the providers to `CidService`. The same environment variables used by Spectre enable the buttons for any product.

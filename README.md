@@ -13,7 +13,7 @@ Run +SPCTR locally: `node apps/spectre/src/server/main.ts`, then open http://loc
 
 ### Social sign-in
 
-CID supports Continue with Google, Apple, Microsoft, GitHub and ChatGPT. Each button appears only when its credentials are set:
+CID supports Continue with Google, Apple, Microsoft, GitHub and ChatGPT. Any product that uses Cumulus://ID can enable the same providers by calling socialFromEnv() and passing the result to CidService. Each button appears only when its credentials are set:
 
 | Provider | Environment variables | Register at |
 |---|---|---|

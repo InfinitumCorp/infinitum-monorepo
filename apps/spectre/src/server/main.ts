@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync } from "n
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Ledger, FileStore, generateSigner, signerFromPrivateKey } from "@infinitum/firmament";
-import { CidService, CidStore, type SocialCredentials } from "@infinitum/cid";
+import { CidService, CidStore, socialFromEnv } from "@infinitum/cid";
 import { SpectreCRM, emptyStore } from "../core/crm.ts";
 import { createApp } from "./app.ts";
 import { aiConfigFromEnv } from "./ai.ts";
@@ -53,18 +53,8 @@ if (!verified.ok) {
 
 const cidStore = loadSnapshot(join(dataDir, "cid.json"), new CidStore());
 const spectreStore = loadSnapshot(join(dataDir, "spectre.json"), emptyStore());
-// Social sign-in: each provider is offered only when its credentials are set.
-const env = process.env;
-const social: Record<string, SocialCredentials> = {};
-if (env.GOOGLE_CLIENT_ID) social.google = { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET };
-if (env.GITHUB_CLIENT_ID) social.github = { clientId: env.GITHUB_CLIENT_ID, clientSecret: env.GITHUB_CLIENT_SECRET };
-if (env.MICROSOFT_CLIENT_ID) social.microsoft = { clientId: env.MICROSOFT_CLIENT_ID, clientSecret: env.MICROSOFT_CLIENT_SECRET };
-if (env.APPLE_CLIENT_ID && env.APPLE_TEAM_ID && env.APPLE_KEY_ID && env.APPLE_PRIVATE_KEY) {
-  social.apple = { clientId: env.APPLE_CLIENT_ID, apple: { teamId: env.APPLE_TEAM_ID, keyId: env.APPLE_KEY_ID, privateKeyPem: env.APPLE_PRIVATE_KEY.replace(/\\n/g, "\n") } };
-}
-if (env.CHATGPT_CLIENT_ID && env.CHATGPT_ISSUER) {
-  social.chatgpt = { clientId: env.CHATGPT_CLIENT_ID, clientSecret: env.CHATGPT_CLIENT_SECRET, issuer: env.CHATGPT_ISSUER };
-}
+// Social sign-in available to every Infinitum product that uses Cumulus://ID.
+const social = socialFromEnv();
 
 const cid = new CidService({ ledger, signer, rpId, origins: [origin], store: cidStore, social: { providers: social } });
 const crm = new SpectreCRM({ ledger, signer, store: spectreStore });

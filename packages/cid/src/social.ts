@@ -237,3 +237,20 @@ export class SocialClient {
     };
   }
 }
+
+/** Load social provider credentials from standard environment variables.
+ *  Any product that uses Cumulus://ID can call this and pass the result to CidService.
+ */
+export function socialFromEnv(env: NodeJS.ProcessEnv = process.env): Partial<Record<SocialProviderId, SocialCredentials>> {
+  const social: Partial<Record<SocialProviderId, SocialCredentials>> = {};
+  if (env.GOOGLE_CLIENT_ID) social.google = { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET };
+  if (env.GITHUB_CLIENT_ID) social.github = { clientId: env.GITHUB_CLIENT_ID, clientSecret: env.GITHUB_CLIENT_SECRET };
+  if (env.MICROSOFT_CLIENT_ID) social.microsoft = { clientId: env.MICROSOFT_CLIENT_ID, clientSecret: env.MICROSOFT_CLIENT_SECRET };
+  if (env.APPLE_CLIENT_ID && env.APPLE_TEAM_ID && env.APPLE_KEY_ID && env.APPLE_PRIVATE_KEY) {
+    social.apple = { clientId: env.APPLE_CLIENT_ID, apple: { teamId: env.APPLE_TEAM_ID, keyId: env.APPLE_KEY_ID, privateKeyPem: env.APPLE_PRIVATE_KEY.replace(/\\n/g, "\n") } };
+  }
+  if (env.CHATGPT_CLIENT_ID && env.CHATGPT_ISSUER) {
+    social.chatgpt = { clientId: env.CHATGPT_CLIENT_ID, clientSecret: env.CHATGPT_CLIENT_SECRET, issuer: env.CHATGPT_ISSUER };
+  }
+  return social;
+}

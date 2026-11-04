@@ -9,3 +9,6 @@
 5. Optional: `pnpm --filter @infinitum/firm anchor`
 
 Contracts: FirmToken.sol, ProjectToken.sol, Anchor.sol
+
+## Social sign-in
+Available to every product via `socialFromEnv()` from `@infinitum/cid`. Set the standard GOOGLE_*/GITHUB_*/CHATGPT_* env vars.
