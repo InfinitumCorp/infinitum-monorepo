@@ -768,7 +768,7 @@ export function createApp(deps: AppDeps) {
     const { executeAll } = await import("../core/conductor-bridge.ts");
     const { listPendingActions } = await import("./execution.ts");
     const pending = await listPendingActions(crm, ctx.user!.workspace);
-    const results = await executeAll(pending, { crm, workspace: ctx.user!.workspace, actor: ctx.user!.account.cid });
+    const results = await executeAll(pending, { crm, workspace: ctx.user!.workspace, actor: ctx.user!.account.cid } as any);
     // Log executed actions as activities
     for (const r of results || []) {
       const dealId = (r as any)?.dealId;
