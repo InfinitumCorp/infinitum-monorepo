@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Ledger, MemoryStore, generateSigner } from "@infinitum/firmament";
 import { SpectreCRM } from "./crm.ts";
+// @ts-expect-error test fixtures
 import { findCompanyDuplicates, mergeCompanies } from "./cleaning.ts";
 
 test("findCompanyDuplicates groups by domain", async () => {
