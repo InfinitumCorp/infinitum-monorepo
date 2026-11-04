@@ -250,6 +250,23 @@ export function createApp(deps: AppDeps) {
     return new Map<string, Score>(crm.list("deals", ws).map((d) => [d.id, scoreDeal(d, acts, now)]));
   };
 
+
+  route("GET", "/api/metrics", (ctx) => {
+    const ws = ctx.user!.workspace;
+    const deals = crm.list("deals", ws);
+    const companies = crm.list("companies", ws);
+    const contacts = crm.list("contacts", ws);
+    const open = deals.filter((d) => OPEN_STAGES.includes(d.stage));
+    return {
+      companies: companies.length,
+      contacts: contacts.length,
+      deals: deals.length,
+      openDeals: open.length,
+      pipeline: open.reduce((s, d) => s + (d.amount || 0), 0),
+      metatron: process.env.USE_METATRON === "1",
+    };
+  });
+
   route("GET", "/api/today", (ctx) => {
     const ws = ctx.user!.workspace;
     const deals = crm.list("deals", ws);
