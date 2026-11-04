@@ -346,7 +346,7 @@ async function renderPipeline() {
         return `<div class="col"><div class="col-head"><span>${STAGE_LABEL[s]}</span><span class="faint">${money(list.reduce((n, d) => n + d.amount, 0))}</span></div>
           ${list.map((d) => `<button class="card" data-deal="${esc(d.id)}">
             <div class="name">${esc(d.name)}</div><div class="muted small">${esc(d.company ?? "")}</div>
-            <div class="meta"><span>${money(d.amount, d.currency)}</span><span>${s === "won" ? "Won" : pct(d.score?.probability)}</span></div>
+            <div class="meta"><span>${money(d.amount, d.currency)}</span><span>${s === "won" ? "Won" : pct(d.score?.probability)}</span>${d.score?.risk && d.score.risk !== "low" ? `<span class="pill ${d.score.risk}">${d.score.risk}</span>` : ""}</div>
             ${s === "won" ? "" : `<div class="bar"><i data-w="${pct(d.score?.probability)}"></i></div>`}
           </button>`).join("") || `<div class="faint small pad6">No deals</div>`}
         </div>`;
