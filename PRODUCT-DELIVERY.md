@@ -14,7 +14,7 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 
 | Product | Advertised task | Status | Evidence | Next steps |
 |---------|-----------------|--------|----------|------------|
-| Firmament Network | Append-only hash-chained Ed25519 ledger. | Core logic | `packages/firmament` + **real Merkle root anchoring** + Anchor.sol + anchor client + deploy script | Deploy anchor. |
+| Firmament Network | Append-only hash-chained Ed25519 ledger. | Core logic | `packages/firmament` + real Merkle root anchoring + Anchor.sol + anchor client + deploy script | Deploy anchor. |
 | Cumulus://ID (CID) | One account for every product. | Core logic | `packages/cid` | Wire into remaining apps. |
 
 ## Core software products
@@ -27,7 +27,7 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 | **METATRON** | Prediction + analytics. | Scaffolded | Default scorer + analytics + Spectre wrapper + forecast projection | Set USE_METATRON=1. |
 | **HRVST** | Capture → privacy filter → Harvest Packet. | Scaffolded | Packet + privacy filter + licensing + Personal Silo | Production privacy model. |
 | **ei·det·ic** | Identity-intelligence (authorized use only). | Scaffolded | Service + Spectre integration | Production sources. |
-| **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM + wallet + DEX (Uniswap-style eth_call) + router calldata + EVM wallet + FirmToken.sol + ProjectToken.sol + deploy.ts + VEIL panel | Compile and deploy. |
+| **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM + wallet + DEX (Uniswap-style eth_call + tests) + router calldata + EVM wallet + FirmToken.sol + ProjectToken.sol + deploy.ts + VEIL panel | Compile and deploy. |
 | **Project-specific tokens** | $HRVST, $CNDT, $SPCTR, $SCLV. | Scaffolded | tokens.ts + ProjectToken.sol + deploy.ts | Compile and deploy. |
 
 ## Supporting / infrastructure concepts
