@@ -22,6 +22,7 @@
 - [x] Queue stats endpoint + UI
 - [x] Auto-done on successful queue research
 - [x] Confidence filter UI on Accounts
+- [x] AI fact count on account research section
 - [x] `pnpm --filter @infinitum/spectre typecheck`
 - [ ] Deploy via Docker or Vercel (see apps/spectre/Dockerfile and vercel.json)
 
