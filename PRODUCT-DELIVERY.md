@@ -14,19 +14,19 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 
 | Product | Advertised task | Status | Evidence | Next steps |
 |---------|-----------------|--------|----------|------------|
-| Firmament Network | Append-only hash-chained Ed25519 ledger for identity, provenance, licensing, payments, audit. Merkle roots for Base anchoring. | Core logic | `packages/firmament` (Ledger, MemoryStore, FileStore, keys, Merkle, tests) | Serialize concurrent writers (see draft PR #1); add token settlement interfaces; anchoring helpers. |
-| Cumulus://ID (CID) | One account for every product: WebAuthn/passkeys, TOTP MFA, session revocation, app-by-app permissions on Firmament, OIDC SSO. | Core logic | `packages/cid` (service, webauthn, totp, oidc, tests) | Wire into apps; fix any type issues noted in PR #1. |
+| Firmament Network | Append-only hash-chained Ed25519 ledger. | Core logic | `packages/firmament` | Concurrent writers; anchoring. |
+| Cumulus://ID (CID) | One account for every product. | Core logic | `packages/cid` | Wire into remaining apps. |
 
 ## Core software products
 
-| Product | Advertised task | Status | Evidence | Next steps to perform advertised tasks |
-|---------|-----------------|--------|----------|----------------------------------------|
-| **+SPCTR (Spectre)** | AI intelligent CRM. | Partial | Full CRM + auth + AI query + production polish | Deploy. |
+| Product | Advertised task | Status | Evidence | Next steps |
+|---------|-----------------|--------|----------|------------|
+| **+SPCTR (Spectre)** | AI intelligent CRM. | Partial | Full CRM + auth + AI query | Deploy. |
 | **/CNDCTR/** | Intent → Score → perform → verify. | Partial | Score, executor, autonomy, instruments, Podium | Deploy. |
-| **SCALVS.ai** | AI workforce platform. | Scaffolded | Agent run loop + Context Vault + **default tools** (echo, search, note) | Conductor integration. |
-| **METATRON** | Prediction + analytics. | Scaffolded | predict + analytics data model | Replace baseline by default. |
-| **HRVST** | Permissioned capture → privacy filter → Harvest Packet. | Scaffolded | **Harvest Packet + privacy filter** | Licensing flow. |
-| **ei·det·ic** | Facial-recognition (authorized use only). | Scaffolded | Interface + stub | Spectre integration. |
+| **SCALVS.ai** | AI workforce platform. | Scaffolded | Agent + Context Vault + default tools | Conductor integration. |
+| **METATRON** | Prediction + analytics. | Scaffolded | **Default scorer** + analytics model | Wire as Spectre default. |
+| **HRVST** | Capture → privacy filter → Harvest Packet. | Scaffolded | Packet + privacy filter | Licensing flow. |
+| **ei·det·ic** | Identity-intelligence (authorized use only). | Scaffolded | **Service scaffold** (match + consent) | Spectre integration. |
 | **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM + wallet + DEX + contracts + VEIL panel | Compile and deploy. |
 | **Project-specific tokens** | $HRVST, $CNDT, $SPCTR, $SCLV. | Scaffolded | tokens.ts + contracts | Compile and deploy. |
 
@@ -34,9 +34,9 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 
 | Product | Notes | Software path |
 |---------|-------|---------------|
-| Cumulus://Cloud | Storage, licensing, agent runtime | Later package |
-| VEIL</> | Tor-first browser + sidebar | Scaffolded — Conductor-wired + Tor scaffold + Wallet panel |
-| FABRIC | Encrypted calls/messaging | **Scaffolded** — `packages/fabric` message encrypt/decrypt |
+| Cumulus://Cloud | Storage, licensing, agent runtime | **Scaffolded** — `packages/cloud` store |
+| VEIL</> | Tor-first browser + sidebar | Scaffolded — Conductor + Tor + Wallet panel |
+| FABRIC | Encrypted calls/messaging | Scaffolded — encrypt/decrypt |
 | ÆTHER | Distributed communications | Concept |
 
 ## Hardware / physical concepts (software stubs only)
@@ -50,9 +50,10 @@ These cannot be fully built as software. Interfaces (tasking, telemetry, evidenc
 
 - Spectre / Conductor: deploy.  
 - FIRM: compile and deploy contracts.  
+- Wire METATRON as Spectre default scorer.  
+- Wire ei·det·ic into Spectre.  
 - FABRIC: real AEAD.  
 - HRVST: licensing flow.  
-- METATRON: replace baseline.  
 
 ## Acceptance criteria (for "performs as advertised")
 
