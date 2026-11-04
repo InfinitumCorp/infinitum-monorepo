@@ -1,19 +1,25 @@
 import type { ConsentRecord, ProductId } from "./types.js";
+import type { Ledger, Signer } from "@infinitum/firmament";
 
 /**
- * Consent manager. In production this writes to Firmament ledger via @infinitum/firmament.
- * All grants must be explicit and revocable.
+ * Consent manager. Records explicit grants/revokes on Firmament when a ledger is provided.
+ * All grants must be explicit and revocable. Military/ODIN° data is excluded by policy.
  */
 export class ConsentManager {
   private consents = new Map<string, ConsentRecord>();
 
-  grant(params: {
+  constructor(
+    private ledger?: Ledger,
+    private signer?: Signer,
+  ) {}
+
+  async grant(params: {
     cid: string;
     product: ProductId;
     datasetId: string;
     scopes: string[];
     purpose: string;
-  }): ConsentRecord {
+  }): Promise<ConsentRecord> {
     const id = `consent_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const record: ConsentRecord = {
       cid: params.cid,
@@ -23,17 +29,55 @@ export class ConsentManager {
       scopes: params.scopes,
       purpose: params.purpose,
       timestamp: new Date().toISOString(),
-      // firmamentTx would be set after on-chain or ledger append
     };
+
+    if (this.ledger && this.signer) {
+      const entry = await this.ledger.append(
+        {
+          type: "grant",
+          product: "data-exchange",
+          actor: params.cid,
+          subject: params.datasetId,
+          payload: {
+            consentId: id,
+            product: params.product,
+            scopes: params.scopes,
+            purpose: params.purpose,
+            granted: true,
+          },
+        },
+        this.signer,
+      );
+      record.firmamentTx = entry.hash;
+    }
+
     this.consents.set(id, record);
     return record;
   }
 
-  revoke(consentId: string): boolean {
+  async revoke(consentId: string): Promise<boolean> {
     const c = this.consents.get(consentId);
     if (!c) return false;
     c.granted = false;
     c.timestamp = new Date().toISOString();
+
+    if (this.ledger && this.signer) {
+      const entry = await this.ledger.append(
+        {
+          type: "revoke",
+          product: "data-exchange",
+          actor: c.cid,
+          subject: c.datasetId,
+          payload: {
+            consentId,
+            revoked: true,
+          },
+        },
+        this.signer,
+      );
+      c.firmamentTx = entry.hash;
+    }
+
     return true;
   }
 

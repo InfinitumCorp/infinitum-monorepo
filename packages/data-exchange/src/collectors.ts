@@ -28,9 +28,8 @@ export abstract class ProductCollector {
 export class ScalusCollector extends ProductCollector {
   product: ProductId = "scalus";
 
-  collect(cid: string): CollectorResult {
-    // In real impl: query agent runtime for anonymized stats
-    const { dataset } = this.dx.packageDataset({
+  async collect(cid: string): Promise<CollectorResult> {
+    const { dataset } = await this.dx.packageDataset({
       cid,
       product: this.product,
       title: "SCALVS agent activity aggregates",
@@ -51,8 +50,8 @@ export class ScalusCollector extends ProductCollector {
 export class CumulusCollector extends ProductCollector {
   product: ProductId = "cumulus";
 
-  collect(cid: string): CollectorResult {
-    const { dataset } = this.dx.packageDataset({
+  async collect(cid: string): Promise<CollectorResult> {
+    const { dataset } = await this.dx.packageDataset({
       cid,
       product: this.product,
       title: "Cumulus storage & compute usage",
@@ -73,8 +72,8 @@ export class CumulusCollector extends ProductCollector {
 export class SpectreCollector extends ProductCollector {
   product: ProductId = "spectre";
 
-  collect(cid: string): CollectorResult {
-    const { dataset } = this.dx.packageDataset({
+  async collect(cid: string): Promise<CollectorResult> {
+    const { dataset } = await this.dx.packageDataset({
       cid,
       product: this.product,
       title: "Anonymized pipeline patterns",
@@ -91,12 +90,57 @@ export class SpectreCollector extends ProductCollector {
   }
 }
 
+/** /CNDCTR/ Conductor: workflow execution patterns */
+export class ConductorCollector extends ProductCollector {
+  product: ProductId = "conductor";
+
+  async collect(cid: string): Promise<CollectorResult> {
+    const { dataset } = await this.dx.packageDataset({
+      cid,
+      product: this.product,
+      title: "Conductor workflow aggregates",
+      description: "Anonymized intent-to-completion rates and tool usage",
+      schema: "intentType,completionRate,avgSteps",
+      sizeEstimate: 40_000,
+      privacyLevel: "aggregated",
+      licenseTerms: "CDAT-commercial-1y",
+      priceUsd: 120,
+      scopes: ["usage_metrics"],
+    });
+    this.dx.catalog.updateStatus(dataset.id, "listed");
+    return { datasetId: dataset.id };
+  }
+}
+
+/** METATRON: prediction / analytics aggregates */
+export class MetatronCollector extends ProductCollector {
+  product: ProductId = "metatron";
+
+  async collect(cid: string): Promise<CollectorResult> {
+    const { dataset } = await this.dx.packageDataset({
+      cid,
+      product: this.product,
+      title: "METATRON forecast accuracy aggregates",
+      description: "Aggregated prediction confidence and outcome distributions",
+      schema: "domain,avgConfidence,outcomeMatchRate",
+      sizeEstimate: 25_000,
+      privacyLevel: "aggregated",
+      licenseTerms: "CDAT-research-1y",
+      priceUsd: 200,
+      scopes: ["analytics"],
+    });
+    this.dx.catalog.updateStatus(dataset.id, "listed");
+    return { datasetId: dataset.id };
+  }
+}
+
 /** Factory for all product collectors */
 export function createCollectors(dx: DataExchange): ProductCollector[] {
   return [
     new ScalusCollector(dx),
     new CumulusCollector(dx),
     new SpectreCollector(dx),
-    // Add more: Conductor, VEIL, etc. as needed
+    new ConductorCollector(dx),
+    new MetatronCollector(dx),
   ];
 }

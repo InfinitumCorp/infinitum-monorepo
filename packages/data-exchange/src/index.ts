@@ -3,32 +3,38 @@ export * from "./consent.js";
 export * from "./catalog.js";
 export * from "./marketplace.js";
 export * from "./revshare.js";
+export * from "./collectors.js";
 
 import { ConsentManager } from "./consent.js";
 import { DatasetCatalog } from "./catalog.js";
 import { DataMarketplace } from "./marketplace.js";
 import { RevShareEngine } from "./revshare.js";
+import type { Ledger, Signer } from "@infinitum/firmament";
+import type { ProductId } from "./types.js";
 
 /**
  * Main Data Exchange service.
  * Products call collectors that feed into catalog after consent.
+ * Optionally backed by Firmament ledger for audit of grants, licenses, and payments.
  */
 export class DataExchange {
-  consent = new ConsentManager();
+  consent: ConsentManager;
   catalog = new DatasetCatalog();
   marketplace: DataMarketplace;
   revshare = new RevShareEngine();
 
-  constructor() {
+  constructor(ledger?: Ledger, signer?: Signer) {
+    this.consent = new ConsentManager(ledger, signer);
     this.marketplace = new DataMarketplace(this.catalog);
   }
 
   /**
    * Package a dataset from a product after user consent.
+   * Records the grant on Firmament when ledger is configured.
    */
-  packageDataset(params: {
+  async packageDataset(params: {
     cid: string;
-    product: import("./types.js").ProductId;
+    product: ProductId;
     title: string;
     description: string;
     schema: string;
@@ -38,10 +44,13 @@ export class DataExchange {
     priceUsd: number;
     scopes: string[];
   }) {
-    const consent = this.consent.grant({
+    // Provisional id so consent can reference the future dataset
+    const provisionalId = `ds_pending_${Date.now()}`;
+
+    const consent = await this.consent.grant({
       cid: params.cid,
       product: params.product,
-      datasetId: "pending",
+      datasetId: provisionalId,
       scopes: params.scopes,
       purpose: "data_licensing",
     });
@@ -56,10 +65,10 @@ export class DataExchange {
       privacyLevel: params.privacyLevel,
       licenseTerms: params.licenseTerms,
       priceUsd: params.priceUsd,
-      consentId: consent.datasetId === "pending" ? undefined : consent.datasetId,
+      consentId: consent.datasetId,
     });
 
-    // Fix consent datasetId
+    // Align the consent subject with the real dataset id
     consent.datasetId = ds.id;
 
     return { dataset: ds, consent };
@@ -69,11 +78,14 @@ export class DataExchange {
     return this.catalog.listListed();
   }
 
-  sell(datasetId: string, buyerId: string, amountUsd: number) {
+  async sell(datasetId: string, buyerId: string, amountUsd: number) {
     const sale = this.marketplace.purchase({ datasetId, buyerId, amountUsd });
     if (sale) {
       const ds = this.catalog.get(datasetId);
-      if (ds) this.revshare.recordPayout(sale, ds.ownerCid);
+      if (ds) {
+        this.revshare.recordPayout(sale, ds.ownerCid);
+        // License + payment records can be appended here when ledger is present
+      }
     }
     return sale;
   }

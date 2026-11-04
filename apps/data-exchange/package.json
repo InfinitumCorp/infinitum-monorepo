@@ -1,0 +1,22 @@
+{
+  "name": "@infinitum/data-exchange-api",
+  "version": "0.1.0",
+  "description": "HTTP API for the Cumulus Data Exchange.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "node --experimental-strip-types src/server.ts",
+    "typecheck": "tsc -p . --noEmit"
+  },
+  "dependencies": {
+    "@infinitum/data-exchange": "workspace:*",
+    "@infinitum/firmament": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/node": "^22.0.0"
+  }
+}
