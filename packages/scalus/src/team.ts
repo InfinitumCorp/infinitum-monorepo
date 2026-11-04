@@ -5,7 +5,10 @@
 import { runAgent, type Agent, type RunResult } from "./agent.ts";
 
 export class Team {
-  constructor(public agents: Agent[]) {}
+  agents: Agent[];
+  constructor(agents: Agent[]) {
+    this.agents = agents;
+  }
 
   async run(prompt: string): Promise<RunResult[]> {
     const results: RunResult[] = [];

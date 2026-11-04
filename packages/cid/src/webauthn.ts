@@ -65,7 +65,7 @@ export function coseToKey(cose: Uint8Array): { key: KeyObject; alg: number } {
   } else {
     throw new Error("WebAuthn: unsupported credential algorithm");
   }
-  return { key: createPublicKey({ key: jwk, format: "jwk" }), alg };
+  return { key: createPublicKey({ key: jwk as any, format: "jwk" }), alg };
 }
 
 interface ClientData {
