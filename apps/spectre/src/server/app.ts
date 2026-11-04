@@ -553,6 +553,27 @@ export function createApp(deps: AppDeps) {
 
   /* ---------------- Research & Agents ---------------- */
 
+
+  route("POST", "/api/companies/:id/research", async (ctx) => {
+    const company = crm.company(ctx.user!.workspace, ctx.params.id);
+    const { researchCompany } = await import("./research.ts");
+    const result = await researchCompany(company.name);
+    let persisted = 0;
+    if (result && Array.isArray(result.facts)) {
+      for (const fact of result.facts.slice(0, 5)) {
+        if (fact.field && fact.value) {
+          await crm.addFact(ctx.user!.workspace, ctx.user!.account.cid, company.id, {
+            field: fact.field,
+            value: fact.value,
+            source: fact.source || "ai-research",
+          });
+          persisted++;
+        }
+      }
+    }
+    return { ...result, persisted };
+  });
+
   route("POST", "/api/research", async (ctx) => {
     need(ctx, "name");
     const { researchCompany } = await import("./research.ts");
