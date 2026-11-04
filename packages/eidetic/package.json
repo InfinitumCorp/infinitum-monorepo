@@ -3,12 +3,16 @@
   "version": "0.1.0",
   "description": "ei·det·ic: authorized identity-intelligence interface (no biometric implementation).",
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "private": true,
-  "engines": { "node": ">=22.18" },
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
     "typecheck": "tsc -p . --noEmit",
-    "test": "node --test \"src/**/*.test.ts\""
+    "test": "node --test --experimental-strip-types $(find src -name \"*.test.ts\" 2>/dev/null || true)"
   },
   "devDependencies": {
     "typescript": "^5.9.0",

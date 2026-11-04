@@ -4,11 +4,13 @@
   "description": "+SPCTR (Spectre): Infinitum's AI-powered intelligent CRM.",
   "type": "module",
   "private": true,
-  "engines": { "node": ">=22.18" },
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
     "start": "node src/server/main.ts",
     "typecheck": "tsc -p . --noEmit",
-    "test": "node --test \"src/**/*.test.ts\""
+    "test": "node --test --experimental-strip-types $(find src -name \"*.test.ts\" 2>/dev/null || true)"
   },
   "dependencies": {
     "@infinitum/firmament": "workspace:*",

@@ -4,10 +4,12 @@
   "description": "HRVST Harvest Packet and privacy filter.",
   "type": "module",
   "private": true,
-  "engines": { "node": ">=22.18" },
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
     "typecheck": "tsc -p . --noEmit",
-    "test": "node --test \"src/**/*.test.ts\""
+    "test": "node --test --experimental-strip-types $(find src -name \"*.test.ts\" 2>/dev/null || true)"
   },
   "devDependencies": {
     "typescript": "^5.9.0",

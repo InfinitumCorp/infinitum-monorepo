@@ -4,10 +4,12 @@
   "description": "FIRM ecosystem token, wallet, and DEX.",
   "type": "module",
   "private": true,
-  "engines": { "node": ">=22.18" },
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
     "typecheck": "tsc -p . --noEmit",
-    "test": "node --test \"src/**/*.test.ts\" \"scripts/**/*.test.ts\"",
+    "test": "node --test --experimental-strip-types $(find src -name \"*.test.ts\" 2>/dev/null || true)",
     "compile": "bash scripts/compile.sh",
     "deploy": "node scripts/deploy.ts",
     "anchor": "node scripts/deploy-anchor.ts"

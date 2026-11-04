@@ -4,14 +4,16 @@
   "description": "/CNDCTR/ (Conductor): intent in, verified outcome out.",
   "type": "module",
   "private": true,
-  "engines": { "node": ">=22.18" },
+  "engines": {
+    "node": ">=22.18"
+  },
   "exports": {
     ".": "./src/index.ts"
   },
   "scripts": {
     "start": "node src/server.ts",
     "typecheck": "tsc -p . --noEmit",
-    "test": "node --test \"src/**/*.test.ts\""
+    "test": "node --test --experimental-strip-types $(find src -name \"*.test.ts\" 2>/dev/null || true)"
   },
   "dependencies": {
     "@infinitum/firmament": "workspace:*"
