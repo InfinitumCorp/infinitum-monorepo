@@ -373,6 +373,7 @@ export function createApp(deps: AppDeps) {
         ...c,
         openDeals: deals.filter((d) => d.companyId === c.id && OPEN_STAGES.includes(d.stage)).length,
         contacts: contacts.filter((p) => p.companyId === c.id && !p.optedOut).length,
+        researchFacts: c.facts.filter((f) => f.source?.includes("ai-research")).length,
       }))
       .sort((a, b) => {
         const sort = ctx.query.get("sort") || "name";
