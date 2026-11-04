@@ -614,6 +614,13 @@ export function createApp(deps: AppDeps) {
       }
     }
     const persisted = (ctx.body.companyId && result && Array.isArray(result.facts)) ? result.facts.filter((f: any) => f.field && f.value).length : 0;
+    if (persisted > 0 && ctx.body.companyId) {
+      await crm.logActivity(ctx.user!.workspace, ctx.user!.account.cid, {
+        kind: "note",
+        summary: `AI research added ${persisted} facts`,
+        companyId: String(ctx.body.companyId),
+      });
+    }
     return { ...result, persisted };
   });
 
