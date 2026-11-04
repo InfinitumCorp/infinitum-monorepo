@@ -663,6 +663,19 @@ export function createApp(deps: AppDeps) {
 
 
 
+
+  route("POST", "/api/research/queue", async (ctx) => {
+    need(ctx, "companyId");
+    const id = String(ctx.body.companyId);
+    const company = crm.company(ctx.user!.workspace, id);
+    await crm.addFact(ctx.user!.workspace, ctx.user!.account.cid, id, {
+      field: "research-queue",
+      value: "queued",
+      source: "research-queue",
+    });
+    return { queued: true, companyId: id, name: company.name };
+  });
+
   route("GET", "/api/research/queue", (ctx) => {
     const ws = ctx.user!.workspace;
     const companies = crm.list("companies", ws);
