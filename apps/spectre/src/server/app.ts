@@ -677,11 +677,14 @@ export function createApp(deps: AppDeps) {
     const ws = ctx.user!.workspace;
     const companies = crm.list("companies", ws);
     const researched = companies.filter((c) => c.facts.some((f) => f.source?.includes("ai-research")));
+    const confs = researched.flatMap((c) => c.facts.filter((f) => f.source?.includes("ai-research") && (f as any).confidence).map((f) => (f as any).confidence));
+    const avgConf = confs.length ? Math.round(confs.reduce((a, b) => a + b, 0) / confs.length * 100) / 100 : 0;
     return {
       total: companies.length,
       researched: researched.length,
       coverage: companies.length ? Math.round(researched.length / companies.length * 100) : 0,
       recent: researched.filter((c) => c.facts.some((f) => f.source?.includes("ai-research") && Date.now() - Date.parse(f.observedAt) < 86400000 * 7)).length,
+      avgConfidence: avgConf,
     };
   });
 
