@@ -626,6 +626,7 @@ async function renderPeople() {
 
 async function renderHealth() {
   const h = await api("GET", "/api/data-health");
+  const coverage = h.researchCoverage ?? 0;
   const group = (g, kind) => `
     <div class="item"><div class="main"><div class="title">${esc(g.keep.name)}</div><div class="sub">${esc(g.reason)} · also: ${g.duplicates.map((d) => esc(d.name)).join(", ")}</div></div>
     <button class="btn small" data-merge='${esc(JSON.stringify({ kind, keepId: g.keep.id, mergeIds: g.duplicates.map((d) => d.id) }))}'>Merge</button></div>`;
