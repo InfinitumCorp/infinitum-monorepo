@@ -461,6 +461,8 @@ export function createApp(deps: AppDeps) {
     if (min) deals = deals.filter((d) => (d.amount || 0) >= min);
     const stage = ctx.query.get("stage");
     if (stage) deals = deals.filter((d) => d.stage === stage);
+    const closingBefore = ctx.query.get("closingBefore");
+    if (closingBefore) deals = deals.filter((d) => d.closeDate && d.closeDate <= closingBefore);
     return { stages: STAGES, deals: deals.map((d) => ({ ...d, company: companies.get(d.companyId), score: scores.get(d.id) })) };
   });
 
