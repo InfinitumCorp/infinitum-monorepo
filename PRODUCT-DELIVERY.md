@@ -22,7 +22,7 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 | Product | Advertised task | Status | Evidence | Next steps |
 |---------|-----------------|--------|----------|------------|
 | **+SPCTR™ (Spectre)** | AI intelligent CRM. | Partial | Full app.ts + METATRON + research (confidence, avg/low/high conf, totalFacts, limited snippets, history, recommendations, queue, timeout, status, deduped, activity-logged)/query/prospect/execution/rehearse/metrics/export/search/activities/pipeline-stats + filters (incl minConfidence) + improved agent routing | Typecheck, tests, deploy. |
-| **/CNDCTR/** | Intent → Score → perform → verify. | Partial | Score, executor, autonomy, instruments, Podium + /health + /api/status + Spectre adapter + DEPLOY.md | See DEPLOY.md and apps/conductor/DEPLOY.md. Deploy. |
+| **/CNDCTR/** | Intent → Score → perform → verify. | Partial | Score, executor, autonomy (typecheck passes) | Deploy via Docker/Vercel. |
 | **SCALVS.ai** | AI workforce platform. | Scaffolded | Agent + Context Vault + tools + Team + Conductor evidence + Firmament vault + NEXT.md | See packages/scalus/NEXT.md. Production integration. |
 | **METATRON** | Prediction + analytics. | Scaffolded | Default scorer + analytics + Spectre wrapper + forecast projection | (enabled by default) |
 | **HRVST** | Capture → privacy filter → Harvest Packet. | Scaffolded | Packet + privacy filter + licensing + Personal Silo | Production privacy model. |
