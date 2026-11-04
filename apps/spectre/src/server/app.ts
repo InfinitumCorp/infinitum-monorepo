@@ -384,6 +384,7 @@ export function createApp(deps: AppDeps) {
         openDeals: deals.filter((d) => d.companyId === c.id && OPEN_STAGES.includes(d.stage)).length,
         contacts: contacts.filter((p) => p.companyId === c.id && !p.optedOut).length,
         researchFacts: c.facts.filter((f) => f.source?.includes("ai-research")).length,
+        lastResearch: c.facts.filter((f) => f.source?.includes("ai-research")).sort((a, b) => b.observedAt.localeCompare(a.observedAt))[0]?.observedAt,
       }))
       .sort((a, b) => {
         const sort = ctx.query.get("sort") || "name";
