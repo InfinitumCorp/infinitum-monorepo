@@ -1,0 +1,16 @@
+{
+  "name": "@infinitum/firmament",
+  "version": "0.1.0",
+  "description": "Firmament Network core: append-only, hash-chained, signed ledger for identity, provenance, licensing, payments and audit.",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "typecheck": "tsc -p . --noEmit",
+    "test": "node --test \"src/**/*.test.ts\""
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/node": "^22.0.0"
+  }
+}
