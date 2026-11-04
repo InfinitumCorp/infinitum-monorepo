@@ -714,6 +714,10 @@ async function renderSettings() {
         <p class="faint small mt10">Linked accounts sign you in to this same Cumulus://ID. Your multifactor setting still applies.</p>
       </div>
       <div class="section">
+        <h2>Data</h2>
+        <button class="btn" id="export-data">Export workspace JSON</button>
+      </div>
+      <div class="section">
         <h2>AI</h2>
         <div class="list">
           <div class="item"><div class="main"><div class="title">METATRON scoring</div><div class="sub">Default on for win probability</div></div></div>
@@ -723,6 +727,17 @@ async function renderSettings() {
         <p class="faint small mt10">Set ANTHROPIC_API_KEY for Ask Spectre. Research uses public search. Filters available on Pipeline and Accounts.</p>
       </div>
     </div>`;
+  $("#export-data")?.addEventListener("click", async () => {
+    try {
+      const data = await api("GET", "/api/export");
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "spectre-export.json";
+      a.click();
+      toast("Export downloaded");
+    } catch (e) { toast(e.message); }
+  });
   main().querySelectorAll("[data-unlink]").forEach((b) => {
     b.onclick = async () => {
       try { await api("POST", `/api/me/identities/${b.dataset.unlink}/unlink`); toast("Unlinked"); renderSettings(); }
