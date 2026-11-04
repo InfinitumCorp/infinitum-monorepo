@@ -35,6 +35,14 @@ export function parseResults(results: RawResult[]): ParsedFact[] {
           source: r.url ?? "search",
           confidence: r.snippet ? 0.7 : 0.5,
         });
+        if (r.snippet && r.snippet.length > 40 && facts.length < 8) {
+          facts.push({
+            field: p.field + "-detail",
+            value: r.snippet.slice(0, 180),
+            source: r.url ?? "search",
+            confidence: 0.6,
+          });
+        }
         break;
       }
     }
