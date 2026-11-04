@@ -731,6 +731,7 @@ async function renderSettings() {
       <div class="page-head"><h1>Settings</h1></div>
       <div class="section">
         <h2>Account</h2>
+        <p class="faint small">Spectre 0.1.0 · METATRON scoring on</p>
         <div class="list"><div class="item"><div class="avatar">${esc(initials(state.me.username))}</div>
           <div class="main"><div class="title">${esc(state.me.username)}</div><div class="sub">${esc(state.me.mailAddress)} · ${esc(state.me.handle)}</div></div></div></div>
       </div>
