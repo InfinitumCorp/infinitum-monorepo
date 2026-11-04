@@ -545,7 +545,7 @@ export function createApp(deps: AppDeps) {
     const result = await researchCompany(String(ctx.body.name));
     // Persist any returned facts to the company if companyId provided
     if (ctx.body.companyId && result && Array.isArray(result.facts)) {
-      for (const fact of result.facts) {
+      for (const fact of result.facts.slice(0, 5)) {
         if (fact.field && fact.value) {
           await crm.addFact(ctx.user!.workspace, ctx.user!.account.cid, String(ctx.body.companyId), {
             field: fact.field,
@@ -577,7 +577,7 @@ export function createApp(deps: AppDeps) {
         const result = await researchCompany(c.name);
         let persisted = 0;
         if (result && Array.isArray(result.facts)) {
-          for (const fact of result.facts) {
+          for (const fact of result.facts.slice(0, 5)) {
             if (fact.field && fact.value) {
               await crm.addFact(ctx.user!.workspace, ctx.user!.account.cid, c.id, {
                 field: fact.field,
