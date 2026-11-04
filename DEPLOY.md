@@ -17,6 +17,7 @@
 - [x] High-confidence fact count in /api/research/status
 - [x] minConfidence filter on /api/companies
 - [x] totalFacts count in /api/research/status
+- [x] Research recommendations and prioritized queue endpoints + UI
 - [ ] `pnpm --filter @infinitum/spectre typecheck`
 - [ ] Deploy via Docker or Vercel (see apps/spectre/Dockerfile and vercel.json)
 
