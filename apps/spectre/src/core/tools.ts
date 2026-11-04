@@ -25,9 +25,14 @@ export function createTools(deps: ToolDeps = {}): Record<string, Tool> {
         if (!q) return { error: "empty query" };
         try {
           const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`;
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 8000);
           const res = await fetch(url, {
             headers: { "user-agent": "InfinitumSpectre/0.1" },
+            signal: controller.signal,
           });
+          clearTimeout(timeout);
+          if (!res.ok) return { error: `search failed ${res.status}`, query: q };
           const html = await res.text();
           const titles = [...html.matchAll(/<a[^>]*class="result__a"[^>]*>([^<]+)<\/a>/gi)].map((m) => m[1].trim()).slice(0, 8);
           const snippets = [...html.matchAll(/<a[^>]*class="result__snippet"[^>]*>([^<]+)<\/a>/gi)].map((m) => m[1].trim()).slice(0, 8);
