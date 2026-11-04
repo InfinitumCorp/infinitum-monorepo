@@ -16,20 +16,20 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 |---------|-----------------|--------|----------|------------|
 | Firmament Network | Append-only hash-chained Ed25519 ledger. | Core logic | `packages/firmament` + real Merkle root anchoring + Anchor.sol + anchor client + deploy-anchor.ts | Deploy anchor. |
 | Cumulus://ID (CID) | One account for every product. | Core logic | `packages/cid` | Wire into remaining apps. |
-| **Data Exchange** | Opt-in data licensing, 85% rev-share to users, CDAT tokens. | Partial | `packages/data-exchange` (catalog, Firmament-backed consent, marketplace, revshare, 5 product collectors) + `apps/data-exchange` HTTP API | Persist sales/licenses on Firmament; issue CDAT tokens; wire collectors into live product runtimes; production storage. |
+| **Data Exchange** | Opt-in data licensing, 85% rev-share to users, CDAT tokens. | Partial | `packages/data-exchange` (catalog, Firmament-backed consent, marketplace, revshare, **14 collectors covering all software products**) + `apps/data-exchange` HTTP API | Persist sales/licenses on Firmament; issue CDAT tokens; wire collectors into live product runtimes; production storage. |
 
 ## Core software products
 
 | Product | Advertised task | Status | Evidence | Next steps |
 |---------|-----------------|--------|----------|------------|
-| **+SPCTR™ (Spectre)** | AI intelligent CRM. | Partial | Full app.ts + METATRON + research ... | Typecheck, tests, deploy. Integrate SpectreCollector. |
+| **+SPCTR™ (Spectre)** | AI intelligent CRM. | Partial | Full app.ts + METATRON + research ... | Typecheck, tests, deploy. SpectreCollector ready. |
 | **/CNDCTR/** | Intent → Score → perform → verify. | Partial | Score, executor, autonomy | Deploy via Docker/Vercel. ConductorCollector ready. |
 | **SCALVS.ai** | AI workforce platform. | Scaffolded | Agent + Context Vault + tools + Team + Conductor evidence + Firmament vault + NEXT.md | See packages/scalus/NEXT.md. ScalusCollector ready. |
 | **METATRON** | Prediction + analytics. | Scaffolded | Default scorer + analytics + Spectre wrapper + forecast projection | MetatronCollector ready. |
-| **HRVST** | Capture → privacy filter → Harvest Packet. | Scaffolded | Packet + privacy filter + licensing + Personal Silo | Production privacy model. Feed into data-exchange. |
-| **ei·det·ic** | Identity-intelligence (authorized use only). | Scaffolded | Service + Spectre integration | Production sources. Restricted. |
-| **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM client + wallet signing + DEX + router calldata + contracts + deploy scripts + compile.sh + deploy-helper.md | See DEPLOY.md and packages/firm/scripts/deploy-helper.md. Compile and deploy. |
-| **Project-specific tokens** | $HRVST, $CNDT, $SPCTR, $SCLV. | Scaffolded | tokens.ts + ProjectToken.sol + deploy.ts | Compile and deploy. |
+| **HRVST** | Capture → privacy filter → Harvest Packet. | Scaffolded | Packet + privacy filter + licensing + Personal Silo | Production privacy model. HrvstCollector ready. |
+| **ei·det·ic** | Identity-intelligence (authorized use only). | Scaffolded | Service + Spectre integration | Production sources. Restricted. EideticCollector ready. |
+| **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM client + wallet signing + DEX + router calldata + contracts + deploy scripts + compile.sh + deploy-helper.md | See DEPLOY.md and packages/firm/scripts/deploy-helper.md. Compile and deploy. FirmCollector ready. |
+| **Project-specific tokens** | $HRVST, $CNDT, $SPCTR, $SCLV. | Scaffolded | tokens.ts + ProjectToken.sol + deploy.ts | Compile and deploy. TokensCollector ready. |
 | **Cumulus://Cloud** | Storage, licensing, agent runtime, **Data Exchange** | Partial (exchange) | packages/cloud + packages/data-exchange + apps/data-exchange | Wire CumulusCollector; object store production; CDAT settlement. |
 
 ## Supporting / infrastructure concepts
@@ -37,13 +37,15 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 | Product | Notes | Software path |
 |---------|-------|---------------|
 | Cumulus://Cloud | Storage, licensing, agent runtime, data exchange | Partial for exchange (API + collectors) |
-| VEIL</> | Tor-first browser + sidebar | Partial — v0.3.1 multi-panel, Conductor Ask, Tor proxy + check, claimable rewards, Base RPC wallet balance | See apps/veil/NEXT.md + PACKAGING.md |
-| FABRIC | Encrypted calls/messaging | Scaffolded — AES-256-GCM AEAD + session |
-| ÆTHER | Distributed communications | Scaffolded — mesh + BFS routing |
+| VEIL</> | Tor-first browser + sidebar | Partial — v0.3.1 multi-panel, Conductor Ask, Tor proxy + check, claimable rewards, Base RPC wallet balance | See apps/veil/NEXT.md + PACKAGING.md. VeilCollector ready. |
+| FABRIC | Encrypted calls/messaging | Scaffolded — AES-256-GCM AEAD + session. FabricCollector ready. |
+| ÆTHER | Distributed communications | Scaffolded — mesh + BFS routing. AetherCollector ready. |
+| Firmament Network | Ledger stats | FirmamentCollector ready. |
+| E(O)N | Wearable usage aggregates | EonCollector ready (limited). |
 
 ## Hardware / physical concepts (software stubs only)
 
-ORBIS, POLLEN, Flower, NEMESIS, EON, ARGUS (sensor fusion), ODIN° (military suite).  
+ORBIS, POLLEN, Flower, NEMESIS, ARGUS (sensor fusion), ODIN° (military suite).  
 **Interfaces stubbed** in `packages/hardware`.  
 These cannot be fully built as software. Data from these is excluded from public Data Exchange.
 
@@ -57,13 +59,13 @@ See **DEPLOY.md**, **apps/spectre/src/server/RESTORE-APP.md**, **packages/firm/s
 - FIRM: compile then deploy.  
 - METATRON enabled by default in Spectre.  
 - VEIL: real key management + deploy $VEIL claim.
-- **Data Exchange:** run `apps/data-exchange`; wire collectors into product runtimes; record sales as Firmament license/payment entries; issue CDAT tokens on Base.
+- **Data Exchange:** run `apps/data-exchange`; wire the 14 collectors into product runtimes; record sales as Firmament license/payment entries; issue CDAT tokens on Base.
 
 ## Acceptance criteria (for "performs as advertised")
 
 - Spectre: full CRM + AI + audit.  
 - Conductor: Score execution with evidence.  
 - SCALVS: agent with tools and memory.  
-- Data Exchange: opt-in packaging, listing, sale with 85% rev-share, Firmament consent audit.  
+- Data Exchange: opt-in packaging, listing, sale with 85% rev-share, Firmament consent audit, collectors for all software products.  
 - All new code type-checks and has tests.  
 - No product is claimed production-complete until deployed.
