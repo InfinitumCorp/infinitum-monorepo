@@ -12,6 +12,7 @@
 - [x] Research confidence scores, search timeout, /api/research/status, improved agent routing, research error handling
 - [x] Research snippets as facts, /api/research/history endpoint
 - [x] Average research confidence in /api/research/status
+- [x] Tightened snippet fact limits in research parser
 - [ ] `pnpm --filter @infinitum/spectre typecheck`
 - [ ] Deploy via Docker or Vercel (see apps/spectre/Dockerfile and vercel.json)
 
