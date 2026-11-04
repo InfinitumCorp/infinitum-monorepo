@@ -1,6 +1,4 @@
-import { createHash, createPublicKey, verify, type KeyObject, webcrypto } from "node:crypto";
-
-type JsonWebKey = webcrypto.JsonWebKey;
+import { createHash, createPublicKey, verify, type KeyObject, type JsonWebKey } from "node:crypto";
 import { decodeCbor, type CborValue } from "./cbor.ts";
 
 /**
@@ -160,3 +158,4 @@ export function verifyAssertion(
   }
   return { signCount: ad.signCount, userVerified: Boolean(ad.flags & FLAG_UV) };
 }
+
