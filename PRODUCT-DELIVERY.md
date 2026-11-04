@@ -21,22 +21,22 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 
 | Product | Advertised task | Status | Evidence | Next steps to perform advertised tasks |
 |---------|-----------------|--------|----------|----------------------------------------|
-| **+SPCTR (Spectre)** | AI intelligent CRM: auto research every account, predictive pipeline (win probability, risk, forecast, next-best-action with reasoning), relationship map + buying-committee gaps, self-cleaning data, AI agents (Researcher, Prospector, Deal coach, etc.), plain-language queries, Shared Truth Ledger, Deal Rehearsal, self-executing deals. | Partial | Core + web server + research + queries + agents + Deal Rehearsal + Shared Truth Ledger UI + self-executing deals + relationship map + self-cleaning + buying-committee gaps + production polish + Dockerfile + vercel.json | Run deploy. |
-| **/CNDCTR/** | Intent in → Score (plan with steps, permissions, checkpoints) → perform across apps/APIs → verify outcome with evidence. Autonomy levels (Rehearsal / Accompaniment / Autopilot). Triggered by other products. | Partial | Score model, executor, Firmament evidence, Podium UI + server, instruments, Spectre HTTP adapter, autonomy levels, production polish, Dockerfile + vercel.json | Run deploy. |
-| **SCALVS.ai** | AI workforce platform: Agent Studio (templates, tools, memory), Command Center, multi-agent teams coordinated by Conductor, Nexus Context Vault memory, private runtime. | Scaffolded | Agent run loop + **Context Vault wired into agents** | Expand tools; Conductor integration. |
-| **METATRON** | Unified financial/intelligence/analytics environment + prediction engine (used by Spectre forecasts, Deal Rehearsal). | Scaffolded | predict interface + **analytics data model** (sum/avg/window) | Replace baseline scorer by default. |
-| **HRVST** | Permissioned capture from camera glasses → AI refine (privacy filter) → Harvest Packet with provenance → license or keep in Personal Silo. Proof of Perspective on Firmament. | Scaffolded | Packet model, privacy filter, Firmament provenance, Personal Silo store | Real privacy model; licensing flow. |
-| **ei·det·ic** | Facial-recognition and identity-intelligence platform (authorized, lawful use only). | Scaffolded | `packages/eidetic` (interface + stub service + test; no biometrics) | Spectre integration point. |
-| **FIRM + FIRM Wallet** | Ecosystem token, self-custody wallet, built-in DEX. Product tokens paired with FIRM. | Partial | EVM client + wallet signing + DEX + contracts + **VEIL wallet panel** | Compile and deploy. |
-| **Project-specific tokens** | $HRVST, $CNDT, $SPCTR, $SCLV, etc. | Scaffolded | tokens.ts + ProjectToken.sol + deploy script | Compile and deploy. |
+| **+SPCTR (Spectre)** | AI intelligent CRM. | Partial | Full CRM + auth + AI query + production polish | Deploy. |
+| **/CNDCTR/** | Intent → Score → perform → verify. | Partial | Score, executor, autonomy, instruments, Podium | Deploy. |
+| **SCALVS.ai** | AI workforce platform. | Scaffolded | Agent run loop + Context Vault + **default tools** (echo, search, note) | Conductor integration. |
+| **METATRON** | Prediction + analytics. | Scaffolded | predict + analytics data model | Replace baseline by default. |
+| **HRVST** | Permissioned capture → privacy filter → Harvest Packet. | Scaffolded | **Harvest Packet + privacy filter** | Licensing flow. |
+| **ei·det·ic** | Facial-recognition (authorized use only). | Scaffolded | Interface + stub | Spectre integration. |
+| **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM + wallet + DEX + contracts + VEIL panel | Compile and deploy. |
+| **Project-specific tokens** | $HRVST, $CNDT, $SPCTR, $SCLV. | Scaffolded | tokens.ts + contracts | Compile and deploy. |
 
 ## Supporting / infrastructure concepts
 
 | Product | Notes | Software path |
 |---------|-------|---------------|
 | Cumulus://Cloud | Storage, licensing, agent runtime | Later package |
-| VEIL</> | Tor-first secure browser + sidebar assistant | **Scaffolded** — side panel wired to Conductor + **Tor proxy scaffold** + **FIRM Wallet panel** |
-| FABRIC | Encrypted calls/messaging | Later |
+| VEIL</> | Tor-first browser + sidebar | Scaffolded — Conductor-wired + Tor scaffold + Wallet panel |
+| FABRIC | Encrypted calls/messaging | **Scaffolded** — `packages/fabric` message encrypt/decrypt |
 | ÆTHER | Distributed communications | Concept |
 
 ## Hardware / physical concepts (software stubs only)
@@ -48,18 +48,16 @@ These cannot be fully built as software. Interfaces (tasking, telemetry, evidenc
 
 ## Immediate next build
 
-- Spectre: deploy.  
-- Conductor: deploy.  
-- FIRM: compile and deploy FirmToken.sol.  
-- Project-specific tokens: compile and deploy.  
-- VEIL: real Tor SOCKS; live wallet RPC.  
-- SCALVS: expand tools.  
-- METATRON: replace baseline scorer.  
+- Spectre / Conductor: deploy.  
+- FIRM: compile and deploy contracts.  
+- FABRIC: real AEAD.  
+- HRVST: licensing flow.  
+- METATRON: replace baseline.  
 
 ## Acceptance criteria (for "performs as advertised")
 
-- Spectre: user can create company/contact/deal, see explained win probability + next-best-action, run a basic research query, ask plain-language questions, rehearse a deal, see the Shared Truth Ledger, run self-executing actions via Conductor, view and add relationship edges, see duplicate/issue cleaning suggestions, see buying-committee gaps, and have changes audited on Firmament.  
-- Conductor: user can write a Score, execute a simulated step with permission check, choose autonomy level (rehearsal/accompaniment/autopilot), call Spectre over HTTP, and receive evidence recorded on Firmament.  
-- SCALVS: agent can be defined, run a tool call, and return a result usable by Spectre/Conductor.  
+- Spectre: full CRM + AI + audit.  
+- Conductor: Score execution with evidence.  
+- SCALVS: agent with tools and memory.  
 - All new code type-checks and has tests.  
-- No product is claimed production-complete until the above acceptance criteria are met and deployed.
+- No product is claimed production-complete until deployed.
