@@ -256,6 +256,7 @@ async function renderToday() {
       </div>
 
       <div class="section"><h2>Next best actions</h2>
+        <button class="btn small" id="run-exec">Run AI actions</button>
         ${t.actions.length ? `<div class="list">${t.actions.slice(0, 8).map((a) => `
           <button class="item" data-deal="${esc(a.dealId)}">
             <span class="pill p${a.priority}">${a.priority === 1 ? "Today" : a.priority === 2 ? "This week" : "Soon"}</span>
@@ -280,6 +281,15 @@ async function renderToday() {
   $("#ask").onsubmit = (e) => { e.preventDefault(); ask(q.value); };
   document.querySelectorAll("[data-q]").forEach((b) => (b.onclick = () => ask(b.dataset.q)));
   document.querySelectorAll("[data-deal]").forEach((b) => (b.onclick = () => openDeal(b.dataset.deal)));
+  $("#run-exec")?.addEventListener("click", async () => {
+    toast("Running actions…");
+    try {
+      const r = await api("POST", "/api/execution/run", {});
+      toast("Actions executed");
+      console.log(r);
+      renderToday();
+    } catch (e) { toast(e.message); }
+  });
 }
 
 async function ask(question) {
