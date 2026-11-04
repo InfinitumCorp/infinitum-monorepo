@@ -504,6 +504,35 @@ export function createApp(deps: AppDeps) {
     return { ...result, persisted };
   });
 
+
+  route("POST", "/api/research/all", async (ctx) => {
+    const { researchCompany } = await import("./research.ts");
+    const companies = crm.list("companies", ctx.user!.workspace);
+    const results = [];
+    for (const c of companies.slice(0, 10)) { // limit to avoid long runs
+      try {
+        const result = await researchCompany(c.name);
+        let persisted = 0;
+        if (result && Array.isArray(result.facts)) {
+          for (const fact of result.facts) {
+            if (fact.field && fact.value) {
+              await crm.addFact(ctx.user!.workspace, ctx.user!.account.cid, c.id, {
+                field: fact.field,
+                value: fact.value,
+                source: fact.source || "ai-research-bulk",
+              });
+              persisted++;
+            }
+          }
+        }
+        results.push({ id: c.id, name: c.name, persisted, summary: result?.summary });
+      } catch (e) {
+        results.push({ id: c.id, name: c.name, error: String(e) });
+      }
+    }
+    return { researched: results.length, results };
+  });
+
   route("POST", "/api/query", async (ctx) => {
     need(ctx, "text");
     const { handleQuery } = await import("./query.ts");

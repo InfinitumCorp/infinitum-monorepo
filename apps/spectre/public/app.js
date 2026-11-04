@@ -422,7 +422,7 @@ async function renderAccounts() {
   const list = await api("GET", "/api/companies");
   main().innerHTML = `
     <div class="page">
-      <div class="page-head"><h1>Accounts</h1><div class="row"><button class="btn" id="prospect">Prospect with AI</button><button class="btn primary" id="new-co">New account</button></div></div>
+      <div class="page-head"><h1>Accounts</h1><div class="row"><button class="btn" id="research-all">Research all</button><button class="btn" id="prospect">Prospect with AI</button><button class="btn primary" id="new-co">New account</button></div></div>
       ${list.length ? `<div class="list">${list.map((c) => `
         <a class="item" href="#/accounts/${esc(c.id)}">
           <div class="avatar">${esc(initials(c.name))}</div>
@@ -431,6 +431,14 @@ async function renderAccounts() {
         </a>`).join("")}</div>` : `<div class="empty">Add a company or government agency to start.</div>`}
     </div>`;
   $("#new-co").onclick = () => newCompanyForm();
+  $("#research-all").onclick = async () => {
+    toast("Researching all accounts…");
+    try {
+      const r = await api("POST", "/api/research/all", {});
+      toast(`Researched ${r.researched} accounts`);
+      renderAccounts();
+    } catch (e) { toast(e.message); }
+  };
   $("#prospect").onclick = async () => {
     toast("Prospecting…");
     try {
