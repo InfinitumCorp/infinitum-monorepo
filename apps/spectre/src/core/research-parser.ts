@@ -31,8 +31,8 @@ export function parseResults(results: RawResult[]): ParsedFact[] {
       if (p.re.test(text)) {
         facts.push({
           field: p.field,
-          value: r.title,
-          source: r.url ?? r.snippet ?? "search",
+          value: r.title.slice(0, 200),
+          source: r.url ?? "search",
         });
         break;
       }
