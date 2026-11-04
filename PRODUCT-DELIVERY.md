@@ -21,7 +21,7 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 
 | Product | Advertised task | Status | Evidence | Next steps |
 |---------|-----------------|--------|----------|------------|
-| **+SPCTR (Spectre)** | AI intelligent CRM. | Partial | Full CRM (restore via RESTORE-APP.md) + auth + AI query + METATRON (USE_METATRON=1 default in main.ts) + ei·det·ic | Restore full app.ts; Deploy. |
+| **+SPCTR (Spectre)** | AI intelligent CRM. | Partial | Functional stub + METATRON import + auth + AI query + METATRON (USE_METATRON=1 default in main.ts) + ei·det·ic | Full restore via RESTORE-APP.md; Deploy. |
 | **/CNDCTR/** | Intent → Score → perform → verify. | Partial | Score, executor, autonomy, instruments, Podium + health + Spectre adapter | See DEPLOY.md. Deploy. |
 | **SCALVS.ai** | AI workforce platform. | Scaffolded | Agent + Context Vault + tools + Team + Conductor evidence + Firmament vault | Production integration. |
 | **METATRON** | Prediction + analytics. | Scaffolded | Default scorer + analytics + Spectre wrapper + forecast projection | (enabled by default) |
@@ -50,7 +50,7 @@ These cannot be fully built as software.
 ## Immediate next build
 
 See **DEPLOY.md** and **apps/spectre/src/server/RESTORE-APP.md**.  
-- Spectre: restore full `app.ts` from history, then deploy.  
+- Spectre: full restore of `app.ts`, then deploy.  
 - Conductor: deploy.  
 - FIRM: compile then deploy.  
 - METATRON enabled by default in Spectre.  
