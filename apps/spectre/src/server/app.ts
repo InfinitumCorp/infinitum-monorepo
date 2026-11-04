@@ -7,10 +7,15 @@ import { nextBestAction, forecast, riskAlerts, type Score } from "../core/intell
 export const SPECTRE_SCOPES = ["crm:read", "crm:write"];
 
 export function createApp(deps: any) {
-  return {
-    server: () => createServer((req, res) => {
-      res.writeHead(200, { "Content-Type": "text/plain" });
-      res.end("Spectre CRM stub - full routes in git history. See RESTORE-APP.md. METATRON scoring imported.");
-    }),
+  const handle = async (req: IncomingMessage, res: ServerResponse) => {
+    const url = new URL(req.url || "/", "http://localhost");
+    if (url.pathname === "/health") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ status: "ok", metatron: true }));
+      return;
+    }
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("Spectre CRM - METATRON scoring imported. Full routes pending restore from history.");
   };
+  return { server: () => createServer((req, res) => void handle(req, res)) };
 }
