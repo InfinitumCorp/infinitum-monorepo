@@ -689,6 +689,7 @@ export function createApp(deps: AppDeps) {
       avgConfidence: avgConf,
       lowConfidence: confs.filter((c) => c < 0.6).length,
       highConfidence: confs.filter((c) => c >= 0.7).length,
+      totalFacts: confs.length,
     };
   });
 
