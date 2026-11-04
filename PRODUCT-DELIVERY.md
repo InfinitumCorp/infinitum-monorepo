@@ -21,13 +21,13 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 
 | Product | Advertised task | Status | Evidence | Next steps |
 |---------|-----------------|--------|----------|------------|
-| **+SPCTR (Spectre)** | AI intelligent CRM. | Partial | Full CRM (restore app.ts from history) + auth + AI query + METATRON (USE_METATRON=1 default in main.ts) + ei·det·ic | Restore full app.ts; Deploy. |
-| **/CNDCTR/** | Intent → Score → perform → verify. | Partial | Score, executor, autonomy, instruments, Podium + health + Spectre adapter | Deploy. |
+| **+SPCTR (Spectre)** | AI intelligent CRM. | Partial | Full CRM (restore app.ts from history) + auth + AI query + METATRON (USE_METATRON=1 default in main.ts) + ei·det·ic | See DEPLOY.md. Restore full app.ts; Deploy. |
+| **/CNDCTR/** | Intent → Score → perform → verify. | Partial | Score, executor, autonomy, instruments, Podium + health + Spectre adapter | See DEPLOY.md. Deploy. |
 | **SCALVS.ai** | AI workforce platform. | Scaffolded | Agent + Context Vault + tools + Team + Conductor evidence + Firmament vault | Production integration. |
 | **METATRON** | Prediction + analytics. | Scaffolded | Default scorer + analytics + Spectre wrapper + forecast projection | (enabled by default) |
 | **HRVST** | Capture → privacy filter → Harvest Packet. | Scaffolded | Packet + privacy filter + licensing + Personal Silo | Production privacy model. |
 | **ei·det·ic** | Identity-intelligence (authorized use only). | Scaffolded | Service + Spectre integration | Production sources. |
-| **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM client + wallet signing + DEX + router calldata + contracts + deploy scripts + compile.sh | Compile and deploy. |
+| **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM client + wallet signing + DEX + router calldata + contracts + deploy scripts + compile.sh | See DEPLOY.md. Compile and deploy. |
 | **Project-specific tokens** | $HRVST, $CNDT, $SPCTR, $SCLV. | Scaffolded | tokens.ts + ProjectToken.sol + deploy.ts | Compile and deploy. |
 
 ## Supporting / infrastructure concepts
@@ -49,9 +49,10 @@ These cannot be fully built as software.
 
 ## Immediate next build
 
+See **DEPLOY.md** for the checklist.  
 - Spectre: restore full `app.ts` from git history, then deploy.  
 - Conductor: deploy.  
-- FIRM: `pnpm --filter @infinitum/firm compile` then deploy.  
+- FIRM: compile then deploy.  
 - METATRON enabled by default in Spectre.  
 
 ## Acceptance criteria (for "performs as advertised")
