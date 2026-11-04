@@ -600,7 +600,7 @@ async function renderAccount(id) {
 
       <div class="section"><h2>Research</h2>
         <button class="btn" id="ai-research">Research with AI</button>
-        ${c.facts.filter(f => f.source?.includes("ai-research")).length ? `<div class="faint small">${c.facts.filter(f => f.source?.includes("ai-research")).length} AI facts</div>` : ""}
+        ${c.facts.filter(f => f.source?.includes("ai-research")).length ? `<div class="faint small">${c.facts.filter(f => f.source?.includes("ai-research")).length} AI facts · last ${ago(c.facts.filter(f => f.source?.includes("ai-research")).sort((a,b)=>b.observedAt.localeCompare(a.observedAt))[0]?.observedAt)}</div>` : ""}
         ${c.facts.length ? `<div class="list">${c.facts.map((f) => `<div class="item"><div class="main"><div class="title">${esc(f.value)}</div><div class="sub">${esc(f.field)} · source: ${esc(f.source)} · ${date(f.observedAt)}</div></div></div>`).join("")}</div>` : `<div class="empty">No research yet.</div>`}
         <form id="fact" class="row wrap mt10">
           <input class="input" name="field" placeholder="Topic (e.g. funding)" required>
