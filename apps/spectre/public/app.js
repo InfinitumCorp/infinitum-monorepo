@@ -353,13 +353,15 @@ async function renderPipeline() {
   const params = new URLSearchParams(location.search);
   const min = params.get("min") || "";
   const stage = params.get("stage") || "";
-  const qs = [min && `minAmount=${min}`, stage && `stage=${stage}`].filter(Boolean).join("&");
+  const before = params.get("before") || "";
+  const qs = [min && `minAmount=${min}`, stage && `stage=${stage}`, before && `closingBefore=${before}`].filter(Boolean).join("&");
   const [{ deals }, stats] = await Promise.all([api("GET", `/api/deals${qs ? `?${qs}` : ""}`), api("GET", "/api/pipeline/stats")]);
   const cols = [...OPEN, "won"];
   main().innerHTML = `
     <div class="page wide">
       <div class="page-head"><h1>Pipeline</h1><div class="row"><input class="input small" id="min-amount" placeholder="Min amount" value="${esc(min)}" style="width:120px">
-            <select class="input small" id="stage-filter" style="width:120px"><option value="">All stages</option>${Object.keys(STAGE_LABEL).map((s) => `<option value="${s}" ${stage === s ? "selected" : ""}>${STAGE_LABEL[s]}</option>`).join("")}</select><button class="btn primary" id="new-deal">New deal</button></div></div>
+            <select class="input small" id="stage-filter" style="width:120px"><option value="">All stages</option>${Object.keys(STAGE_LABEL).map((s) => `<option value="${s}" ${stage === s ? "selected" : ""}>${STAGE_LABEL[s]}</option>`).join("")}</select>
+            <input class="input small" id="before-filter" type="date" value="${esc(before)}" style="width:140px"><button class="btn primary" id="new-deal">New deal</button></div></div>
       <div class="faint small">${Object.entries(stats.byStage || {}).map(([s, v]) => `${STAGE_LABEL[s] || s}: ${v.count}`).join(" · ")}</div>
       <div class="board">${cols.map((s) => {
         const list = deals.filter((d) => d.stage === s);
@@ -377,14 +379,17 @@ async function renderPipeline() {
   const applyFilter = () => {
     const m = $("#min-amount")?.value || "";
     const s = $("#stage-filter")?.value || "";
+    const b = $("#before-filter")?.value || "";
     const p = [];
     if (m) p.push(`min=${m}`);
     if (s) p.push(`stage=${s}`);
+    if (b) p.push(`before=${b}`);
     history.replaceState(null, "", p.length ? `?${p.join("&")}` : location.pathname);
     renderPipeline();
   };
   $("#min-amount")?.addEventListener("change", applyFilter);
   $("#stage-filter")?.addEventListener("change", applyFilter);
+  $("#before-filter")?.addEventListener("change", applyFilter);
   document.querySelectorAll("[data-deal]").forEach((b) => (b.onclick = () => openDeal(b.dataset.deal)));
 }
 
