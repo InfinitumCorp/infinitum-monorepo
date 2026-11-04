@@ -313,11 +313,12 @@ async function ask(question) {
 /* ---------------- Pipeline ---------------- */
 
 async function renderPipeline() {
-  const { deals } = await api("GET", "/api/deals");
+  const [{ deals }, stats] = await Promise.all([api("GET", "/api/deals"), api("GET", "/api/pipeline/stats")]);
   const cols = [...OPEN, "won"];
   main().innerHTML = `
     <div class="page wide">
       <div class="page-head"><h1>Pipeline</h1><button class="btn primary" id="new-deal">New deal</button></div>
+      <div class="faint small">${Object.entries(stats.byStage || {}).map(([s, v]) => `${STAGE_LABEL[s] || s}: ${v.count}`).join(" · ")}</div>
       <div class="board">${cols.map((s) => {
         const list = deals.filter((d) => d.stage === s);
         return `<div class="col"><div class="col-head"><span>${STAGE_LABEL[s]}</span><span class="faint">${money(list.reduce((n, d) => n + d.amount, 0))}</span></div>
