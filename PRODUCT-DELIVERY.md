@@ -14,7 +14,7 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 
 | Product | Advertised task | Status | Evidence | Next steps |
 |---------|-----------------|--------|----------|------------|
-| Firmament Network | Append-only hash-chained Ed25519 ledger. | Core logic | `packages/firmament` + real Merkle root anchoring + Anchor.sol (anchor + isAnchored) + anchor client + **deploy-anchor.ts** | Deploy anchor. |
+| Firmament Network | Append-only hash-chained Ed25519 ledger. | Core logic | `packages/firmament` + real Merkle root anchoring + Anchor.sol (anchor + isAnchored) + anchor client + deploy-anchor.ts (test) | Deploy anchor. |
 | Cumulus://ID (CID) | One account for every product. | Core logic | `packages/cid` | Wire into remaining apps. |
 
 ## Core software products
