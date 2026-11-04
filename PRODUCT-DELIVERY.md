@@ -21,12 +21,12 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 
 | Product | Advertised task | Status | Evidence | Next steps |
 |---------|-----------------|--------|----------|------------|
-| **+SPCTR (Spectre)** | AI intelligent CRM. | Partial | Full CRM + auth + AI query | Deploy. |
+| **+SPCTR (Spectre)** | AI intelligent CRM. | Partial | Full CRM + auth + AI query + **METATRON scorer adapter** | Deploy. |
 | **/CNDCTR/** | Intent → Score → perform → verify. | Partial | Score, executor, autonomy, instruments, Podium | Deploy. |
 | **SCALVS.ai** | AI workforce platform. | Scaffolded | Agent + Context Vault + default tools | Conductor integration. |
-| **METATRON** | Prediction + analytics. | Scaffolded | **Default scorer** + analytics model | Wire as Spectre default. |
-| **HRVST** | Capture → privacy filter → Harvest Packet. | Scaffolded | Packet + privacy filter | Licensing flow. |
-| **ei·det·ic** | Identity-intelligence (authorized use only). | Scaffolded | **Service scaffold** (match + consent) | Spectre integration. |
+| **METATRON** | Prediction + analytics. | Scaffolded | Default scorer + analytics + **Spectre adapter** | Wire as default in CRM. |
+| **HRVST** | Capture → privacy filter → Harvest Packet. | Scaffolded | Packet + privacy filter + **licensing flow** | Production privacy model. |
+| **ei·det·ic** | Identity-intelligence (authorized use only). | Scaffolded | Service scaffold (match + consent) | Spectre integration. |
 | **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM + wallet + DEX + contracts + VEIL panel | Compile and deploy. |
 | **Project-specific tokens** | $HRVST, $CNDT, $SPCTR, $SCLV. | Scaffolded | tokens.ts + contracts | Compile and deploy. |
 
@@ -34,9 +34,9 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 
 | Product | Notes | Software path |
 |---------|-------|---------------|
-| Cumulus://Cloud | Storage, licensing, agent runtime | **Scaffolded** — `packages/cloud` store |
+| Cumulus://Cloud | Storage, licensing, agent runtime | Scaffolded — store |
 | VEIL</> | Tor-first browser + sidebar | Scaffolded — Conductor + Tor + Wallet panel |
-| FABRIC | Encrypted calls/messaging | Scaffolded — encrypt/decrypt |
+| FABRIC | Encrypted calls/messaging | Scaffolded — **AES-256-GCM AEAD** |
 | ÆTHER | Distributed communications | Concept |
 
 ## Hardware / physical concepts (software stubs only)
@@ -50,10 +50,8 @@ These cannot be fully built as software. Interfaces (tasking, telemetry, evidenc
 
 - Spectre / Conductor: deploy.  
 - FIRM: compile and deploy contracts.  
-- Wire METATRON as Spectre default scorer.  
+- Wire METATRON as Spectre default in CRM.  
 - Wire ei·det·ic into Spectre.  
-- FABRIC: real AEAD.  
-- HRVST: licensing flow.  
 
 ## Acceptance criteria (for "performs as advertised")
 
