@@ -21,10 +21,10 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 
 | Product | Advertised task | Status | Evidence | Next steps |
 |---------|-----------------|--------|----------|------------|
-| **+SPCTR (Spectre)** | AI intelligent CRM. | Partial | Full CRM + auth + AI query + METATRON wrapper + ei·det·ic | Deploy. |
+| **+SPCTR (Spectre)** | AI intelligent CRM. | Partial | Full CRM + auth + AI query + METATRON wrapper (USE_METATRON=1 default) + ei·det·ic | Deploy. |
 | **/CNDCTR/** | Intent → Score → perform → verify. | Partial | Score, executor, autonomy, instruments, Podium + health + Spectre adapter | Deploy. |
 | **SCALVS.ai** | AI workforce platform. | Scaffolded | Agent + Context Vault + tools + Team + Conductor evidence + Firmament vault | Production integration. |
-| **METATRON** | Prediction + analytics. | Scaffolded | Default scorer + analytics + Spectre wrapper + forecast projection | Set USE_METATRON=1. |
+| **METATRON** | Prediction + analytics. | Scaffolded | Default scorer + analytics + Spectre wrapper + forecast projection | (enabled by default) |
 | **HRVST** | Capture → privacy filter → Harvest Packet. | Scaffolded | Packet + privacy filter + licensing + Personal Silo | Production privacy model. |
 | **ei·det·ic** | Identity-intelligence (authorized use only). | Scaffolded | Service + Spectre integration | Production sources. |
 | **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM client (tests) + wallet signing (tests) + DEX (Uniswap-style eth_call + tests) + router calldata + EVM wallet + FirmToken.sol + ProjectToken.sol + deploy.ts (tests) + compile.sh (includes Anchor.sol) + **package.json scripts (compile/deploy/anchor)** + README + VEIL panel | Compile and deploy. |
@@ -51,7 +51,7 @@ These cannot be fully built as software.
 
 - Spectre / Conductor: deploy.  
 - FIRM: `pnpm --filter @infinitum/firm compile` then deploy.  
-- Set USE_METATRON=1 in Spectre.  
+- METATRON enabled by default in Spectre.  
 
 ## Acceptance criteria (for "performs as advertised")
 
