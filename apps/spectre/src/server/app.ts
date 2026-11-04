@@ -708,7 +708,14 @@ export function createApp(deps: AppDeps) {
             companyId: c.id,
           });
         }
-        results.push({ id: c.id, name: c.name, persisted });
+        if (persisted > 0) {
+          await crm.addFact(ctx.user!.workspace, ctx.user!.account.cid, c.id, {
+            field: "research-queue",
+            value: "done",
+            source: "research-queue-done",
+          });
+        }
+        results.push({ id: c.id, name: c.name, persisted, done: persisted > 0 });
       } catch (e) {
         results.push({ id: c.id, name: c.name, error: String(e) });
       }
