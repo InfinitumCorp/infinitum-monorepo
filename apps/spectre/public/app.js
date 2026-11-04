@@ -274,6 +274,7 @@ async function renderToday() {
         <div class="stat"><div class="muted small">Weighted</div><div class="v">${money(t.totals.weighted)}</div></div>
         <div class="stat"><div class="muted small">Accounts</div><div class="v">${m.companies}</div></div>
         <div class="stat"><div class="muted small">People</div><div class="v">${m.contacts}</div></div>
+        ${m.byKind ? Object.entries(m.byKind).map(([k, v]) => `<div class="stat"><div class="muted small">${esc(k)}</div><div class="v">${v}</div></div>`).join("") : ""}
       </div>
 
       <div class="section"><h2>Next best actions</h2>
