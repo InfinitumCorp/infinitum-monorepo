@@ -4,28 +4,33 @@ export * from "./catalog.js";
 export * from "./marketplace.js";
 export * from "./revshare.js";
 export * from "./collectors.js";
+export * from "./cdat.js";
 
 import { ConsentManager } from "./consent.js";
 import { DatasetCatalog } from "./catalog.js";
 import { DataMarketplace } from "./marketplace.js";
 import { RevShareEngine } from "./revshare.js";
+import { CdatIssuer } from "./cdat.js";
 import type { Ledger, Signer } from "@infinitum/firmament";
 import type { ProductId } from "./types.js";
 
 /**
  * Main Data Exchange service.
  * Products call collectors that feed into catalog after consent.
- * Optionally backed by Firmament ledger for audit of grants, licenses, and payments.
+ * A completed sale mints one soulbound CDAT license and, when a ledger is
+ * attached, records the license and the 85/15 payment split on Firmament.
  */
 export class DataExchange {
   consent: ConsentManager;
   catalog = new DatasetCatalog();
   marketplace: DataMarketplace;
   revshare = new RevShareEngine();
+  cdat: CdatIssuer;
 
   constructor(ledger?: Ledger, signer?: Signer) {
     this.consent = new ConsentManager(ledger, signer);
     this.marketplace = new DataMarketplace(this.catalog);
+    this.cdat = new CdatIssuer(ledger, signer);
   }
 
   /**
@@ -44,17 +49,6 @@ export class DataExchange {
     priceUsd: number;
     scopes: string[];
   }) {
-    // Provisional id so consent can reference the future dataset
-    const provisionalId = `ds_pending_${Date.now()}`;
-
-    const consent = await this.consent.grant({
-      cid: params.cid,
-      product: params.product,
-      datasetId: provisionalId,
-      scopes: params.scopes,
-      purpose: "data_licensing",
-    });
-
     const ds = this.catalog.create({
       ownerCid: params.cid,
       product: params.product,
@@ -65,11 +59,15 @@ export class DataExchange {
       privacyLevel: params.privacyLevel,
       licenseTerms: params.licenseTerms,
       priceUsd: params.priceUsd,
-      consentId: consent.datasetId,
     });
 
-    // Align the consent subject with the real dataset id
-    consent.datasetId = ds.id;
+    const consent = await this.consent.grant({
+      cid: params.cid,
+      product: params.product,
+      datasetId: ds.id,
+      scopes: params.scopes,
+      purpose: "data_licensing",
+    });
 
     return { dataset: ds, consent };
   }
@@ -80,13 +78,23 @@ export class DataExchange {
 
   async sell(datasetId: string, buyerId: string, amountUsd: number) {
     const sale = this.marketplace.purchase({ datasetId, buyerId, amountUsd });
-    if (sale) {
-      const ds = this.catalog.get(datasetId);
-      if (ds) {
-        this.revshare.recordPayout(sale, ds.ownerCid);
-        // License + payment records can be appended here when ledger is present
-      }
-    }
+    if (!sale) return null;
+
+    const ds = this.catalog.get(datasetId);
+    if (!ds) return sale;
+
+    this.revshare.recordPayout(sale, ds.ownerCid);
+    const token = await this.cdat.issue({
+      datasetId,
+      saleId: sale.id,
+      licensee: buyerId,
+      ownerCid: ds.ownerCid,
+      terms: ds.licenseTerms,
+      amountUsd,
+      userShareUsd: sale.userShareUsd,
+      platformShareUsd: sale.platformShareUsd,
+    });
+    sale.cdatTokenId = token.tokenId;
     return sale;
   }
 }

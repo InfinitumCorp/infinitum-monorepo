@@ -5,8 +5,10 @@
  * Endpoints (JSON):
  * POST /datasets          — package a new dataset (body matches packageDataset params)
  * GET  /datasets          — list listed datasets
- * POST /sell              — { datasetId, buyerId, amountUsd }
+ * POST /sell              — { datasetId, buyerId, amountUsd }  (mints a CDAT license)
  * GET  /sales             — list sales
+ * GET  /cdat              — list CDAT license tokens
+ * GET  /cdat/:tokenId     — one CDAT token plus its on-chain mint intent
  * GET  /payouts/:cid      — pending payouts for a CID
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
@@ -49,12 +51,38 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
     if (req.method === "POST" && url.pathname === "/sell") {
       const body = JSON.parse(await readBody(req));
       const sale = await dx.sell(body.datasetId, body.buyerId, body.amountUsd);
-      res.end(JSON.stringify(sale ?? { error: "not found or not listed" }));
+      if (!sale) {
+        res.end(JSON.stringify({ error: "not found or not listed" }));
+        return;
+      }
+      const token = sale.cdatTokenId ? dx.cdat.get(sale.cdatTokenId) : undefined;
+      res.end(JSON.stringify({ sale, cdat: token ?? null }));
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/sales") {
       res.end(JSON.stringify(dx.marketplace.listSales()));
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/cdat") {
+      res.end(JSON.stringify(dx.cdat.list()));
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname.startsWith("/cdat/")) {
+      const tokenId = decodeURIComponent(url.pathname.slice("/cdat/".length));
+      const token = dx.cdat.get(tokenId);
+      if (!token) {
+        res.statusCode = 404;
+        res.end(JSON.stringify({ error: "not found" }));
+        return;
+      }
+      res.end(JSON.stringify({
+        token,
+        active: dx.cdat.isActive(tokenId),
+        mint: dx.cdat.mintIntent(token),
+      }));
       return;
     }
 

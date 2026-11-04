@@ -3,24 +3,28 @@
 Opt-in Cumulus Data Exchange backend.
 
 ## Features
-- Explicit consent recorded (Firmament-ready)
+- Explicit consent recorded on Firmament
 - Dataset catalog per product
 - Marketplace for data brokers
-- 85% revenue share to data owner
-- CDAT license token support (stub)
+- 85% revenue share to the data owner
+- One soulbound CDAT license token per sale (`CdatLicense.sol` + off-chain issuer)
 
 ## Usage
 ```ts
 import { DataExchange } from "@infinitum/data-exchange";
 
 const dx = new DataExchange();
-const { dataset } = dx.packageDataset({ ... });
+const { dataset } = await dx.packageDataset({ /* ... */ });
 dx.catalog.updateStatus(dataset.id, "listed");
-const sale = dx.sell(dataset.id, "broker_id", 100);
+const sale = await dx.sell(dataset.id, "broker_id", 100);
+const cdat = dx.cdat.get(sale.cdatTokenId);
 ```
 
+`cdat.mintIntent(token)` is the `CdatLicense.mint` call to submit on Base.
+License and payment records are appended to Firmament when a ledger and signer are passed to `DataExchange`.
+
 ## Product integration
-Each product (SCALVS, Cumulus, Spectre, etc.) provides a collector that:
+Each product collector:
 1. Checks user consent via CID
 2. Anonymizes / aggregates data
 3. Calls packageDataset()

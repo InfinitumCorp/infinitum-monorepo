@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Compile FirmToken.sol, ProjectToken.sol, and Anchor.sol with solc if available.
+# Compile FirmToken.sol, ProjectToken.sol, CdatLicense.sol, and Anchor.sol with solc if available.
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$DIR/artifacts"
@@ -10,5 +10,9 @@ if ! command -v solc >/dev/null; then
   exit 1
 fi
 
-solc --bin --abi --optimize -o "$OUT" "$DIR/contracts/FirmToken.sol" "$DIR/contracts/ProjectToken.sol" "$DIR/contracts/Anchor.sol"
+solc --bin --abi --optimize -o "$OUT" \
+  "$DIR/contracts/FirmToken.sol" \
+  "$DIR/contracts/ProjectToken.sol" \
+  "$DIR/contracts/CdatLicense.sol" \
+  "$DIR/contracts/Anchor.sol"
 echo "Compiled to $OUT"

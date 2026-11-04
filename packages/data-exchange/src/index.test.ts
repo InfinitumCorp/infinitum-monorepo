@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { DataExchange } from "./index.js";
 import { Ledger, generateSigner } from "@infinitum/firmament";
 
-test("package dataset and sell with rev share", async () => {
+test("package dataset and sell with rev share and CDAT", async () => {
   const dx = new DataExchange();
 
   const { dataset } = await dx.packageDataset({
@@ -24,13 +24,21 @@ test("package dataset and sell with rev share", async () => {
 
   const sale = await dx.sell(dataset.id, "broker_acme", 250);
   assert.ok(sale);
-  assert.equal(sale!.userShareUsd, 212.5); // 85%
+  assert.equal(sale!.userShareUsd, 212.5);
   assert.equal(sale!.platformShareUsd, 37.5);
+  assert.equal(sale!.cdatTokenId, "cdat_1");
 
+  const token = dx.cdat.get(sale!.cdatTokenId!);
+  assert.ok(token);
+  assert.equal(token!.datasetId, dataset.id);
+  assert.equal(token!.licensee, "broker_acme");
+  assert.equal(token!.terms, "CDAT-research-1y");
+  assert.equal(token!.amountUsdCents, 25000);
+  assert.equal(dx.cdat.isActive(token!.tokenId), true);
   assert.equal(dx.revshare.pendingForCid("cid_user123"), 212.5);
 });
 
-test("Firmament records consent grant", async () => {
+test("Firmament records consent, license, and payment", async () => {
   const ledger = new Ledger();
   const signer = generateSigner();
   ledger.authorize(signer.publicKey);
@@ -45,16 +53,23 @@ test("Firmament records consent grant", async () => {
     schema: "x",
     sizeEstimate: 1,
     privacyLevel: "aggregated",
-    licenseTerms: "CDAT-test",
+    licenseTerms: "CDAT-test-1y",
     priceUsd: 10,
     scopes: ["usage_metrics"],
   });
 
   assert.ok(consent.firmamentTx);
+  dx.catalog.updateStatus(dataset.id, "listed");
+  const sale = await dx.sell(dataset.id, "broker_acme", 10);
+  assert.ok(sale?.cdatTokenId);
+
+  const token = dx.cdat.get(sale!.cdatTokenId!);
+  assert.ok(token?.firmamentTx);
+  assert.ok(token?.paymentTx);
+
   const entries = await ledger.entries();
-  assert.equal(entries.length, 1);
-  assert.equal(entries[0].type, "grant");
+  assert.deepEqual(entries.map((e) => e.type), ["grant", "license", "payment"]);
   assert.equal(entries[0].subject, dataset.id);
-  const verified = await ledger.verify();
-  assert.equal(verified.ok, true);
+  assert.equal(entries[1].subject, dataset.id);
+  assert.equal((await ledger.verify()).ok, true);
 });
