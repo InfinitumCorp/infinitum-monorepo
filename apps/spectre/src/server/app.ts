@@ -471,6 +471,18 @@ export function createApp(deps: AppDeps) {
     need(ctx, "name");
     const { researchCompany } = await import("./research.ts");
     const result = await researchCompany(String(ctx.body.name));
+    // Persist any returned facts to the company if companyId provided
+    if (ctx.body.companyId && result && Array.isArray(result.facts)) {
+      for (const fact of result.facts) {
+        if (fact.field && fact.value) {
+          await crm.addFact(ctx.user!.workspace, ctx.user!.account.cid, String(ctx.body.companyId), {
+            field: fact.field,
+            value: fact.value,
+            source: fact.source || "ai-research",
+          });
+        }
+      }
+    }
     return result;
   });
 

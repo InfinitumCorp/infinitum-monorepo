@@ -460,7 +460,7 @@ async function renderAccount(id) {
   $("#ai-research").onclick = async () => {
     toast("Researching…");
     try {
-      const result = await api("POST", "/api/research", { name: c.name });
+      const result = await api("POST", "/api/research", { name: c.name, companyId: id });
       toast("Research complete");
       console.log(result);
       renderAccount(id);
