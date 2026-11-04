@@ -11,3 +11,5 @@ export type { FirmDex, SwapQuote, DexPool } from "./dex.ts";
 export { encodeGetAmountsOut, encodeSwapExactTokensForTokens } from "./dex-router.ts";
 export { createEvmWalletScaffold } from "./wallet-evm.ts";
 export type { EvmWallet, EvmSignedTx } from "./wallet-evm.ts";
+export { prepareAnchorCall } from "./anchor-client.ts";
+export type { AnchorCall } from "./anchor-client.ts";
