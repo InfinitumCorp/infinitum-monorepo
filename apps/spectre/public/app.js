@@ -503,8 +503,8 @@ async function renderAccounts() {
     <div class="page">
       <div class="page-head"><h1>Accounts</h1><div class="row"><input class="input small" id="industry-filter" placeholder="Industry" value="${esc(industry)}" style="width:140px">
             <select class="input small" id="sort-filter" style="width:100px"><option value="">Name</option><option value="deals" ${sort === "deals" ? "selected" : ""}>Deals</option></select>
-            <select class="input small" id="researched-filter" style="width:120px"><option value="">All</option><option value="1" ${researched === "1" ? "selected" : ""}>Researched</option><option value="0" ${researched === "0" ? "selected" : ""}>Not researched</option></select><button class="btn" id="research-all">Research all</button><button class="btn" id="prospect">Prospect with AI</button><button class="btn primary" id="new-co">New account</button></div></div>
-      ${queue.queue?.length ? `<div class="section"><h2>Research queue</h2><div class="list">${queue.queue.slice(0, 5).map((r) => `<div class="item"><div class="main"><div class="title">${esc(r.name)}</div><div class="sub">priority ${r.priority} · ${r.factCount} facts · ${r.ageDays < 999 ? r.ageDays + "d" : "never"}</div></div></div>`).join("")}</div></div>` : ""}
+            <select class="input small" id="researched-filter" style="width:120px"><option value="">All</option><option value="1" ${researched === "1" ? "selected" : ""}>Researched</option><option value="0" ${researched === "0" ? "selected" : ""}>Not researched</option></select><button class="btn" id="process-queue">Process queue</button><button class="btn" id="research-all">Research all</button><button class="btn" id="prospect">Prospect with AI</button><button class="btn primary" id="new-co">New account</button></div></div>
+      ${queue.queue?.length ? `<div class="section"><h2>Research queue</h2><div class="list">${queue.queue.slice(0, 5).map((r) => `<div class="item"><div class="main"><div class="title">${esc(r.name)}</div><div class="sub">priority ${r.priority} · ${r.factCount} facts · ${r.ageDays < 999 ? r.ageDays + "d" : "never"}</div></div><button class="btn ghost small" data-unqueue="${esc(r.id)}">Remove</button></div>`).join("")}</div></div>` : ""}
       ${recs.recommendations?.length ? `<div class="section"><h2>Needs research</h2><div class="list">${recs.recommendations.map((r) => `<div class="item"><div class="main"><div class="title">${esc(r.name)}</div><div class="sub">${esc(r.reason)} · ${r.factCount} facts${r.ageDays < 999 ? ` · ${r.ageDays}d old` : ""}</div></div></div>`).join("")}</div></div>` : ""}
       ${list.length ? `<div class="list">${list.map((c) => `
         <a class="item" href="#/accounts/${esc(c.id)}">
@@ -515,6 +515,13 @@ async function renderAccounts() {
         </a>`).join("")}</div>` : `<div class="empty">Add a company or government agency to start.</div>`}
     </div>`;
   $("#new-co").onclick = () => newCompanyForm();
+  document.querySelectorAll("[data-unqueue]").forEach((b) => (b.onclick = async () => {
+    try {
+      await api("POST", "/api/research/queue/remove", { companyId: b.dataset.unqueue });
+      toast("Removed from queue");
+      renderAccounts();
+    } catch (e) { toast(e.message); }
+  }));
   document.querySelectorAll("[data-queue]").forEach((b) => (b.onclick = async () => {
     try {
       await api("POST", "/api/research/queue", { companyId: b.dataset.queue });
@@ -536,6 +543,14 @@ async function renderAccounts() {
   $("#industry-filter")?.addEventListener("change", apply);
   $("#sort-filter")?.addEventListener("change", apply);
   $("#researched-filter")?.addEventListener("change", apply);
+  $("#process-queue").onclick = async () => {
+    toast("Processing research queue…");
+    try {
+      const r = await api("POST", "/api/research/queue/process", {});
+      toast(`Processed ${r.processed} accounts`);
+      renderAccounts();
+    } catch (e) { toast(e.message); }
+  };
   $("#research-all").onclick = async () => {
     toast("Researching all accounts…");
     try {
@@ -621,7 +636,7 @@ async function renderPeople() {
   main().innerHTML = `
     <div class="page">
       <div class="page-head"><h1>People</h1><button class="btn primary" id="new-ct">Add person</button></div>
-      ${queue.queue?.length ? `<div class="section"><h2>Research queue</h2><div class="list">${queue.queue.slice(0, 5).map((r) => `<div class="item"><div class="main"><div class="title">${esc(r.name)}</div><div class="sub">priority ${r.priority} · ${r.factCount} facts · ${r.ageDays < 999 ? r.ageDays + "d" : "never"}</div></div></div>`).join("")}</div></div>` : ""}
+      ${queue.queue?.length ? `<div class="section"><h2>Research queue</h2><div class="list">${queue.queue.slice(0, 5).map((r) => `<div class="item"><div class="main"><div class="title">${esc(r.name)}</div><div class="sub">priority ${r.priority} · ${r.factCount} facts · ${r.ageDays < 999 ? r.ageDays + "d" : "never"}</div></div><button class="btn ghost small" data-unqueue="${esc(r.id)}">Remove</button></div>`).join("")}</div></div>` : ""}
       ${recs.recommendations?.length ? `<div class="section"><h2>Needs research</h2><div class="list">${recs.recommendations.map((r) => `<div class="item"><div class="main"><div class="title">${esc(r.name)}</div><div class="sub">${esc(r.reason)} · ${r.factCount} facts${r.ageDays < 999 ? ` · ${r.ageDays}d old` : ""}</div></div></div>`).join("")}</div></div>` : ""}
       ${list.length ? `<div class="list">${list.map((c) => `
         <div class="item"><div class="avatar">${esc(initials(c.name))}</div>
