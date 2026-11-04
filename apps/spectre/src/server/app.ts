@@ -648,6 +648,16 @@ export function createApp(deps: AppDeps) {
     return result;
   });
 
+
+  route("POST", "/api/rehearse", async (ctx) => {
+    need(ctx, "dealId");
+    const deal = crm.deal(ctx.user!.workspace, String(ctx.body.dealId));
+    const { runSpectreAgent } = await import("../core/agents.ts");
+    const summary = `${deal.name} at ${deal.stage} for ${deal.amount}`;
+    const result = await runSpectreAgent("deal-coach", `rehearse ${summary}`, { crm, workspace: ctx.user!.workspace });
+    return result;
+  });
+
   route("POST", "/api/agents/:id/run", async (ctx) => {
     need(ctx, "prompt");
     const { runSpectreAgent } = await import("../core/agents.ts");
