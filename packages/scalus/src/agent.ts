@@ -2,6 +2,7 @@
  * SCALVS.ai agent: a unit of work with tools, memory and a run loop.
  * Used by Spectre's AI team and coordinated by Conductor.
  */
+import { ContextVault, type MemoryEntry } from "./vault.ts";
 
 export interface Tool {
   name: string;
@@ -16,17 +17,20 @@ export interface Agent {
   tools: Tool[];
   /** Optional memory key in the Nexus Context Vault. */
   memoryKey?: string;
+  vault?: ContextVault;
 }
 
 export interface RunResult {
   agentId: string;
   output: unknown;
   toolCalls: { tool: string; input: Record<string, unknown>; result: unknown }[];
+  memory?: MemoryEntry[];
 }
 
 /**
  * Run an agent. If the prompt mentions a tool name, call that tool.
  * Otherwise call the first tool (if any) so agents still do useful work.
+ * Remembers the run in the Context Vault when one is attached.
  */
 export async function runAgent(agent: Agent, prompt: string): Promise<RunResult> {
   const toolCalls: RunResult["toolCalls"] = [];
@@ -49,5 +53,12 @@ export async function runAgent(agent: Agent, prompt: string): Promise<RunResult>
   const output = toolCalls.length
     ? toolCalls.map((c) => `${c.tool}: ${JSON.stringify(c.result)}`).join("\n")
     : `Agent ${agent.name} received: ${prompt}`;
-  return { agentId: agent.id, output, toolCalls };
+
+  let memory: MemoryEntry[] | undefined;
+  if (agent.vault) {
+    agent.vault.remember(agent.id, String(output), ["run"]);
+    memory = agent.vault.recall(agent.id);
+  }
+
+  return { agentId: agent.id, output, toolCalls, memory };
 }
