@@ -480,8 +480,9 @@ async function renderAccount(id) {
     toast("Researching…");
     try {
       const result = await api("POST", "/api/research", { name: c.name, companyId: id });
-      toast("Research complete");
-      console.log(result);
+      const n = result.persisted || (result.facts || []).length;
+      toast(`Research complete · ${n} facts saved`);
+      if (result.summary) alert(result.summary);
       renderAccount(id);
     } catch (e) { toast(e.message); }
   };

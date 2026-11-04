@@ -500,7 +500,8 @@ export function createApp(deps: AppDeps) {
         }
       }
     }
-    return result;
+    const persisted = (ctx.body.companyId && result && Array.isArray(result.facts)) ? result.facts.filter((f: any) => f.field && f.value).length : 0;
+    return { ...result, persisted };
   });
 
   route("POST", "/api/query", async (ctx) => {
