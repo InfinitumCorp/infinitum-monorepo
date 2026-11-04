@@ -251,6 +251,18 @@ export function createApp(deps: AppDeps) {
   };
 
 
+
+  route("GET", "/api/export", (ctx) => {
+    const ws = ctx.user!.workspace;
+    return {
+      exportedAt: new Date().toISOString(),
+      companies: crm.list("companies", ws),
+      contacts: crm.list("contacts", ws).filter((c) => !c.optedOut),
+      deals: crm.list("deals", ws),
+      activities: crm.list("activities", ws).slice(0, 200),
+    };
+  });
+
   route("GET", "/api/metrics", (ctx) => {
     const ws = ctx.user!.workspace;
     const deals = crm.list("deals", ws);
