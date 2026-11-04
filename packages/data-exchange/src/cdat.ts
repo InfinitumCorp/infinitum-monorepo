@@ -19,6 +19,8 @@ export interface CdatToken {
   issuedAt: string;
   expiresAt: string;
   burned: boolean;
+  /** 0x address that will own the on-chain token. Absent until the buyer has a wallet. */
+  licenseeAddress?: string;
   firmamentTx?: string;
   paymentTx?: string;
 }
@@ -51,6 +53,7 @@ export class CdatIssuer {
   private nextOnchainId = 1;
   private ledger?: Ledger;
   private signer?: Signer;
+  changed?: () => void;
 
   constructor(ledger?: Ledger, signer?: Signer) {
     this.ledger = ledger;
@@ -66,6 +69,7 @@ export class CdatIssuer {
     amountUsd: number;
     userShareUsd: number;
     platformShareUsd: number;
+    licenseeAddress?: string;
   }): Promise<CdatToken> {
     const onchainId = this.nextOnchainId++;
     const tokenId = `cdat_${onchainId}`;
@@ -86,6 +90,7 @@ export class CdatIssuer {
       issuedAt: issuedAt.toISOString(),
       expiresAt: expiresAt.toISOString(),
       burned: false,
+      licenseeAddress: params.licenseeAddress,
     };
 
     if (this.ledger && this.signer) {
@@ -130,15 +135,19 @@ export class CdatIssuer {
     }
 
     this.tokens.set(tokenId, token);
+    this.changed?.();
     return token;
   }
 
-  mintIntent(token: CdatToken, licenseeAddress = "0x0000000000000000000000000000000000000000"): CdatMintIntent {
+  mintIntent(token: CdatToken, licenseeAddress?: string): CdatMintIntent {
+    const licensee = licenseeAddress
+      ?? token.licenseeAddress
+      ?? (isAddress(token.licensee) ? token.licensee : "0x0000000000000000000000000000000000000000");
     return {
       contract: "CdatLicense",
       function: "mint",
       args: {
-        licensee: licenseeAddress,
+        licensee,
         datasetId: token.datasetId,
         terms: token.terms,
         expiresAt: Math.floor(Date.parse(token.expiresAt) / 1000),
@@ -151,6 +160,7 @@ export class CdatIssuer {
     const token = this.tokens.get(tokenId);
     if (!token || token.burned) return false;
     token.burned = true;
+    this.changed?.();
     if (this.ledger && this.signer) {
       await this.ledger.append(
         {
@@ -183,4 +193,17 @@ export class CdatIssuer {
   listForDataset(datasetId: string): CdatToken[] {
     return this.list().filter((t) => t.datasetId === datasetId);
   }
+
+  exportState(): { tokens: CdatToken[]; nextOnchainId: number } {
+    return { tokens: this.list(), nextOnchainId: this.nextOnchainId };
+  }
+
+  importState(state: { tokens: CdatToken[]; nextOnchainId: number }) {
+    this.tokens = new Map(state.tokens.map((t) => [t.tokenId, t]));
+    this.nextOnchainId = state.nextOnchainId;
+  }
+}
+
+function isAddress(value: string): boolean {
+  return /^0x[0-9a-fA-F]{40}$/.test(value);
 }

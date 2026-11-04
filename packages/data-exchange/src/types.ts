@@ -20,6 +20,7 @@ export type ProductId =
   | "other";
 
 export interface ConsentRecord {
+  id: string;
   cid: string; // Cumulus://ID
   product: ProductId;
   datasetId: string;

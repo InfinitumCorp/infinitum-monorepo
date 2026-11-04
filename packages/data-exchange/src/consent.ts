@@ -9,6 +9,7 @@ export class ConsentManager {
   private consents = new Map<string, ConsentRecord>();
   private ledger?: Ledger;
   private signer?: Signer;
+  changed?: () => void;
 
   constructor(ledger?: Ledger, signer?: Signer) {
     this.ledger = ledger;
@@ -24,6 +25,7 @@ export class ConsentManager {
   }): Promise<ConsentRecord> {
     const id = `consent_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const record: ConsentRecord = {
+      id,
       cid: params.cid,
       product: params.product,
       datasetId: params.datasetId,
@@ -54,6 +56,7 @@ export class ConsentManager {
     }
 
     this.consents.set(id, record);
+    this.changed?.();
     return record;
   }
 
@@ -80,7 +83,16 @@ export class ConsentManager {
       c.firmamentTx = entry.hash;
     }
 
+    this.changed?.();
     return true;
+  }
+
+  exportState(): ConsentRecord[] {
+    return [...this.consents.values()];
+  }
+
+  importState(records: ConsentRecord[]) {
+    this.consents = new Map(records.map((r) => [r.id, r]));
   }
 
   get(consentId: string): ConsentRecord | undefined {

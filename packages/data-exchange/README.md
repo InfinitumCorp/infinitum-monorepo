@@ -20,7 +20,8 @@ const sale = await dx.sell(dataset.id, "broker_id", 100);
 const cdat = dx.cdat.get(sale.cdatTokenId);
 ```
 
-`cdat.mintIntent(token)` is the `CdatLicense.mint` call to submit on Base.
+`dx.mintCalldata(tokenId)` is the ABI-encoded `CdatLicense.mint` call (`0x01d47bed`) to submit on Base.
+Pass a snapshot path as the third `DataExchange` argument to persist the catalog, consents, sales, CDAT tokens, and payouts across restarts. `settlePayout(saleId)` marks the owner's 85% share paid.
 License and payment records are appended to Firmament when a ledger and signer are passed to `DataExchange`.
 
 ## Product integration

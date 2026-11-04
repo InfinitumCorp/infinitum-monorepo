@@ -9,6 +9,7 @@ export class DataMarketplace {
   private sales = new Map<string, LicenseSale>();
   private brokers = new Map<string, DataBroker>();
   private catalog: DatasetCatalog;
+  changed?: () => void;
 
   constructor(catalog: DatasetCatalog) {
     this.catalog = catalog;
@@ -18,6 +19,7 @@ export class DataMarketplace {
     const id = `broker_${Date.now()}`;
     const b: DataBroker = { ...broker, id };
     this.brokers.set(id, b);
+    this.changed?.();
     return b;
   }
 
@@ -49,6 +51,7 @@ export class DataMarketplace {
 
     this.sales.set(sale.id, sale);
     this.catalog.updateStatus(params.datasetId, "sold");
+    this.changed?.();
     return sale;
   }
 
@@ -63,5 +66,14 @@ export class DataMarketplace {
 
   getSale(id: string): LicenseSale | undefined {
     return this.sales.get(id);
+  }
+
+  exportState(): { sales: LicenseSale[]; brokers: DataBroker[] } {
+    return { sales: [...this.sales.values()], brokers: [...this.brokers.values()] };
+  }
+
+  importState(state: { sales: LicenseSale[]; brokers: DataBroker[] }) {
+    this.sales = new Map(state.sales.map((s) => [s.id, s]));
+    this.brokers = new Map(state.brokers.map((b) => [b.id, b]));
   }
 }

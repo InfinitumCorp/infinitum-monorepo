@@ -5,6 +5,7 @@ import type { Dataset, ProductId } from "./types.ts";
  */
 export class DatasetCatalog {
   private datasets = new Map<string, Dataset>();
+  changed?: () => void;
 
   create(params: Omit<Dataset, "id" | "createdAt" | "status"> & { status?: Dataset["status"] }): Dataset {
     const id = `ds_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -16,6 +17,7 @@ export class DatasetCatalog {
       revSharePct: params.revSharePct ?? 85,
     };
     this.datasets.set(id, ds);
+    this.changed?.();
     return ds;
   }
 
@@ -35,7 +37,16 @@ export class DatasetCatalog {
     const ds = this.datasets.get(id);
     if (!ds) return undefined;
     ds.status = status;
+    this.changed?.();
     return ds;
+  }
+
+  exportState(): Dataset[] {
+    return [...this.datasets.values()];
+  }
+
+  importState(records: Dataset[]) {
+    this.datasets = new Map(records.map((d) => [d.id, d]));
   }
 
   listListed(): Dataset[] {
