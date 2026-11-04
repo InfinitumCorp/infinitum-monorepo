@@ -13,6 +13,10 @@ export type ProductId =
   | "metatron" 
   | "hrvst" 
   | "eidetic" 
+  | "firm" 
+  | "firmament" 
+  | "tokens" 
+  | "eon" 
   | "other";
 
 export interface ConsentRecord {
