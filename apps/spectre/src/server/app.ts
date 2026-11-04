@@ -624,6 +624,12 @@ export function createApp(deps: AppDeps) {
     const results = [];
     for (const c of companies.slice(0, 10)) { // limit to avoid long runs
       try {
+        // Skip if has recent AI research facts
+        const recent = c.facts.some((f) => f.source?.includes("ai-research") && Date.now() - Date.parse(f.observedAt) < 86400000);
+        if (recent) {
+          results.push({ id: c.id, name: c.name, skipped: "recent research" });
+          continue;
+        }
         const result = await researchCompany(c.name);
         let persisted = 0;
         if (result && Array.isArray(result.facts)) {
