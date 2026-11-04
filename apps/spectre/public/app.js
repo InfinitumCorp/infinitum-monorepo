@@ -720,7 +720,7 @@ async function renderSettings() {
           <div class="item"><div class="main"><div class="title">Research</div><div class="sub">Public web search for account facts</div></div></div>
           <div class="item"><div class="main"><div class="title">Agents</div><div class="sub">Researcher, Prospector, Deal Coach, Query</div></div></div>
         </div>
-        <p class="faint small mt10">Set ANTHROPIC_API_KEY for Ask Spectre. Research uses public search.</p>
+        <p class="faint small mt10">Set ANTHROPIC_API_KEY for Ask Spectre. Research uses public search. Filters available on Pipeline and Accounts.</p>
       </div>
     </div>`;
   main().querySelectorAll("[data-unlink]").forEach((b) => {
