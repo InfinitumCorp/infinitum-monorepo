@@ -255,6 +255,15 @@ export function createApp(deps: AppDeps) {
 
 
 
+
+  route("GET", "/api/activities/summary", (ctx) => {
+    const ws = ctx.user!.workspace;
+    const acts = crm.list("activities", ws);
+    const byKind: Record<string, number> = {};
+    for (const a of acts) byKind[a.kind] = (byKind[a.kind] || 0) + 1;
+    return { total: acts.length, byKind };
+  });
+
   route("GET", "/api/activities", (ctx) => {
     const ws = ctx.user!.workspace;
     const limit = Number(ctx.query.get("limit") || 50);
