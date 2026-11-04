@@ -255,7 +255,8 @@ const fillBars = (el) => el.querySelectorAll("[data-w]").forEach((b) => { b.styl
 /* ---------------- Today ---------------- */
 
 async function renderToday() {
-  const [t, m, acts] = await Promise.all([api("GET", "/api/today"), api("GET", "/api/metrics"), api("GET", "/api/activities?limit=8")]);
+  const kind = new URLSearchParams(location.search).get("act") || "";
+  const [t, m, acts] = await Promise.all([api("GET", "/api/today"), api("GET", "/api/metrics"), api("GET", `/api/activities?limit=8${kind ? `&kind=${kind}` : ""}`)]);
   const first = state.thread.length === 0;
   main().innerHTML = `
     <div class="page narrow">
@@ -295,6 +296,7 @@ async function renderToday() {
         <button class="item" data-deal="${esc(a.dealId)}"><span class="pill ${a.severity}">${a.severity}</span><div class="main">${esc(a.message)}</div></button>`).join("")}</div></div>` : ""}
 
       <div class="section"><h2>Recent activity</h2>
+        <select class="input small" id="act-filter" style="margin-bottom:8px"><option value="">All</option><option value="note" ${kind==="note"?"selected":""}>Notes</option><option value="call" ${kind==="call"?"selected":""}>Calls</option><option value="email" ${kind==="email"?"selected":""}>Emails</option><option value="meeting" ${kind==="meeting"?"selected":""}>Meetings</option><option value="task" ${kind==="task"?"selected":""}>Tasks</option></select>
         ${acts.activities.length ? `<div class="list">${acts.activities.map((a) => `<div class="item"><div class="main"><div class="title">${esc(a.summary)}</div><div class="sub">${esc(a.kind)} · ${ago(a.at)}</div></div></div>`).join("")}</div>` : `<div class="empty">No activity yet.</div>`}
       </div>
       <div class="section"><h2>Forecast</h2>
@@ -310,6 +312,12 @@ async function renderToday() {
   $("#ask").onsubmit = (e) => { e.preventDefault(); ask(q.value); };
   document.querySelectorAll("[data-q]").forEach((b) => (b.onclick = () => ask(b.dataset.q)));
   document.querySelectorAll("[data-deal]").forEach((b) => (b.onclick = () => openDeal(b.dataset.deal)));
+  $("#act-filter")?.addEventListener("change", () => {
+    const v = $("#act-filter").value;
+    if (v) history.replaceState(null, "", `?act=${v}`);
+    else history.replaceState(null, "", location.pathname);
+    renderToday();
+  });
   $("#run-exec")?.addEventListener("click", async () => {
     toast("Running actions…");
     try {
