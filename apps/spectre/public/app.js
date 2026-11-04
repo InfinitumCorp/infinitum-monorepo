@@ -511,9 +511,17 @@ async function renderAccounts() {
           <div class="avatar">${esc(initials(c.name))}</div>
           <div class="main"><div class="title">${esc(c.name)}</div><div class="sub">${esc([c.kind, c.industry, c.domain].filter(Boolean).join(" · "))}</div></div>
           <div class="muted small">${c.openDeals} open deal${c.openDeals === 1 ? "" : "s"} · ${c.contacts} people${c.researchFacts ? ` · ${c.researchFacts} AI facts${c.lastResearch ? ` (${ago(c.lastResearch)})` : ""}` : ""}</div>
+          <button class="btn ghost small" data-queue="${esc(c.id)}">Queue</button>
         </a>`).join("")}</div>` : `<div class="empty">Add a company or government agency to start.</div>`}
     </div>`;
   $("#new-co").onclick = () => newCompanyForm();
+  document.querySelectorAll("[data-queue]").forEach((b) => (b.onclick = async () => {
+    try {
+      await api("POST", "/api/research/queue", { companyId: b.dataset.queue });
+      toast("Added to research queue");
+      renderAccounts();
+    } catch (e) { toast(e.message); }
+  }));
   const apply = () => {
     const i = $("#industry-filter")?.value || "";
     const s = $("#sort-filter")?.value || "";

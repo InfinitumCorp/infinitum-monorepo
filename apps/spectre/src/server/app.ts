@@ -685,8 +685,9 @@ export function createApp(deps: AppDeps) {
         const ai = c.facts.filter((f) => f.source?.includes("ai-research"));
         const last = ai.sort((a, b) => b.observedAt.localeCompare(a.observedAt))[0];
         const age = last ? Math.floor((now - Date.parse(last.observedAt)) / 86400000) : 999;
-        const score = (ai.length < 2 ? 50 : 0) + (age > 30 ? 30 : age > 7 ? 10 : 0);
-        return { id: c.id, name: c.name, factCount: ai.length, ageDays: age, priority: score };
+        const manual = c.facts.some((f) => f.source === "research-queue");
+        const score = (manual ? 100 : 0) + (ai.length < 2 ? 50 : 0) + (age > 30 ? 30 : age > 7 ? 10 : 0);
+        return { id: c.id, name: c.name, factCount: ai.length, ageDays: age, priority: score, manual };
       })
       .filter((c) => c.priority > 0)
       .sort((a, b) => b.priority - a.priority)
