@@ -31,7 +31,7 @@ export const podiumHtml = `<!DOCTYPE html>
       const el = document.getElementById("social");
       if (!providers.length) return;
       el.innerHTML = "<strong>Sign in:</strong> " + providers.map(p => 
-        `<a class="btn" href="${CID_ORIGIN}/api/auth/oauth/${p.id}/start" style="margin-right:0.5rem;padding:0.4rem 0.8rem;border:1px solid #ccc;border-radius:4px;text-decoration:none">Continue with ${p.label}</a>`
+        \`<a class="btn" href="\${CID_ORIGIN}/api/auth/oauth/\${p.id}/start" style="margin-right:0.5rem;padding:0.4rem 0.8rem;border:1px solid #ccc;border-radius:4px;text-decoration:none">Continue with \${p.label}</a>\`
       ).join("");
     }).catch(() => {});
 
