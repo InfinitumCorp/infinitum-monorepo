@@ -40,6 +40,9 @@ Coming next: AI account research the Spectre agent team, then `$FIRM` and produc
 - `GET /api/activities` — recent activities (optional kind filter)
 - `GET /api/pipeline/stats` — counts and amounts by stage
 - `POST /api/research/contact` — research a person
+- `POST /api/companies/:id/research` — research shortcut for an account
+- `GET /api/deals?stage=&minAmount=` — filtered deals
+- `GET /api/companies?industry=` — filtered accounts
 
 ## Requirements
 
