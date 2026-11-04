@@ -330,6 +330,7 @@ export function createApp(deps: AppDeps) {
       deals: deals.length,
       openDeals: open.length,
       pipeline: open.reduce((s, d) => s + (d.amount || 0), 0),
+      avgProbability: open.length ? Math.round(open.reduce((s, d) => s + (scoresFor(ws).get(d.id)?.probability || 0), 0) / open.length * 100) / 100 : 0,
       byKind,
       byIndustry,
       metatron: process.env.USE_METATRON === "1",
