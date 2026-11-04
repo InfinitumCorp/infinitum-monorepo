@@ -664,6 +664,58 @@ export function createApp(deps: AppDeps) {
 
 
 
+
+  route("POST", "/api/research/queue/process", async (ctx) => {
+    const { researchCompany } = await import("./research.ts") as any;
+    const companies = crm.list("companies", ctx.user!.workspace);
+    const queued = companies.filter((c) => c.facts.some((f) => f.source === "research-queue")).slice(0, 5);
+    const results = [];
+    for (const c of queued) {
+      try {
+        const result = await researchCompany(c.name) as any;
+        let persisted = 0;
+        if (result && Array.isArray(result.facts)) {
+          const existing = new Set(c.facts.map((f) => `${f.field}:${f.value}`));
+          for (const fact of result.facts.slice(0, 5)) {
+            if (fact.field && fact.value && !existing.has(`${fact.field}:${fact.value}`)) {
+              await crm.addFact(ctx.user!.workspace, ctx.user!.account.cid, c.id, {
+                field: fact.field,
+                value: fact.value,
+                source: fact.source || "ai-research-queue",
+              });
+              existing.add(`${fact.field}:${fact.value}`);
+              persisted++;
+            }
+          }
+        }
+        if (persisted > 0) {
+          await crm.logActivity(ctx.user!.workspace, ctx.user!.account.cid, {
+            kind: "note",
+            summary: `Queue research added ${persisted} facts`,
+            companyId: c.id,
+          });
+        }
+        results.push({ id: c.id, name: c.name, persisted });
+      } catch (e) {
+        results.push({ id: c.id, name: c.name, error: String(e) });
+      }
+    }
+    return { processed: results.length, results };
+  });
+
+  route("POST", "/api/research/queue/remove", async (ctx) => {
+    need(ctx, "companyId");
+    const id = String(ctx.body.companyId);
+    const company = crm.company(ctx.user!.workspace, id);
+    // Mark as processed by adding a done fact (simple approach)
+    await crm.addFact(ctx.user!.workspace, ctx.user!.account.cid, id, {
+      field: "research-queue",
+      value: "done",
+      source: "research-queue-done",
+    });
+    return { removed: true, companyId: id, name: company.name };
+  });
+
   route("POST", "/api/research/queue", async (ctx) => {
     need(ctx, "companyId");
     const id = String(ctx.body.companyId);
