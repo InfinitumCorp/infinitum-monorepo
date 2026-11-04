@@ -356,7 +356,10 @@ export function createApp(deps: AppDeps) {
     const ws = ctx.user!.workspace;
     const deals = crm.list("deals", ws);
     const contacts = crm.list("contacts", ws);
-    return crm.list("companies", ws)
+    const industry = ctx.query.get("industry");
+    let list = crm.list("companies", ws);
+    if (industry) list = list.filter((c) => (c.industry || "").toLowerCase().includes(industry.toLowerCase()));
+    return list
       .map((c) => ({
         ...c,
         openDeals: deals.filter((d) => d.companyId === c.id && OPEN_STAGES.includes(d.stage)).length,
