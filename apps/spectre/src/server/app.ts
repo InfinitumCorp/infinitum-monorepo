@@ -317,12 +317,15 @@ export function createApp(deps: AppDeps) {
     const companies = crm.list("companies", ws);
     const contacts = crm.list("contacts", ws);
     const open = deals.filter((d) => OPEN_STAGES.includes(d.stage));
+    const byKind: Record<string, number> = {};
+    for (const c of companies) byKind[c.kind || "unknown"] = (byKind[c.kind || "unknown"] || 0) + 1;
     return {
       companies: companies.length,
       contacts: contacts.length,
       deals: deals.length,
       openDeals: open.length,
       pipeline: open.reduce((s, d) => s + (d.amount || 0), 0),
+      byKind,
       metatron: process.env.USE_METATRON === "1",
     };
   });
