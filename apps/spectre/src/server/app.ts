@@ -437,6 +437,8 @@ export function createApp(deps: AppDeps) {
     let deals = crm.list("deals", ws);
     const min = Number(ctx.query.get("minAmount") || 0);
     if (min) deals = deals.filter((d) => (d.amount || 0) >= min);
+    const stage = ctx.query.get("stage");
+    if (stage) deals = deals.filter((d) => d.stage === stage);
     return { stages: STAGES, deals: deals.map((d) => ({ ...d, company: companies.get(d.companyId), score: scores.get(d.id) })) };
   });
 
