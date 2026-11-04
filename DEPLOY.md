@@ -20,6 +20,8 @@
 - [x] Research recommendations and prioritized queue endpoints + UI
 - [x] Queue process and remove endpoints + buttons
 - [x] Queue stats endpoint + UI
+- [x] Auto-done on successful queue research
+- [x] Confidence filter UI on Accounts
 - [x] `pnpm --filter @infinitum/spectre typecheck`
 - [ ] Deploy via Docker or Vercel (see apps/spectre/Dockerfile and vercel.json)
 
