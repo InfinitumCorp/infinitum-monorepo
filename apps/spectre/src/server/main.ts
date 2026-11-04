@@ -14,6 +14,7 @@ import { saveSnapshot, loadSnapshot } from "./persist.ts";
  *   SPECTRE_ORIGIN       public origin for passkeys, default http://localhost:PORT
  *   SPECTRE_DATA_DIR     default ./data
  *   ANTHROPIC_API_KEY    enables AI features
+ *   USE_METATRON         set to 1 (default) to use METATRON scorer
  *   Social sign-in (each optional; a provider appears only when its credentials are set):
  *     GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
  *     GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
@@ -22,6 +23,9 @@ import { saveSnapshot, loadSnapshot } from "./persist.ts";
  *     CHATGPT_CLIENT_ID, CHATGPT_CLIENT_SECRET, CHATGPT_ISSUER   (OpenAI partner program)
  *   Callback URL to register with each provider: {SPECTRE_ORIGIN}/api/auth/oauth/{provider}/callback
  */
+
+// Enable METATRON by default for advertised prediction performance.
+process.env.USE_METATRON ??= "1";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT ?? 3000);
@@ -80,5 +84,5 @@ const app = createApp({
 });
 
 app.server().listen(port, () => {
-  console.log(`+SPCTR running at ${origin}  (ledger: ${verified.length} verified entries, AI: ${ai.apiKey ? "connected" : "not connected"}, sign-in: passkey${Object.keys(social).map((p) => ", " + p).join("")})`);
+  console.log(`+SPCTR running at ${origin}  (ledger: ${verified.length} verified entries, AI: ${ai.apiKey ? "connected" : "not connected"}, METATRON: ${process.env.USE_METATRON === "1" ? "on" : "off"}, sign-in: passkey${Object.keys(social).map((p) => ", " + p).join("")})`);
 });
