@@ -492,12 +492,14 @@ async function renderAccounts() {
   const params = new URLSearchParams(location.search);
   const industry = params.get("industry") || "";
   const sort = params.get("sort") || "";
-  const qs = [industry && `industry=${encodeURIComponent(industry)}`, sort && `sort=${sort}`].filter(Boolean).join("&");
+  const researched = params.get("researched") || "";
+  const qs = [industry && `industry=${encodeURIComponent(industry)}`, sort && `sort=${sort}`, researched && `researched=${researched}`].filter(Boolean).join("&");
   const list = await api("GET", `/api/companies${qs ? `?${qs}` : ""}`);
   main().innerHTML = `
     <div class="page">
       <div class="page-head"><h1>Accounts</h1><div class="row"><input class="input small" id="industry-filter" placeholder="Industry" value="${esc(industry)}" style="width:140px">
-            <select class="input small" id="sort-filter" style="width:100px"><option value="">Name</option><option value="deals" ${sort === "deals" ? "selected" : ""}>Deals</option></select><button class="btn" id="research-all">Research all</button><button class="btn" id="prospect">Prospect with AI</button><button class="btn primary" id="new-co">New account</button></div></div>
+            <select class="input small" id="sort-filter" style="width:100px"><option value="">Name</option><option value="deals" ${sort === "deals" ? "selected" : ""}>Deals</option></select>
+            <select class="input small" id="researched-filter" style="width:120px"><option value="">All</option><option value="1" ${researched === "1" ? "selected" : ""}>Researched</option><option value="0" ${researched === "0" ? "selected" : ""}>Not researched</option></select><button class="btn" id="research-all">Research all</button><button class="btn" id="prospect">Prospect with AI</button><button class="btn primary" id="new-co">New account</button></div></div>
       ${list.length ? `<div class="list">${list.map((c) => `
         <a class="item" href="#/accounts/${esc(c.id)}">
           <div class="avatar">${esc(initials(c.name))}</div>
@@ -509,14 +511,17 @@ async function renderAccounts() {
   const apply = () => {
     const i = $("#industry-filter")?.value || "";
     const s = $("#sort-filter")?.value || "";
+    const r = $("#researched-filter")?.value || "";
     const p = [];
     if (i) p.push(`industry=${encodeURIComponent(i)}`);
     if (s) p.push(`sort=${s}`);
+    if (r) p.push(`researched=${r}`);
     history.replaceState(null, "", p.length ? `?${p.join("&")}` : location.pathname);
     renderAccounts();
   };
   $("#industry-filter")?.addEventListener("change", apply);
   $("#sort-filter")?.addEventListener("change", apply);
+  $("#researched-filter")?.addEventListener("change", apply);
   $("#research-all").onclick = async () => {
     toast("Researching all accounts…");
     try {
