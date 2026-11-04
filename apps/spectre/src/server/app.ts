@@ -652,6 +652,19 @@ export function createApp(deps: AppDeps) {
     return result;
   });
 
+
+  route("GET", "/api/research/status", (ctx) => {
+    const ws = ctx.user!.workspace;
+    const companies = crm.list("companies", ws);
+    const researched = companies.filter((c) => c.facts.some((f) => f.source?.includes("ai-research")));
+    return {
+      total: companies.length,
+      researched: researched.length,
+      coverage: companies.length ? Math.round(researched.length / companies.length * 100) : 0,
+      recent: researched.filter((c) => c.facts.some((f) => f.source?.includes("ai-research") && Date.now() - Date.parse(f.observedAt) < 86400000 * 7)).length,
+    };
+  });
+
   route("POST", "/api/research/all", async (ctx) => {
     const { researchCompany } = await import("./research.ts");
     const companies = crm.list("companies", ctx.user!.workspace);
