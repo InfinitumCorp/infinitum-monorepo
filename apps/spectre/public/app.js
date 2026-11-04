@@ -412,7 +412,7 @@ async function renderAccounts() {
   const list = await api("GET", "/api/companies");
   main().innerHTML = `
     <div class="page">
-      <div class="page-head"><h1>Accounts</h1><button class="btn primary" id="new-co">New account</button></div>
+      <div class="page-head"><h1>Accounts</h1><div class="row"><button class="btn" id="prospect">Prospect with AI</button><button class="btn primary" id="new-co">New account</button></div></div>
       ${list.length ? `<div class="list">${list.map((c) => `
         <a class="item" href="#/accounts/${esc(c.id)}">
           <div class="avatar">${esc(initials(c.name))}</div>
@@ -421,6 +421,15 @@ async function renderAccounts() {
         </a>`).join("")}</div>` : `<div class="empty">Add a company or government agency to start.</div>`}
     </div>`;
   $("#new-co").onclick = () => newCompanyForm();
+  $("#prospect").onclick = async () => {
+    toast("Prospecting…");
+    try {
+      const result = await api("POST", "/api/prospect", {});
+      toast("Suggestions ready");
+      console.log(result);
+      alert(JSON.stringify(result, null, 2).slice(0, 500));
+    } catch (e) { toast(e.message); }
+  };
 }
 
 async function renderAccount(id) {
