@@ -239,7 +239,7 @@ function renderShell(page) {
             const html = lines.length 
               ? `<div class="list">${lines.map(l => `<div class="item"><div class="main">${esc(l)}</div></div>`).join("")}</div>`
               : `<div class="empty">No results for "${esc(q)}"</div>`;
-            modal(`<h2>Search: ${esc(q)}</h2>${html}`, () => {});
+            modal(`<h2>Search: ${esc(q)}</h2><p class="faint small">${r.companies.length} accounts · ${r.contacts.length} people · ${r.deals.length} deals</p>${html}`, () => {});
           } catch (err) { toast(err.message); }
         }
       };
