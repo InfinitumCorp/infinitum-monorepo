@@ -23,7 +23,7 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 |---------|-----------------|--------|----------|------------|
 | **+SPCTR (Spectre)** | AI intelligent CRM. | Partial | Functional stub + METATRON import + auth + AI query + METATRON (USE_METATRON=1 default in main.ts) + ei·det·ic | Full restore via RESTORE-APP.md; Deploy. |
 | **/CNDCTR/** | Intent → Score → perform → verify. | Partial | Score, executor, autonomy, instruments, Podium + health + Spectre adapter + DEPLOY.md | See DEPLOY.md and apps/conductor/DEPLOY.md. Deploy. |
-| **SCALVS.ai** | AI workforce platform. | Scaffolded | Agent + Context Vault + tools + Team + Conductor evidence + Firmament vault | Production integration. |
+| **SCALVS.ai** | AI workforce platform. | Scaffolded | Agent + Context Vault + tools + Team + Conductor evidence + Firmament vault + NEXT.md | See packages/scalus/NEXT.md. Production integration. |
 | **METATRON** | Prediction + analytics. | Scaffolded | Default scorer + analytics + Spectre wrapper + forecast projection | (enabled by default) |
 | **HRVST** | Capture → privacy filter → Harvest Packet. | Scaffolded | Packet + privacy filter + licensing + Personal Silo | Production privacy model. |
 | **ei·det·ic** | Identity-intelligence (authorized use only). | Scaffolded | Service + Spectre integration | Production sources. |
@@ -49,7 +49,7 @@ These cannot be fully built as software.
 
 ## Immediate next build
 
-See **DEPLOY.md**, **apps/spectre/src/server/RESTORE-APP.md**, **packages/firm/scripts/deploy-helper.md**, **apps/conductor/DEPLOY.md**, and **apps/veil/NEXT.md**.  
+See **DEPLOY.md**, **apps/spectre/src/server/RESTORE-APP.md**, **packages/firm/scripts/deploy-helper.md**, **apps/conductor/DEPLOY.md**, **apps/veil/NEXT.md**, and **packages/scalus/NEXT.md**.  
 - Spectre: full restore of `app.ts`, then deploy.  
 - Conductor: deploy.  
 - FIRM: compile then deploy.  
