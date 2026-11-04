@@ -527,7 +527,7 @@ async function renderAccount(id) {
   $("#ai-research").onclick = async () => {
     toast("Researching…");
     try {
-      const result = await api("POST", "/api/research", { name: c.name, companyId: id });
+      const result = await api("POST", `/api/companies/${encodeURIComponent(id)}/research`, {});
       const n = result.persisted || (result.facts || []).length;
       toast(`Research complete · ${n} facts saved`);
       if (result.summary) alert(result.summary);
