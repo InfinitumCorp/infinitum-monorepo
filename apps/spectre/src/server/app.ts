@@ -318,7 +318,11 @@ export function createApp(deps: AppDeps) {
     const contacts = crm.list("contacts", ws);
     const open = deals.filter((d) => OPEN_STAGES.includes(d.stage));
     const byKind: Record<string, number> = {};
-    for (const c of companies) byKind[c.kind || "unknown"] = (byKind[c.kind || "unknown"] || 0) + 1;
+    const byIndustry: Record<string, number> = {};
+    for (const c of companies) {
+      byKind[c.kind || "unknown"] = (byKind[c.kind || "unknown"] || 0) + 1;
+      if (c.industry) byIndustry[c.industry] = (byIndustry[c.industry] || 0) + 1;
+    }
     return {
       companies: companies.length,
       contacts: contacts.length,
@@ -326,6 +330,7 @@ export function createApp(deps: AppDeps) {
       openDeals: open.length,
       pipeline: open.reduce((s, d) => s + (d.amount || 0), 0),
       byKind,
+      byIndustry,
       metatron: process.env.USE_METATRON === "1",
     };
   });
