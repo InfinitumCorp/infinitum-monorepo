@@ -18,11 +18,23 @@ export const podiumHtml = `<!DOCTYPE html>
 </head>
 <body>
   <h1>/CNDCTR/</h1>
+  <div id="social" style="margin-bottom:1rem"></div>
   <p>Write a Score intent (plain text). The executor will plan and simulate.</p>
   <textarea id="intent" placeholder="Research the top 3 competitors of Acme and summarize"></textarea><br>
   <button id="run">Perform</button>
   <pre id="out"></pre>
   <script>
+    
+    // Social sign-in (shared Cumulus://ID). Buttons appear when providers are configured on the CID origin.
+    const CID_ORIGIN = window.CID_ORIGIN || "http://localhost:3000";
+    fetch(CID_ORIGIN + "/api/auth/providers").then(r => r.json()).then(providers => {
+      const el = document.getElementById("social");
+      if (!providers.length) return;
+      el.innerHTML = providers.map(p => 
+        `<a class="btn" href="${CID_ORIGIN}/api/auth/oauth/${p.id}/start" style="margin-right:0.5rem;padding:0.4rem 0.8rem;border:1px solid #ccc;border-radius:4px;text-decoration:none">${p.label}</a>`
+      ).join("");
+    }).catch(() => {});
+
     document.getElementById("run").onclick = async () => {
       const intent = document.getElementById("intent").value;
       const r = await fetch("/api/perform", {

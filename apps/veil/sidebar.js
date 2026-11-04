@@ -141,3 +141,21 @@ refreshTor();
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === "status") status.textContent = msg.text;
 });
+
+
+// Social sign-in (shared Cumulus://ID via Spectre origin)
+const CID_ORIGIN = "http://localhost:3000";
+async function loadSocial() {
+  const el = document.getElementById("social-buttons");
+  if (!el) return;
+  try {
+    const r = await fetch(CID_ORIGIN + "/api/auth/providers");
+    const providers = await r.json();
+    el.innerHTML = providers.length
+      ? providers.map(p => `<a class="btn" href="${CID_ORIGIN}/api/auth/oauth/${p.id}/start" target="_blank" style="display:block;margin:0.25rem 0;padding:0.4rem;background:#fff;color:#000;text-align:center;border-radius:4px;text-decoration:none">Continue with ${p.label}</a>`).join("")
+      : "<span class=\"muted\">No social providers configured on the CID origin.</span>";
+  } catch {
+    el.innerHTML = "<span class=\"muted\">CID origin unreachable.</span>";
+  }
+}
+loadSocial();
