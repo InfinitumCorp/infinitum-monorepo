@@ -21,13 +21,13 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 
 | Product | Advertised task | Status | Evidence | Next steps |
 |---------|-----------------|--------|----------|------------|
-| **+SPCTR (Spectre)** | AI intelligent CRM. | Partial | Full CRM + auth + AI query + METATRON adapter | Deploy. |
+| **+SPCTR (Spectre)** | AI intelligent CRM. | Partial | Full CRM + auth + AI query + METATRON adapter + **ei·det·ic integration point** | Deploy. |
 | **/CNDCTR/** | Intent → Score → perform → verify. | Partial | Score, executor, autonomy, instruments, Podium | Deploy. |
-| **SCALVS.ai** | AI workforce platform. | Scaffolded | Agent + Context Vault + default tools + **index exports** | Conductor integration. |
+| **SCALVS.ai** | AI workforce platform. | Scaffolded | Agent + Context Vault + default tools + index | Conductor integration. |
 | **METATRON** | Prediction + analytics. | Scaffolded | Default scorer + analytics + Spectre adapter | Wire as default in CRM. |
-| **HRVST** | Capture → privacy filter → Harvest Packet. | Scaffolded | Packet + privacy filter + licensing + **index** | Production privacy model. |
-| **ei·det·ic** | Identity-intelligence (authorized use only). | Scaffolded | Service scaffold | Spectre integration. |
-| **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM + wallet + DEX + contracts + **compile.sh** + VEIL panel | Compile and deploy. |
+| **HRVST** | Capture → privacy filter → Harvest Packet. | Scaffolded | Packet + privacy filter + licensing + index | Production privacy model. |
+| **ei·det·ic** | Identity-intelligence (authorized use only). | Scaffolded | Service scaffold + **Spectre integration** | Production sources. |
+| **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM + wallet + DEX + contracts + compile.sh + VEIL panel | Compile and deploy. |
 | **Project-specific tokens** | $HRVST, $CNDT, $SPCTR, $SCLV. | Scaffolded | tokens.ts + contracts | Compile and deploy. |
 
 ## Supporting / infrastructure concepts
@@ -37,12 +37,13 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 | Cumulus://Cloud | Storage, licensing, agent runtime | Scaffolded — store + index |
 | VEIL</> | Tor-first browser + sidebar | Scaffolded — Conductor + Tor + Wallet panel |
 | FABRIC | Encrypted calls/messaging | Scaffolded — AES-256-GCM AEAD + index |
-| ÆTHER | Distributed communications | **Scaffolded** — mesh concept stub |
+| ÆTHER | Distributed communications | Scaffolded — mesh concept stub |
 
 ## Hardware / physical concepts (software stubs only)
 
 ORBIS, POLLEN, Flower, NEMESIS, EON, ARGUS (sensor fusion), ODIN° (military suite).  
-These cannot be fully built as software. Interfaces (tasking, telemetry, evidence to Firmament) can be stubbed once core digital products exist.
+**Interfaces stubbed** in `packages/hardware` (tasking, telemetry, evidence).  
+These cannot be fully built as software.
 
 **Ignored:** #THRONE — not part of this delivery plan.
 
@@ -51,7 +52,6 @@ These cannot be fully built as software. Interfaces (tasking, telemetry, evidenc
 - Spectre / Conductor: deploy.  
 - FIRM: run compile.sh and deploy contracts.  
 - Wire METATRON as Spectre default in CRM.  
-- Wire ei·det·ic into Spectre.  
 
 ## Acceptance criteria (for "performs as advertised")
 
