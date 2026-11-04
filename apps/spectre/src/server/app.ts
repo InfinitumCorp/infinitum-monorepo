@@ -269,7 +269,8 @@ export function createApp(deps: AppDeps) {
     if (!q) return { companies: [], contacts: [], deals: [] };
     const ws = ctx.user!.workspace;
     const companies = crm.list("companies", ws).filter((c) => 
-      c.name.toLowerCase().includes(q) || (c.domain || "").toLowerCase().includes(q) || (c.industry || "").toLowerCase().includes(q)
+      c.name.toLowerCase().includes(q) || (c.domain || "").toLowerCase().includes(q) || (c.industry || "").toLowerCase().includes(q) ||
+      c.facts.some((f) => f.value.toLowerCase().includes(q) || f.field.toLowerCase().includes(q))
     ).slice(0, 10);
     const contacts = crm.list("contacts", ws).filter((c) => !c.optedOut && (
       c.name.toLowerCase().includes(q) || (c.email || "").toLowerCase().includes(q) || (c.title || "").toLowerCase().includes(q)
