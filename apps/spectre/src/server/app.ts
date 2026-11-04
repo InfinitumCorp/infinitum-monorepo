@@ -30,6 +30,8 @@ export interface AppDeps {
   ai: AiConfig;
   publicDir: string;
   secureCookies: boolean;
+  /** Public origin, e.g. https://spectre.infinitum.example; used for sign-in callback URLs. */
+  origin: string;
   /** Called after any request that changed data (persistence hook). */
   onChange?: () => void;
 }
@@ -39,6 +41,14 @@ class HttpError extends Error {
   constructor(status: number, message: string) {
     super(message);
     this.status = status;
+  }
+}
+
+/** Return from a handler to send the browser elsewhere (sign-in redirects). */
+class Redirect {
+  readonly location: string;
+  constructor(location: string) {
+    this.location = location;
   }
 }
 
@@ -52,7 +62,7 @@ interface Ctx {
 }
 
 type Handler = (ctx: Ctx) => Promise<unknown> | unknown;
-interface Route { method: string; pattern: RegExp; keys: string[]; auth: boolean; handler: Handler; }
+interface Route { method: string; pattern: RegExp; keys: string[]; auth: boolean; handler: Handler; csrf: boolean; optionalAuth: boolean; }
 
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -82,6 +92,9 @@ async function readBody(req: IncomingMessage): Promise<Record<string, any>> {
     chunks.push(c as Buffer);
   }
   if (!chunks.length) return {};
+  if (String(req.headers["content-type"] ?? "").startsWith("application/x-www-form-urlencoded")) {
+    return Object.fromEntries(new URLSearchParams(Buffer.concat(chunks).toString("utf8")));
+  }
   try {
     const parsed = JSON.parse(Buffer.concat(chunks).toString("utf8"));
     if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) throw new Error();
@@ -94,14 +107,16 @@ async function readBody(req: IncomingMessage): Promise<Record<string, any>> {
 export function createApp(deps: AppDeps) {
   const { cid, crm } = deps;
   const routes: Route[] = [];
-  const route = (method: string, path: string, handler: Handler, auth = true) => {
+  const route = (method: string, path: string, handler: Handler, auth = true, opts: { csrf?: boolean; optionalAuth?: boolean } = {}) => {
     const keys: string[] = [];
     const pattern = new RegExp("^" + path.replace(/:(\w+)/g, (_, k) => { keys.push(k); return "([^/]+)"; }) + "$");
-    routes.push({ method, pattern, keys, auth, handler });
+    routes.push({ method, pattern, keys, auth, handler, csrf: opts.csrf ?? true, optionalAuth: opts.optionalAuth ?? false });
   };
 
-  const setSession = (res: ServerResponse, token: string, maxAgeDays = 30) => {
-    res.setHeader("Set-Cookie", `${COOKIE}=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${maxAgeDays * 86400}${deps.secureCookies ? "; Secure" : ""}`);
+  const sessionCookie = (token: string, maxAgeDays = 30) =>
+    `${COOKIE}=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${maxAgeDays * 86400}${deps.secureCookies ? "; Secure" : ""}`;
+  const setSession = (res: ServerResponse, token: string) => {
+    res.setHeader("Set-Cookie", sessionCookie(token));
   };
 
   const ensureGrant = async (account: Account) => {
@@ -161,6 +176,63 @@ export function createApp(deps: AppDeps) {
   route("POST", "/api/auth/signout", async (ctx) => {
     await cid.revokeSession(ctx.user!.account.cid, ctx.user!.sessionId);
     ctx.res.setHeader("Set-Cookie", `${COOKIE}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0`);
+    return { ok: true };
+  });
+
+  /* ---------------- Social sign-in (Google, Apple, Microsoft, GitHub, ChatGPT) ---------------- */
+
+  const OAUTH_COOKIE = "spctr_oauth";
+  const oauthCookie = (provider: string, value: string, maxAge: number) => {
+    // Apple returns with a cross-site form POST, which only carries SameSite=None cookies.
+    const sameSite = provider === "apple" && deps.secureCookies ? "None" : "Lax";
+    return `${OAUTH_COOKIE}=${value}; HttpOnly; Path=/api/auth/oauth; SameSite=${sameSite}; Max-Age=${maxAge}${deps.secureCookies ? "; Secure" : ""}`;
+  };
+
+  route("GET", "/api/auth/providers", () => cid.socialProvidersEnabled(), false);
+
+  route("GET", "/api/auth/oauth/:provider/start", async (ctx) => {
+    const linking = ctx.query.get("link") === "1";
+    if (linking && !ctx.user) throw new HttpError(401, "Please sign in");
+    const redirectUri = `${deps.origin}/api/auth/oauth/${ctx.params.provider}/callback`;
+    const { url, state } = await cid.startSocialSignIn(ctx.params.provider, redirectUri, linking ? ctx.user!.account.cid : undefined);
+    ctx.res.setHeader("Set-Cookie", oauthCookie(ctx.params.provider, state, 600));
+    return new Redirect(url);
+  }, false, { optionalAuth: true });
+
+  const oauthCallback: Handler = async (ctx) => {
+    const p = ctx.req.method === "POST" ? ctx.body : Object.fromEntries(ctx.query);
+    ctx.res.setHeader("Set-Cookie", oauthCookie(ctx.params.provider, "", 0));
+    if (p.error) return new Redirect(`/#/signin-error/${encodeURIComponent(p.error === "access_denied" ? "Sign-in was cancelled." : "The provider couldn't sign you in.")}`);
+    try {
+      const device = String(ctx.req.headers["user-agent"] ?? "Browser").slice(0, 120);
+      const result = await cid.finishSocialSignIn(ctx.params.provider, {
+        state: String(p.state ?? ""),
+        code: String(p.code ?? ""),
+        browserState: parseCookies(ctx.req.headers.cookie)[OAUTH_COOKIE],
+      }, device);
+      if (result.status === "linked") return new Redirect("/#/settings");
+      if (result.status === "mfa_required") return new Redirect(`/#/mfa/${result.mfaToken}`);
+      ctx.res.setHeader("Set-Cookie", [oauthCookie(ctx.params.provider, "", 0), sessionCookie(result.token)]);
+      await ensureGrant(cid.getAccount(result.session.cid));
+      return new Redirect("/#/today");
+    } catch (err) {
+      const message = err instanceof CidError ? err.message : "Sign-in failed. Please try again.";
+      if (!(err instanceof CidError)) console.error(err);
+      return new Redirect(`/#/signin-error/${encodeURIComponent(message)}`);
+    }
+  };
+  // The provider sends the browser back here, so these can't carry Spectre's request header.
+  route("GET", "/api/auth/oauth/:provider/callback", oauthCallback, false, { csrf: false });
+  route("POST", "/api/auth/oauth/:provider/callback", oauthCallback, false, { csrf: false });
+
+  route("GET", "/api/me/identities", (ctx) => ({
+    linked: cid.linkedIdentities(ctx.user!.account.cid).map(({ provider, email, linkedAt }) => ({ provider, email, linkedAt })),
+    available: cid.socialProvidersEnabled(),
+    passkeys: cid.listAuthenticators(ctx.user!.account.cid).length,
+  }));
+
+  route("POST", "/api/me/identities/:provider/unlink", async (ctx) => {
+    await cid.unlinkIdentity(ctx.user!.account.cid, ctx.params.provider);
     return { ok: true };
   });
 
@@ -425,20 +497,28 @@ export function createApp(deps: AppDeps) {
       const r = routes.find((x) => x.method === req.method && x.pattern.test(url.pathname));
       if (!r) throw new HttpError(404, "Not found");
       // CSRF: state-changing calls must come from Spectre's own script (custom header + JSON).
-      if (MUTATING.has(req.method!) && req.headers["x-spectre"] !== "1") throw new HttpError(403, "Missing request header");
+      if (r.csrf && MUTATING.has(req.method!) && req.headers["x-spectre"] !== "1") throw new HttpError(403, "Missing request header");
       const m = url.pathname.match(r.pattern)!;
       const ctx: Ctx = { req, res, params: Object.fromEntries(r.keys.map((k, i) => [k, decodeURIComponent(m[i + 1])])), body: await readBody(req), query: url.searchParams };
-      if (r.auth) {
+      if (r.auth || r.optionalAuth) {
         const token = parseCookies(req.headers.cookie)[COOKIE];
         const session = token ? cid.authenticate(token) : null;
-        if (!session) throw new HttpError(401, "Please sign in");
-        const ws = session.account.orgId ?? session.account.cid;
-        const scope = MUTATING.has(req.method!) ? "crm:write" : "crm:read";
-        if (!cid.can(session.account.cid, "spectre", scope)) throw new HttpError(403, "Spectre's access was revoked in your Cumulus://ID permissions");
-        ctx.user = { account: session.account, workspace: ws, sessionId: session.session.id };
+        if (!session && r.auth) throw new HttpError(401, "Please sign in");
+        if (session) {
+          if (r.auth) {
+            const scope = MUTATING.has(req.method!) ? "crm:write" : "crm:read";
+            if (!cid.can(session.account.cid, "spectre", scope)) throw new HttpError(403, "Spectre's access was revoked in your Cumulus://ID permissions");
+          }
+          ctx.user = { account: session.account, workspace: session.account.orgId ?? session.account.cid, sessionId: session.session.id };
+        }
       }
       const result = await r.handler(ctx);
-      if (MUTATING.has(req.method!)) deps.onChange?.();
+      if (MUTATING.has(req.method!) || result instanceof Redirect) deps.onChange?.();
+      if (result instanceof Redirect) {
+        res.writeHead(302, { Location: result.location, "Cache-Control": "no-store" });
+        res.end();
+        return;
+      }
       res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
       res.end(JSON.stringify(result ?? { ok: true }));
     } catch (err) {

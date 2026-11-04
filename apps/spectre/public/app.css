@@ -35,10 +35,10 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line);
-  background: var(--bg); cursor: pointer; font-weight: 500; white-space: nowrap;
+  background: var(--bg); cursor: pointer; font-weight: 500; white-space: nowrap; text-decoration: none; color: var(--text);
 }
 .btn:hover { background: var(--hover); }
-.btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--on-accent) !important; border-color: var(--accent); }
 .btn.primary:hover { background: #2f2f2f; }
 .btn.ghost { border-color: transparent; }
 .btn.small { height: 32px; padding: 0 12px; font-size: 13px; }
@@ -60,6 +60,9 @@ label.field { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
 .logo { font-weight: 700; font-size: 28px; letter-spacing: -0.02em; }
 .logo span { font-weight: 400; color: var(--muted); }
 .auth-card .btn { width: 100%; height: 48px; }
+.social { display: grid; gap: 10px; }
+.social:empty { display: none; }
+.input.code { text-align: center; letter-spacing: .4em; font-size: 20px; }
 .divider { display: flex; align-items: center; gap: 12px; color: var(--faint); font-size: 13px; }
 .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .error { color: var(--bad); font-size: 13px; min-height: 18px; }

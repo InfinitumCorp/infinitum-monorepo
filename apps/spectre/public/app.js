@@ -47,6 +47,7 @@ const icon = {
   people: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.7 3 2.4 3.5 5.2"/></svg>',
   health: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>',
   send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+  settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   menu: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
 };
 
@@ -105,21 +106,25 @@ async function boot() {
 }
 
 function render() {
-  if (!state.me) return renderAuth();
   const { page, id } = route();
+  if (!state.me) {
+    if (page === "mfa" && id) return renderMfa(id);
+    return renderAuth(page === "signin-error" && id ? decodeURIComponent(id) : "");
+  }
   renderShell(page);
-  const views = { today: renderToday, pipeline: renderPipeline, accounts: id ? () => renderAccount(id) : renderAccounts, people: renderPeople, health: renderHealth };
+  const views = { today: renderToday, pipeline: renderPipeline, accounts: id ? () => renderAccount(id) : renderAccounts, people: renderPeople, health: renderHealth, settings: renderSettings };
   (views[page] || renderToday)().catch((e) => { $("main").innerHTML = `<div class="page"><div class="empty">${esc(e.message)}</div></div>`; });
 }
 
 /* ---------------- sign-in ---------------- */
 
-function renderAuth() {
+function renderAuth(message = "") {
   root.innerHTML = `
     <div class="auth"><div class="auth-card">
       <div class="logo">+SPCTR <span>Spectre</span></div>
       <p class="muted">Sign in with your Cumulus://ID</p>
       <button class="btn primary" id="signin">Continue with passkey</button>
+      <div class="social" id="social"></div>
       <div class="divider">or create a CID</div>
       <input class="input" id="username" placeholder="Choose a username" autocomplete="username webauthn" autocapitalize="none" spellcheck="false">
       <button class="btn" id="signup">Create account with passkey</button>
@@ -127,7 +132,12 @@ function renderAuth() {
       <p class="faint small">One account for every Infinitum product. Your passkey stays on your device.</p>
     </div></div>`;
   const err = $("#err");
+  err.textContent = message;
   const fail = (e) => { err.textContent = e.name === "NotAllowedError" ? "Passkey request was cancelled." : e.message; };
+  // Social sign-in buttons for every provider the server has configured.
+  api("GET", "/api/auth/providers").then((providers) => {
+    $("#social").innerHTML = providers.map((p) => `<a class="btn" href="/api/auth/oauth/${esc(p.id)}/start">Continue with ${esc(p.label)}</a>`).join("");
+  }).catch(() => {});
 
   $("#signin").onclick = async () => {
     err.textContent = "";
@@ -161,6 +171,29 @@ async function finishSignIn(response) {
   render();
 }
 
+function renderMfa(mfaToken) {
+  root.innerHTML = `
+    <div class="auth"><div class="auth-card">
+      <div class="logo">+SPCTR <span>Spectre</span></div>
+      <p class="muted">Enter the 6-digit code from your authenticator app</p>
+      <input class="input code" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456">
+      <button class="btn primary" id="verify">Verify</button>
+      <div class="error" id="err"></div>
+      <a class="faint small" href="#/">Use a different sign-in method</a>
+    </div></div>`;
+  $("#code").focus();
+  const submit = async () => {
+    try {
+      await api("POST", "/api/auth/mfa", { mfaToken, code: $("#code").value.trim() });
+      state.me = await api("GET", "/api/me");
+      location.hash = "#/today";
+      render();
+    } catch (e) { $("#err").textContent = e.message; }
+  };
+  $("#verify").onclick = submit;
+  $("#code").onkeydown = (e) => { if (e.key === "Enter") submit(); };
+}
+
 /* ---------------- shell ---------------- */
 
 function renderShell(page) {
@@ -178,6 +211,7 @@ function renderShell(page) {
             <a href="#/health" data-p="health">${icon.health}Data health</a>
           </nav>
           <div class="spacer"></div>
+          <nav class="nav"><a href="#/settings" data-p="settings">${icon.settings}Settings</a></nav>
           <div class="me">
             <div class="avatar">${esc(initials(state.me.username))}</div>
             <div class="who"><div>${esc(state.me.username)}</div><div class="faint small">${esc(state.me.mailAddress)}</div></div>
@@ -552,3 +586,42 @@ async function newDealForm(companyId) {
 }
 
 boot();
+
+/* ---------------- Settings: sign-in methods ---------------- */
+
+async function renderSettings() {
+  const data = await api("GET", "/api/me/identities");
+  const linked = new Map(data.linked.map((i) => [i.provider, i]));
+  const label = Object.fromEntries(data.available.map((p) => [p.id, p.label]));
+  for (const i of data.linked) label[i.provider] ??= i.provider;
+  const ids = [...new Set([...data.available.map((p) => p.id), ...data.linked.map((i) => i.provider)])];
+  main().innerHTML = `
+    <div class="page narrow">
+      <div class="page-head"><h1>Settings</h1></div>
+      <div class="section">
+        <h2>Account</h2>
+        <div class="list"><div class="item"><div class="avatar">${esc(initials(state.me.username))}</div>
+          <div class="main"><div class="title">${esc(state.me.username)}</div><div class="sub">${esc(state.me.mailAddress)} · ${esc(state.me.handle)}</div></div></div></div>
+      </div>
+      <div class="section">
+        <h2>Ways to sign in</h2>
+        <div class="list">
+          <div class="item"><div class="main"><div class="title">Passkeys</div><div class="sub">${data.passkeys ? `${data.passkeys} on this account` : "None yet"}</div></div></div>
+          ${ids.map((id) => {
+            const l = linked.get(id);
+            return `<div class="item"><div class="main"><div class="title">${esc(label[id])}</div>
+              <div class="sub">${l ? `Linked${l.email ? ` · ${esc(l.email)}` : ""} · ${date(l.linkedAt)}` : "Not linked"}</div></div>
+              ${l ? `<button class="btn small" data-unlink="${esc(id)}">Unlink</button>`
+                  : data.available.some((p) => p.id === id) ? `<a class="btn small" href="/api/auth/oauth/${esc(id)}/start?link=1">Link</a>` : ""}</div>`;
+          }).join("")}
+        </div>
+        <p class="faint small mt10">Linked accounts sign you in to this same Cumulus://ID. Your multifactor setting still applies.</p>
+      </div>
+    </div>`;
+  main().querySelectorAll("[data-unlink]").forEach((b) => {
+    b.onclick = async () => {
+      try { await api("POST", `/api/me/identities/${b.dataset.unlink}/unlink`); toast("Unlinked"); renderSettings(); }
+      catch (e) { toast(e.message); }
+    };
+  });
+}

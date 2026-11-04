@@ -35,7 +35,7 @@ describe("+SPCTR app over HTTP", () => {
         return new Response(JSON.stringify({ content: [{ type: "text", text: "Northwind fleet rollout is most at risk." }] }), { status: 200 });
       }) as typeof fetch,
     };
-    const app = createApp({ cid, crm, ai, publicDir: join(here, "../../public"), secureCookies: false, onChange: () => changes++ });
+    const app = createApp({ cid, crm, ai, publicDir: join(here, "../../public"), secureCookies: false, origin: "http://localhost", onChange: () => changes++ });
     server = app.server();
     await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;

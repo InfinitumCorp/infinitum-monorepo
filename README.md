@@ -5,11 +5,25 @@ Shared foundation for every Infinitum product.
 | Package | What it is |
 |---|---|
 | `packages/firmament` | Firmament Network core: append-only, hash-chained, Ed25519-signed ledger for identity, provenance, licensing, payments and audit. Merkle roots for anchoring to Base. |
-| `packages/cid` | Cumulus://ID (CID): one account for every product. Passkeys and security keys (WebAuthn), authenticator-app MFA, session revocation, app-by-app permissions recorded on Firmament, organization SSO (OIDC). |
+| `packages/cid` | Cumulus://ID (CID): one account for every product. Passkeys and security keys (WebAuthn), authenticator-app MFA, session revocation, app-by-app permissions recorded on Firmament, organization SSO (OIDC), and social sign-in with Google, Apple, Microsoft, GitHub and ChatGPT (PKCE, state bound to the browser, nonce, issuer checks; accounts are never joined by email). |
 
 | `apps/spectre` | +SPCTR (Spectre) intelligent CRM. Core so far: companies, contacts, deals, activities and relationships with a Firmament audit trail and source provenance; opt-out handling; predictive pipeline with explained win probability, risk alerts, next best action and monthly forecast; warmest-path relationship map and buying-committee gaps; duplicate detection, merging and stale-data flags (17 passing tests). |
 
-Run +SPCTR locally: `node apps/spectre/src/server/main.ts`, then open http://localhost:3000 and create a CID with a passkey. Set `ANTHROPIC_API_KEY` to turn on Ask Spectre. Data is stored in `apps/spectre/data/`.
+Run +SPCTR locally: `node apps/spectre/src/server/main.ts`, then open http://localhost:3000 and create a CID with a passkey. Set `ANTHROPIC_API_KEY` to turn on Ask Spectre.
+
+### Social sign-in
+
+CID supports Continue with Google, Apple, Microsoft, GitHub and ChatGPT. Each button appears only when its credentials are set:
+
+| Provider | Environment variables | Register at |
+|---|---|---|
+| Google | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google Cloud Console → APIs & Services → Credentials |
+| Apple | `APPLE_CLIENT_ID` (Services ID), `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` | Apple Developer → Certificates, Identifiers & Profiles |
+| Microsoft | `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` | Microsoft Entra admin center → App registrations |
+| GitHub | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | GitHub → Settings → Developer settings → OAuth Apps |
+| ChatGPT | `CHATGPT_CLIENT_ID`, `CHATGPT_CLIENT_SECRET`, `CHATGPT_ISSUER` | OpenAI's Sign in with ChatGPT partner program (beta) |
+
+Callback URL for each: `{SPECTRE_ORIGIN}/api/auth/oauth/{provider}/callback`. Data is stored in `apps/spectre/data/`.
 
 Coming next: AI account research the Spectre agent team, then `$FIRM` and product token contracts.
 

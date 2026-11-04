@@ -22,9 +22,14 @@ const DAY = 86_400_000;
 
 const signer = generateSigner();
 const ledger = new Ledger(undefined, { authorizedSigners: [signer.publicKey] });
-const cid = new CidService({ ledger, signer, rpId: "localhost", origins: [ORIGIN] });
+// Placeholder credentials so every sign-in option is shown; no provider is contacted.
+const display = { clientId: "screenshot", clientSecret: "screenshot" };
+const cid = new CidService({
+  ledger, signer, rpId: "localhost", origins: [ORIGIN],
+  social: { providers: { google: display, apple: { clientId: "screenshot" }, microsoft: display, github: display, chatgpt: { ...display, issuer: "https://issuer.example" } } },
+});
 const crm = new SpectreCRM({ ledger, signer });
-const app = createApp({ cid, crm, ai: { model: "claude-sonnet-5-5" }, publicDir: join(here, "../public"), secureCookies: false });
+const app = createApp({ cid, crm, ai: { model: "claude-sonnet-5-5" }, publicDir: join(here, "../public"), secureCookies: false, origin: "http://localhost" });
 
 // Fictional sample workspace.
 const me = await cid.createAccount({ username: "alex" });
@@ -105,6 +110,7 @@ await shot("02-today", "/#/today");
 await shot("03-pipeline", "/#/pipeline");
 await shot("04-account", `/#/accounts/${nw.id}`);
 await shot("05-people", "/#/people");
+await shot("07-settings", "/#/settings");
 await shot("06-today-mobile", "/#/today", { width: 390, height: 844, mobile: true });
 
 sock.close();

@@ -8,6 +8,15 @@ import {
 } from "./webauthn.ts";
 import { generateTotpSecret, verifyTotp, otpauthUri } from "./totp.ts";
 import { verifyIdToken, type SsoConfig } from "./oidc.ts";
+import {
+  PROVIDERS,
+  SocialClient,
+  pkcePair,
+  type PendingAuth,
+  type SocialCredentials,
+  type SocialProfile,
+  type SocialProviderId,
+} from "./social.ts";
 
 /* ------------------------------------------------------------------ *
  * Product registry: every app a CID can sign in to and grant access to.
@@ -46,10 +55,24 @@ export interface Account {
   orgId?: string;
   /** Link to the organization identity provider, for SSO members. */
   federated?: { issuer: string; subject: string };
+  /** Google, GitHub, Microsoft, Apple or ChatGPT accounts linked for sign-in. */
+  identities?: LinkedIdentity[];
   createdAt: string;
   entitlements: typeof FREE_ENTITLEMENTS;
   totp?: { secret: string; confirmed: boolean; lastStep: number };
 }
+
+export interface LinkedIdentity {
+  provider: SocialProviderId;
+  subject: string;
+  /** Shown in the account's settings so people can tell linked accounts apart. */
+  email?: string;
+  linkedAt: string;
+}
+
+export type SessionMethod =
+  | "passkey" | "security-key" | "sso" | "passkey+totp"
+  | `social:${SocialProviderId}` | `social:${SocialProviderId}+totp`;
 
 export interface Authenticator {
   id: string;
@@ -69,7 +92,7 @@ export interface Session {
   cid: string;
   tokenHash: string;
   device: string;
-  method: "passkey" | "security-key" | "sso" | "passkey+totp";
+  method: SessionMethod;
   createdAt: string;
   expiresAt: string;
   revokedAt?: string;
@@ -100,7 +123,7 @@ interface Challenge {
 
 interface PendingMfa {
   cid: string;
-  authenticatorId: string;
+  method: SessionMethod;
   device: string;
   expiresAt: number;
 }
@@ -118,6 +141,8 @@ export class CidStore {
   orgs = new Map<string, Organization>();
   challenges = new Map<string, Challenge>();
   pendingMfa = new Map<string, PendingMfa>();
+  byIdentity = new Map<string, string>(); // `${provider}|${subject}` -> cid
+  oauthPending = new Map<string, PendingAuth>();
 }
 
 /* ------------------------------------------------------------------ */
@@ -132,6 +157,8 @@ export interface CidConfig {
   store?: CidStore;
   clock?: () => Date;
   sessionDays?: number;
+  /** Social sign-in providers with their client credentials. Only configured ones are offered. */
+  social?: { providers: Partial<Record<SocialProviderId, SocialCredentials>>; fetchImpl?: typeof fetch };
 }
 
 export class CidError extends Error {
@@ -149,7 +176,9 @@ const hashToken = (t: string) => createHash("sha256").update(t).digest("hex");
 
 export class CidService {
   readonly store: CidStore;
-  private readonly cfg: Required<Omit<CidConfig, "store">>;
+  private readonly cfg: Required<Omit<CidConfig, "store" | "social">>;
+  private readonly socialProviders: Partial<Record<SocialProviderId, SocialCredentials>>;
+  private readonly socialClient: SocialClient;
 
   constructor(config: CidConfig) {
     this.store = config.store ?? new CidStore();
@@ -161,6 +190,8 @@ export class CidService {
       clock: config.clock ?? (() => new Date()),
       sessionDays: config.sessionDays ?? 30,
     };
+    this.socialProviders = config.social?.providers ?? {};
+    this.socialClient = new SocialClient(config.social?.fetchImpl);
   }
 
   private now() {
@@ -300,7 +331,8 @@ export class CidService {
   async removeAuthenticator(cid: string, authenticatorId: string) {
     const auth = this.store.authenticators.get(authenticatorId);
     if (!auth || auth.cid !== cid) throw new CidError("not_found", "No such key on this account");
-    if (this.listAuthenticators(cid).length === 1 && !this.account(cid).federated) {
+    const acct = this.account(cid);
+    if (this.listAuthenticators(cid).length === 1 && !acct.federated && !acct.identities?.length) {
       throw new CidError("last_key", "Add another passkey or security key before removing your last one");
     }
     this.store.authenticators.delete(authenticatorId);
@@ -353,7 +385,7 @@ export class CidService {
     // A security key tap without verification needs the authenticator-app code too.
     if (account.totp?.confirmed && !result.userVerified) {
       const mfaToken = randomBytes(24).toString("base64url");
-      this.store.pendingMfa.set(mfaToken, { cid: account.cid, authenticatorId: auth.id, device, expiresAt: this.now().getTime() + CHALLENGE_TTL_MS });
+      this.store.pendingMfa.set(mfaToken, { cid: account.cid, method: "passkey+totp", device, expiresAt: this.now().getTime() + CHALLENGE_TTL_MS });
       return { status: "mfa_required", mfaToken };
     }
     const issued = await this.issueSession(account.cid, device, auth.kind);
@@ -374,7 +406,7 @@ export class CidService {
     }
     account.totp!.lastStep = step;
     this.store.pendingMfa.delete(mfaToken);
-    return this.issueSession(account.cid, pending.device, "passkey+totp");
+    return this.issueSession(account.cid, pending.device, pending.method);
   }
 
   /* ---------------- Multifactor (authenticator app) ---------------- */
@@ -408,7 +440,7 @@ export class CidService {
 
   /* ---------------- Sessions ---------------- */
 
-  private async issueSession(cid: string, device: string, method: Session["method"]) {
+  private async issueSession(cid: string, device: string, method: SessionMethod) {
     const token = randomBytes(32).toString("base64url");
     const now = this.now();
     const session: Session = {
@@ -460,6 +492,135 @@ export class CidService {
     }
     await this.record("audit", actor, cid, { event: "session.revoked_all", count });
     return count;
+  }
+
+  /* ---------------- Social sign-in ---------------- */
+
+  /** Providers with credentials configured, in display order. */
+  socialProvidersEnabled(): { id: SocialProviderId; label: string }[] {
+    const order: SocialProviderId[] = ["google", "apple", "microsoft", "github", "chatgpt"];
+    return order.filter((id) => this.socialProviders[id]).map((id) => ({ id, label: PROVIDERS[id].label }));
+  }
+
+  private providerCreds(provider: string): { spec: (typeof PROVIDERS)[SocialProviderId]; creds: SocialCredentials } {
+    const spec = PROVIDERS[provider as SocialProviderId];
+    const creds = spec ? this.socialProviders[spec.id] : undefined;
+    if (!spec || !creds) throw new CidError("provider_unavailable", "That sign-in option isn't available");
+    return { spec, creds };
+  }
+
+  /**
+   * Begin "Continue with Google/GitHub/…". Returns the provider URL to send the browser to and
+   * the state, which the caller must also bind to the browser (a short-lived cookie) and check on return.
+   * Pass `linkToCid` when a signed-in person is adding a provider to their account.
+   */
+  async startSocialSignIn(provider: string, redirectUri: string, linkToCid?: string) {
+    const { spec, creds } = this.providerCreds(provider);
+    if (linkToCid) this.account(linkToCid);
+    const { verifier, challenge } = pkcePair();
+    const pending: PendingAuth = {
+      state: randomBytes(24).toString("base64url"),
+      provider: spec.id,
+      nonce: randomBytes(16).toString("base64url"),
+      codeVerifier: verifier,
+      redirectUri,
+      expiresAt: this.now().getTime() + 10 * 60_000,
+      linkToCid,
+    };
+    this.store.oauthPending.set(pending.state, pending);
+    const url = await this.socialClient.authorizeUrl(spec, creds, pending, challenge);
+    return { url, state: pending.state };
+  }
+
+  async finishSocialSignIn(
+    provider: string,
+    params: { state: string; code: string; browserState?: string },
+    device: string,
+  ): Promise<
+    | { status: "ok"; token: string; session: Session; created: boolean }
+    | { status: "mfa_required"; mfaToken: string }
+    | { status: "linked"; cid: string }
+  > {
+    const { spec, creds } = this.providerCreds(provider);
+    const pending = this.store.oauthPending.get(params.state);
+    this.store.oauthPending.delete(params.state); // single use
+    // The state must be one we issued, for this provider, unexpired, and started in this same browser.
+    if (!pending || pending.provider !== spec.id || pending.expiresAt < this.now().getTime() || params.browserState !== params.state) {
+      throw new CidError("challenge_expired", "Sign-in request expired. Please try again.");
+    }
+    let profile: SocialProfile;
+    try {
+      profile = await this.socialClient.complete(spec, creds, pending, params.code, this.now());
+    } catch (err) {
+      throw new CidError("social_failed", (err as Error).message);
+    }
+    const key = `${profile.provider}|${profile.subject}`;
+    const existing = this.store.byIdentity.get(key);
+
+    if (pending.linkToCid) {
+      if (existing && existing !== pending.linkToCid) {
+        throw new CidError("identity_in_use", `That ${spec.label} account is already linked to a different CID`);
+      }
+      if (!existing) await this.attachIdentity(pending.linkToCid, profile);
+      return { status: "linked", cid: pending.linkToCid };
+    }
+
+    let cid = existing;
+    let created = false;
+    if (!cid) {
+      // A new provider account always gets a new CID. Accounts are never joined by matching email,
+      // which would let anyone who controls an email at one provider take over another person's CID.
+      const account = await this.createAccount({ username: this.freeUsername(profile.usernameHint ?? `${spec.id}-user`) });
+      await this.attachIdentity(account.cid, profile);
+      cid = account.cid;
+      created = true;
+    }
+    const account = this.account(cid);
+    const method = `social:${spec.id}` as const;
+    if (account.totp?.confirmed) {
+      const mfaToken = randomBytes(24).toString("base64url");
+      this.store.pendingMfa.set(mfaToken, { cid, method: `${method}+totp`, device, expiresAt: this.now().getTime() + CHALLENGE_TTL_MS });
+      return { status: "mfa_required", mfaToken };
+    }
+    const issued = await this.issueSession(cid, device, method);
+    return { status: "ok", ...issued, created };
+  }
+
+  private freeUsername(hint: string): string {
+    let base = hint.toLowerCase().replace(/[^a-z0-9._-]/g, "").replace(/^[._-]+/, "").slice(0, 24);
+    if (base.length < 3) base = `${base}user`.slice(0, 24);
+    let name = base;
+    for (let i = 2; this.store.byUsername.has(name) || RESERVED.has(name); i++) name = `${base}${i}`;
+    return name;
+  }
+
+  private async attachIdentity(cid: string, profile: SocialProfile) {
+    const account = this.account(cid);
+    const identity: LinkedIdentity = {
+      provider: profile.provider,
+      subject: profile.subject,
+      email: profile.emailVerified ? profile.email : undefined,
+      linkedAt: this.now().toISOString(),
+    };
+    account.identities = [...(account.identities ?? []).filter((i) => i.provider !== profile.provider), identity];
+    this.store.byIdentity.set(`${profile.provider}|${profile.subject}`, cid);
+    // The provider's account ID and email stay off the ledger; only the event is recorded.
+    await this.record("audit", cid, cid, { event: "identity.linked", provider: profile.provider });
+  }
+
+  linkedIdentities(cid: string): LinkedIdentity[] {
+    return [...(this.account(cid).identities ?? [])];
+  }
+
+  async unlinkIdentity(cid: string, provider: string) {
+    const account = this.account(cid);
+    const identity = account.identities?.find((i) => i.provider === provider);
+    if (!identity) throw new CidError("not_found", "That account isn't linked");
+    const otherWays = this.listAuthenticators(cid).length + (account.identities!.length - 1) + (account.federated ? 1 : 0);
+    if (otherWays === 0) throw new CidError("last_key", "Add a passkey or another sign-in option before removing your last one");
+    account.identities = account.identities!.filter((i) => i.provider !== provider);
+    this.store.byIdentity.delete(`${identity.provider}|${identity.subject}`);
+    await this.record("audit", cid, cid, { event: "identity.unlinked", provider });
   }
 
   /* ---------------- Permissions dashboard ---------------- */
