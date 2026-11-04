@@ -445,6 +445,7 @@ async function renderAccount(id) {
       </div>
 
       <div class="section"><h2>Research</h2>
+        <button class="btn" id="ai-research">Research with AI</button>
         ${c.facts.length ? `<div class="list">${c.facts.map((f) => `<div class="item"><div class="main"><div class="title">${esc(f.value)}</div><div class="sub">${esc(f.field)} · source: ${esc(f.source)} · ${date(f.observedAt)}</div></div></div>`).join("")}</div>` : `<div class="empty">No research yet.</div>`}
         <form id="fact" class="row wrap mt10">
           <input class="input" name="field" placeholder="Topic (e.g. funding)" required>
@@ -456,6 +457,15 @@ async function renderAccount(id) {
     </div>`;
   $("#add-person").onclick = () => newContactForm(id);
   $("#add-deal").onclick = () => newDealForm(id);
+  $("#ai-research").onclick = async () => {
+    toast("Researching…");
+    try {
+      const result = await api("POST", "/api/research", { name: c.name });
+      toast("Research complete");
+      console.log(result);
+      renderAccount(id);
+    } catch (e) { toast(e.message); }
+  };
   document.querySelectorAll("[data-deal]").forEach((b) => (b.onclick = () => openDeal(b.dataset.deal)));
   const f = $("#fact");
   f.onsubmit = async (e) => {
