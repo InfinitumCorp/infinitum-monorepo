@@ -121,7 +121,7 @@ function render() {
 function renderAuth(message = "") {
   root.innerHTML = `
     <div class="auth"><div class="auth-card">
-      <div class="logo">+SPCTR<sup class="tm">™</sup> <span>(Spectre)</span></div>
+      <div class="logo">+SPCTR<sup class="tm">™</sup></div>
       <p class="muted">Sign in with your Cumulus://ID<sup class="tm">™</sup></p>
       <button class="btn primary" id="signin">Continue with passkey</button>
       <div class="social" id="social"></div>
@@ -174,7 +174,7 @@ async function finishSignIn(response) {
 function renderMfa(mfaToken) {
   root.innerHTML = `
     <div class="auth"><div class="auth-card">
-      <div class="logo">+SPCTR<sup class="tm">™</sup> <span>(Spectre)</span></div>
+      <div class="logo">+SPCTR<sup class="tm">™</sup></div>
       <p class="muted">Enter the 6-digit code from your authenticator app</p>
       <input class="input code" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456">
       <button class="btn primary" id="verify">Verify</button>
