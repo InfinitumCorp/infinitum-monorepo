@@ -662,6 +662,25 @@ export function createApp(deps: AppDeps) {
 
 
 
+
+  route("GET", "/api/research/queue", (ctx) => {
+    const ws = ctx.user!.workspace;
+    const companies = crm.list("companies", ws);
+    const now = Date.now();
+    const queue = companies
+      .map((c) => {
+        const ai = c.facts.filter((f) => f.source?.includes("ai-research"));
+        const last = ai.sort((a, b) => b.observedAt.localeCompare(a.observedAt))[0];
+        const age = last ? Math.floor((now - Date.parse(last.observedAt)) / 86400000) : 999;
+        const score = (ai.length < 2 ? 50 : 0) + (age > 30 ? 30 : age > 7 ? 10 : 0);
+        return { id: c.id, name: c.name, factCount: ai.length, ageDays: age, priority: score };
+      })
+      .filter((c) => c.priority > 0)
+      .sort((a, b) => b.priority - a.priority)
+      .slice(0, 15);
+    return { queue };
+  });
+
   route("GET", "/api/research/recommendations", (ctx) => {
     const ws = ctx.user!.workspace;
     const companies = crm.list("companies", ws);
