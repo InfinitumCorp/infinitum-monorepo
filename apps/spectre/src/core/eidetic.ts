@@ -2,7 +2,7 @@
  * Spectre integration point for ei·det·ic.
  * Authorized, lawful use only. Calls the stub service.
  */
-import type { EideticService } from "@infinitum/eidetic";
+import { EideticService } from "@infinitum/eidetic";
 
 const eidetic = new EideticService();
 
