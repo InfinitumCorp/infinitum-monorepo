@@ -1,6 +1,6 @@
 # Infinitum Deployment Checklist
 
-## Spectre (+SPCTR)
+## Spectre (+SPCTR™)
 - [x] Restore full `apps/spectre/src/server/app.ts` (see `apps/spectre/src/server/RESTORE-APP.md`)
 - [x] Confirm METATRON scoring (default-on via main.ts)
 - [x] Research and query agent endpoints wired
