@@ -586,13 +586,15 @@ export function createApp(deps: AppDeps) {
     const result = await researchCompany(String(ctx.body.name));
     // Persist any returned facts to the company if companyId provided
     if (ctx.body.companyId && result && Array.isArray(result.facts)) {
+      const existing = new Set(crm.company(ctx.user!.workspace, String(ctx.body.companyId)).facts.map((f) => `${f.field}:${f.value}`));
       for (const fact of result.facts.slice(0, 5)) {
-        if (fact.field && fact.value) {
+        if (fact.field && fact.value && !existing.has(`${fact.field}:${fact.value}`)) {
           await crm.addFact(ctx.user!.workspace, ctx.user!.account.cid, String(ctx.body.companyId), {
             field: fact.field,
             value: fact.value,
             source: fact.source || "ai-research",
           });
+          existing.add(`${fact.field}:${fact.value}`);
         }
       }
     }
