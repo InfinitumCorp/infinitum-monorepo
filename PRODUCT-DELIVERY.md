@@ -27,14 +27,14 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 | **METATRON** | Prediction + analytics. | Scaffolded | Default scorer + analytics + Spectre wrapper + forecast projection | Set USE_METATRON=1. |
 | **HRVST** | Capture → privacy filter → Harvest Packet. | Scaffolded | Packet + privacy filter + licensing + Personal Silo | Production privacy model. |
 | **ei·det·ic** | Identity-intelligence (authorized use only). | Scaffolded | Service + Spectre integration | Production sources. |
-| **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM + wallet + DEX + router calldata + EVM wallet + **FirmToken.sol + ProjectToken.sol + deploy.ts** + VEIL panel | Compile and deploy. |
-| **Project-specific tokens** | $HRVST, $CNDT, $SPCTR, $SCLV. | Scaffolded | tokens.ts + **ProjectToken.sol** + deploy.ts | Compile and deploy. |
+| **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM + wallet + DEX + router calldata + EVM wallet + FirmToken.sol + ProjectToken.sol + deploy.ts + VEIL panel | Compile and deploy. |
+| **Project-specific tokens** | $HRVST, $CNDT, $SPCTR, $SCLV. | Scaffolded | tokens.ts + ProjectToken.sol + deploy.ts | Compile and deploy. |
 
 ## Supporting / infrastructure concepts
 
 | Product | Notes | Software path |
 |---------|-------|---------------|
-| Cumulus://Cloud | Storage, licensing, agent runtime | Scaffolded — store + licensing |
+| Cumulus://Cloud | Storage, licensing, agent runtime | Scaffolded — store + licensing + **agent runtime** |
 | VEIL</> | Tor-first browser + sidebar | Scaffolded — Conductor + Tor + Wallet + rewards + privacy + content script in manifest |
 | FABRIC | Encrypted calls/messaging | Scaffolded — AES-256-GCM AEAD + session |
 | ÆTHER | Distributed communications | Scaffolded — mesh + BFS routing |
