@@ -14,11 +14,13 @@ export interface ParsedFact {
 }
 
 const PATTERNS: { field: string; re: RegExp }[] = [
-  { field: "leadership", re: /\b(CEO|CTO|CFO|founder|president|VP)\b/i },
-  { field: "funding", re: /\b(raised|funding|series [a-d]|seed|valuation)\b/i },
-  { field: "news", re: /\b(announced|launched|acquired|partnership|award)\b/i },
-  { field: "industry", re: /\b(industry|sector|market)\b/i },
-  { field: "headcount", re: /\b(\d+[,\d]*\s*(employees|staff|people))\b/i },
+  { field: "leadership", re: /\b(CEO|CTO|CFO|founder|president|VP|chief)\b/i },
+  { field: "funding", re: /\b(raised|funding|series [a-d]|seed|valuation|invested)\b/i },
+  { field: "news", re: /\b(announced|launched|acquired|partnership|award|named)\b/i },
+  { field: "industry", re: /\b(industry|sector|market|technology|software)\b/i },
+  { field: "headcount", re: /\b(\d+[,\d]*\s*(employees|staff|people|team))\b/i },
+  { field: "location", re: /\b(headquartered|based in|located in)\b/i },
+  { field: "product", re: /\b(product|platform|solution|service)\b/i },
 ];
 
 export function parseResults(results: RawResult[]): ParsedFact[] {
