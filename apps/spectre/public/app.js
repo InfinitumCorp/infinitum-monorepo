@@ -252,7 +252,7 @@ const fillBars = (el) => el.querySelectorAll("[data-w]").forEach((b) => { b.styl
 /* ---------------- Today ---------------- */
 
 async function renderToday() {
-  const [t, m] = await Promise.all([api("GET", "/api/today"), api("GET", "/api/metrics")]);
+  const [t, m, acts] = await Promise.all([api("GET", "/api/today"), api("GET", "/api/metrics"), api("GET", "/api/activities?limit=8")]);
   const first = state.thread.length === 0;
   main().innerHTML = `
     <div class="page narrow">
@@ -289,6 +289,9 @@ async function renderToday() {
       ${t.alerts.length ? `<div class="section"><h2>Risk alerts</h2><div class="list">${t.alerts.slice(0, 6).map((a) => `
         <button class="item" data-deal="${esc(a.dealId)}"><span class="pill ${a.severity}">${a.severity}</span><div class="main">${esc(a.message)}</div></button>`).join("")}</div></div>` : ""}
 
+      <div class="section"><h2>Recent activity</h2>
+        ${acts.activities.length ? `<div class="list">${acts.activities.map((a) => `<div class="item"><div class="main"><div class="title">${esc(a.summary)}</div><div class="sub">${esc(a.kind)} · ${ago(a.at)}</div></div></div>`).join("")}</div>` : `<div class="empty">No activity yet.</div>`}
+      </div>
       <div class="section"><h2>Forecast</h2>
         <table class="simple"><thead><tr><th>Month</th><th class="num">Won</th><th class="num">Weighted</th><th class="num">Best case</th></tr></thead>
         <tbody>${t.forecast.map((f) => `<tr><td>${new Date(f.period + "-01T00:00:00Z").toLocaleDateString(undefined, { month: "long", year: "numeric", timeZone: "UTC" })}</td><td class="num">${money(f.committed)}</td><td class="num">${money(f.weighted)}</td><td class="num">${money(f.bestCase)}</td></tr>`).join("")}</tbody></table>
