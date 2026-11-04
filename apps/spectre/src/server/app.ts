@@ -771,11 +771,12 @@ export function createApp(deps: AppDeps) {
     const results = await executeAll(pending, { crm, workspace: ctx.user!.workspace, actor: ctx.user!.account.cid });
     // Log executed actions as activities
     for (const r of results || []) {
-      if (r && r.dealId) {
+      const dealId = (r as any)?.dealId;
+      if (dealId) {
         await crm.logActivity(ctx.user!.workspace, ctx.user!.account.cid, {
           kind: "note",
-          summary: `AI action: ${r.description || r.type || "executed"}`,
-          dealId: r.dealId,
+          summary: `AI action: ${(r as any).description || (r as any).type || "executed"}`,
+          dealId,
         });
       }
     }
