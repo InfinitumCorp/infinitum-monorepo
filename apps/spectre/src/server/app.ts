@@ -303,6 +303,14 @@ export function createApp(deps: AppDeps) {
     };
   });
 
+
+  route("GET", "/api/health", () => ({
+    status: "ok",
+    metatron: process.env.USE_METATRON === "1",
+    version: "0.1.0",
+    features: ["crm", "research", "agents", "execution", "search", "export", "pipeline-stats"],
+  }), false);
+
   route("GET", "/api/metrics", (ctx) => {
     const ws = ctx.user!.workspace;
     const deals = crm.list("deals", ws);
