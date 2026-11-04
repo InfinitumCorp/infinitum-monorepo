@@ -45,6 +45,8 @@ Coming next: AI account research the Spectre agent team, then `$FIRM` and produc
 - `GET /api/companies?industry=&sort=` — filtered/sorted accounts
 - `POST /api/rehearse` — deal coach rehearsal
 - `GET /api/activities?kind=` — filtered activities
+- Research logs activities and dedupes facts; company list shows AI fact counts
+- Metrics include avg open-deal probability and industry/kind breakdowns
 
 ## Requirements
 
