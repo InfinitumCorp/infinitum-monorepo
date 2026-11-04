@@ -236,7 +236,10 @@ function renderShell(page) {
               ...r.contacts.map((c) => `Person: ${c.name}`),
               ...r.deals.map((d) => `Deal: ${d.name}`),
             ];
-            alert(lines.length ? lines.join("\n") : "No results");
+            const html = lines.length 
+              ? `<div class="list">${lines.map(l => `<div class="item"><div class="main">${esc(l)}</div></div>`).join("")}</div>`
+              : `<div class="empty">No results for "${esc(q)}"</div>`;
+            modal(`<h2>Search: ${esc(q)}</h2>${html}`, () => {});
           } catch (err) { toast(err.message); }
         }
       };
@@ -548,7 +551,12 @@ async function renderAccount(id) {
       const result = await api("POST", `/api/companies/${encodeURIComponent(id)}/research`, {});
       const n = result.persisted || (result.facts || []).length;
       toast(`Research complete · ${n} facts saved`);
-      if (result.summary) alert(result.summary);
+      if (result.summary || (result.facts && result.facts.length)) {
+        const factsHtml = (result.facts || []).slice(0, 5).map(f => 
+          `<div class="item"><div class="main"><div class="title">${esc(f.value)}</div><div class="sub">${esc(f.field)} · ${esc(f.source || "")}</div></div></div>`
+        ).join("");
+        modal(`<h2>Research: ${esc(c.name)}</h2>${result.summary ? `<p>${esc(result.summary)}</p>` : ""}${factsHtml ? `<div class="list">${factsHtml}</div>` : ""}`, () => {});
+      }
       renderAccount(id);
     } catch (e) { toast(e.message); }
   };
