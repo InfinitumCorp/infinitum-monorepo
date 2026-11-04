@@ -35,7 +35,7 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 | Product | Notes | Software path |
 |---------|-------|---------------|
 | Cumulus://Cloud | Storage, licensing, agent runtime | Scaffolded — store + licensing + agent runtime |
-| VEIL</> | Tor-first browser + sidebar | Scaffolded — Conductor + Tor + Wallet + rewards + privacy + content script |
+| VEIL</> | Tor-first browser + sidebar | Scaffolded — Conductor + Tor + Wallet + rewards + privacy + content script + NEXT.md | See apps/veil/NEXT.md |
 | FABRIC | Encrypted calls/messaging | Scaffolded — AES-256-GCM AEAD + session |
 | ÆTHER | Distributed communications | Scaffolded — mesh + BFS routing |
 
@@ -49,7 +49,7 @@ These cannot be fully built as software.
 
 ## Immediate next build
 
-See **DEPLOY.md**, **apps/spectre/src/server/RESTORE-APP.md**, **packages/firm/scripts/deploy-helper.md**, and **apps/conductor/DEPLOY.md**.  
+See **DEPLOY.md**, **apps/spectre/src/server/RESTORE-APP.md**, **packages/firm/scripts/deploy-helper.md**, **apps/conductor/DEPLOY.md**, and **apps/veil/NEXT.md**.  
 - Spectre: full restore of `app.ts`, then deploy.  
 - Conductor: deploy.  
 - FIRM: compile then deploy.  
