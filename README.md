@@ -36,6 +36,10 @@ Coming next: AI account research the Spectre agent team, then `$FIRM` and produc
 - `GET /api/execution/pending` / `POST /api/execution/run` — self-executing deal actions via Conductor (logs activities)
 - `GET /api/metrics` — workspace counts
 - `GET /api/export` — dump companies, contacts, deals, activities
+- `GET /api/search?q=` — search companies, contacts, deals
+- `GET /api/activities` — recent activities (optional kind filter)
+- `GET /api/pipeline/stats` — counts and amounts by stage
+- `POST /api/research/contact` — research a person
 
 ## Requirements
 
