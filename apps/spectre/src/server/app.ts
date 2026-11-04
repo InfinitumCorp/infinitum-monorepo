@@ -253,6 +253,23 @@ export function createApp(deps: AppDeps) {
 
 
 
+
+  route("GET", "/api/search", (ctx) => {
+    const q = (ctx.query.get("q") || "").toLowerCase().trim();
+    if (!q) return { companies: [], contacts: [], deals: [] };
+    const ws = ctx.user!.workspace;
+    const companies = crm.list("companies", ws).filter((c) => 
+      c.name.toLowerCase().includes(q) || (c.domain || "").toLowerCase().includes(q) || (c.industry || "").toLowerCase().includes(q)
+    ).slice(0, 10);
+    const contacts = crm.list("contacts", ws).filter((c) => !c.optedOut && (
+      c.name.toLowerCase().includes(q) || (c.email || "").toLowerCase().includes(q) || (c.title || "").toLowerCase().includes(q)
+    )).slice(0, 10);
+    const deals = crm.list("deals", ws).filter((d) => 
+      d.name.toLowerCase().includes(q) || (d.market || "").toLowerCase().includes(q)
+    ).slice(0, 10);
+    return { companies, contacts, deals, query: q };
+  });
+
   route("GET", "/api/pipeline/stats", (ctx) => {
     const ws = ctx.user!.workspace;
     const deals = crm.list("deals", ws);
