@@ -493,7 +493,8 @@ async function renderAccounts() {
   const industry = params.get("industry") || "";
   const sort = params.get("sort") || "";
   const researched = params.get("researched") || "";
-  const qs = [industry && `industry=${encodeURIComponent(industry)}`, sort && `sort=${sort}`, researched && `researched=${researched}`].filter(Boolean).join("&");
+  const minConf = params.get("minConf") || "";
+  const qs = [industry && `industry=${encodeURIComponent(industry)}`, sort && `sort=${sort}`, researched && `researched=${researched}`, minConf && `minConfidence=${minConf}`].filter(Boolean).join("&");
   const [list, recs, queue, qStats] = await Promise.all([
     api("GET", `/api/companies${qs ? `?${qs}` : ""}`),
     api("GET", "/api/research/recommendations").catch(() => ({ recommendations: [] })),
@@ -504,7 +505,8 @@ async function renderAccounts() {
     <div class="page">
       <div class="page-head"><h1>Accounts</h1><div class="row"><input class="input small" id="industry-filter" placeholder="Industry" value="${esc(industry)}" style="width:140px">
             <select class="input small" id="sort-filter" style="width:100px"><option value="">Name</option><option value="deals" ${sort === "deals" ? "selected" : ""}>Deals</option></select>
-            <select class="input small" id="researched-filter" style="width:120px"><option value="">All</option><option value="1" ${researched === "1" ? "selected" : ""}>Researched</option><option value="0" ${researched === "0" ? "selected" : ""}>Not researched</option></select><button class="btn" id="process-queue">Process queue</button><button class="btn" id="research-all">Research all</button><button class="btn" id="prospect">Prospect with AI</button><button class="btn primary" id="new-co">New account</button></div></div>
+            <select class="input small" id="researched-filter" style="width:120px"><option value="">All</option><option value="1" ${researched === "1" ? "selected" : ""}>Researched</option><option value="0" ${researched === "0" ? "selected" : ""}>Not researched</option></select>
+            <select class="input small" id="conf-filter" style="width:110px"><option value="">Any conf</option><option value="0.6" ${minConf === "0.6" ? "selected" : ""}>≥0.6</option><option value="0.7" ${minConf === "0.7" ? "selected" : ""}>≥0.7</option></select><button class="btn" id="process-queue">Process queue</button><button class="btn" id="research-all">Research all</button><button class="btn" id="prospect">Prospect with AI</button><button class="btn primary" id="new-co">New account</button></div></div>
       ${qStats.queued ? `<div class="faint small">Queue: ${qStats.queued} pending · ${qStats.done} done</div>` : ""}
       ${queue.queue?.length ? `<div class="section"><h2>Research queue</h2><div class="list">${queue.queue.slice(0, 5).map((r) => `<div class="item"><div class="main"><div class="title">${esc(r.name)}</div><div class="sub">priority ${r.priority} · ${r.factCount} facts · ${r.ageDays < 999 ? r.ageDays + "d" : "never"}</div></div><button class="btn ghost small" data-unqueue="${esc(r.id)}">Remove</button></div>`).join("")}</div></div>` : ""}
       ${recs.recommendations?.length ? `<div class="section"><h2>Needs research</h2><div class="list">${recs.recommendations.map((r) => `<div class="item"><div class="main"><div class="title">${esc(r.name)}</div><div class="sub">${esc(r.reason)} · ${r.factCount} facts${r.ageDays < 999 ? ` · ${r.ageDays}d old` : ""}</div></div></div>`).join("")}</div></div>` : ""}
@@ -535,16 +537,19 @@ async function renderAccounts() {
     const i = $("#industry-filter")?.value || "";
     const s = $("#sort-filter")?.value || "";
     const r = $("#researched-filter")?.value || "";
+    const c = $("#conf-filter")?.value || "";
     const p = [];
     if (i) p.push(`industry=${encodeURIComponent(i)}`);
     if (s) p.push(`sort=${s}`);
     if (r) p.push(`researched=${r}`);
+    if (c) p.push(`minConf=${c}`);
     history.replaceState(null, "", p.length ? `?${p.join("&")}` : location.pathname);
     renderAccounts();
   };
   $("#industry-filter")?.addEventListener("change", apply);
   $("#sort-filter")?.addEventListener("change", apply);
   $("#researched-filter")?.addEventListener("change", apply);
+  $("#conf-filter")?.addEventListener("change", apply);
   $("#process-queue").onclick = async () => {
     toast("Processing research queue…");
     try {
