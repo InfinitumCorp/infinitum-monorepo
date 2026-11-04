@@ -400,7 +400,8 @@ async function openDeal(id) {
         <div class="factor"><span class="muted">Typical for ${STAGE_LABEL[d.deal.stage].toLowerCase()} stage</span><span>${pct(d.score.base)}</span></div>
         ${d.score.factors.map((f) => `<div class="factor"><span>${esc(f.label)}</span><span class="${f.effect >= 1 ? "up" : "down"}">${f.effect >= 1 ? "▲" : "▼"} ×${f.effect}</span></div>`).join("")}
       </div>
-      <div class="section"><h2>Next best action</h2><div class="next"><div class="act">${esc(d.next.action)}</div><div class="muted small">${esc(d.next.why)}</div></div></div>` : ""}
+      <div class="section"><h2>Next best action</h2><div class="next"><div class="act">${esc(d.next.action)}</div><div class="muted small">${esc(d.next.why)}</div></div>
+        <button class="btn small" id="rehearse">Rehearse with AI</button></div>` : ""}
 
       <div class="section"><h2>People</h2>
         ${d.contacts.length ? d.contacts.map((c) => `<div class="factor"><span>${esc(c.name)}<span class="muted"> · ${esc(c.title ?? "")}</span></span><span class="pill">${esc(c.influence ?? "contact")}</span></div>`).join("") : `<div class="muted small">No one linked yet.</div>`}
@@ -426,6 +427,14 @@ async function openDeal(id) {
     </aside>`;
   document.body.appendChild(wrap);
   wrap.id = "drawer";
+  $("#rehearse", wrap)?.addEventListener("click", async () => {
+    toast("Rehearsing…");
+    try {
+      const r = await api("POST", "/api/rehearse", { dealId: id });
+      const text = r.output || r.summary || JSON.stringify(r).slice(0, 400);
+      modal(`<h2>Deal Rehearsal</h2><p>${esc(text)}</p>`, () => {});
+    } catch (e) { toast(e.message); }
+  });
   const close = () => closeDrawer();
   $(".drawer-bg", wrap).onclick = close;
   $(".close", wrap).onclick = close;
