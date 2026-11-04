@@ -517,6 +517,14 @@ export function createApp(deps: AppDeps) {
   });
 
 
+
+  route("POST", "/api/research/contact", async (ctx) => {
+    need(ctx, "name");
+    const { researchCompany } = await import("./research.ts");
+    const result = await researchCompany(`${ctx.body.name} ${ctx.body.company || ""}`.trim());
+    return result;
+  });
+
   route("POST", "/api/research/all", async (ctx) => {
     const { researchCompany } = await import("./research.ts");
     const companies = crm.list("companies", ctx.user!.workspace);
