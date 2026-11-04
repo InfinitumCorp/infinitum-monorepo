@@ -1,7 +1,7 @@
 # Infinitum Deployment Checklist
 
 ## Spectre (+SPCTR)
-- [ ] Restore full `apps/spectre/src/server/app.ts` from git history (parent of placeholder commits)
+- [ ] Restore full `apps/spectre/src/server/app.ts` (see `apps/spectre/src/server/RESTORE-APP.md`)
 - [ ] Confirm METATRON scoring (default-on via main.ts)
 - [ ] `pnpm --filter @infinitum/spectre typecheck`
 - [ ] Deploy via Docker or Vercel (see apps/spectre/Dockerfile and vercel.json)
