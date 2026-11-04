@@ -6,3 +6,4 @@ export { defaultTools, echoTool, searchTool, noteTool } from "./tools.ts";
 export { Team } from "./team.ts";
 export { runAndRecord } from "./conductor.ts";
 export type { ConductorEvidence } from "./conductor.ts";
+export { FirmamentVault } from "./memory-firmament.ts";
