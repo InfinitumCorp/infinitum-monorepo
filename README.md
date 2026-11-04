@@ -48,6 +48,7 @@ Coming next: AI account research the Spectre agent team, then `$FIRM` and produc
 - Research logs activities and dedupes facts; company list shows AI fact counts and last research time
 - Metrics include avg open-deal probability and industry/kind breakdowns
 - Pipeline supports closingBefore date filter
+- Accounts support researched=1/0 filter and show lastResearch time
 
 ## Requirements
 
