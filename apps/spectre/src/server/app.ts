@@ -497,6 +497,14 @@ export function createApp(deps: AppDeps) {
     need(ctx, "prompt");
     const { runSpectreAgent } = await import("../core/agents.ts");
     const result = await runSpectreAgent(ctx.params.id, String(ctx.body.prompt), { crm, workspace: ctx.user!.workspace });
+
+  route("POST", "/api/prospect", async (ctx) => {
+    const { runSpectreAgent } = await import("../core/agents.ts");
+    const result = await runSpectreAgent("prospector", "suggest new accounts matching ideal customer profile", { crm, workspace: ctx.user!.workspace });
+    return result;
+  });
+
+
     return result;
   });
 
