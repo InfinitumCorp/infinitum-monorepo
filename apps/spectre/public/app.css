@@ -1,20 +1,21 @@
 :root {
   --bg: #ffffff;
   --side: #f9f9f9;
-  --text: #0d0d0d;
+  --text: #141619;
   --muted: #6b6b6b;
   --faint: #9b9b9b;
   --line: #ececec;
   --hover: #f3f3f3;
   --chip: #f4f4f4;
-  --accent: #0d0d0d;
+  --accent: #141619;
   --on-accent: #ffffff;
   --good: #1a7f37;
   --warn: #9a6700;
   --bad: #c62828;
   --radius: 12px;
   --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.06);
-  font-family: ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+  /* Same type as infinitum-corporation.vercel.app */
+  font-family: Arial, Helvetica, sans-serif;
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
@@ -25,7 +26,9 @@ html, body, #root { margin: 0; height: 100%; }
 body { font-size: 15px; line-height: 1.5; }
 button, input, select, textarea { font: inherit; color: inherit; }
 a { color: inherit; }
-h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+h1, h2, h3 { margin: 0; font-weight: 400; letter-spacing: -0.03em; }
+/* Trademark mark, matching the Infinitum site: small, raised, regular weight */
+sup.tm { font-size: .38em; vertical-align: super; line-height: 0; margin-left: .08em; letter-spacing: 0; font-weight: 400; }
 .muted { color: var(--muted); }
 .faint { color: var(--faint); }
 .small { font-size: 13px; }
@@ -57,8 +60,8 @@ label.field { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
 /* Sign-in */
 .auth { min-height: 100%; display: grid; place-items: center; padding: 24px; }
 .auth-card { width: 100%; max-width: 360px; text-align: center; display: grid; gap: 14px; }
-.logo { font-weight: 700; font-size: 28px; letter-spacing: -0.02em; }
-.logo span { font-weight: 400; color: var(--muted); }
+.logo { font-weight: 400; font-size: 34px; letter-spacing: -0.055em; line-height: 1.03; }
+.logo span { font-weight: 400; color: var(--muted); letter-spacing: -0.03em; }
 .auth-card .btn { width: 100%; height: 48px; }
 .social { display: grid; gap: 10px; }
 .social:empty { display: none; }
@@ -70,7 +73,7 @@ label.field { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
 /* Shell */
 .shell { display: grid; grid-template-columns: 260px 1fr; height: 100%; }
 .side { background: var(--side); display: flex; flex-direction: column; padding: 12px; gap: 2px; overflow-y: auto; }
-.side .brand { padding: 10px 12px 18px; font-weight: 700; font-size: 18px; }
+.side .brand { padding: 10px 12px 18px; font-weight: 400; font-size: 22px; letter-spacing: -0.04em; }
 .nav a {
   display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px;
   text-decoration: none; color: var(--text);
@@ -89,7 +92,7 @@ main { overflow-y: auto; position: relative; }
 .page.narrow { max-width: 768px; }
 .page.wide { max-width: 1480px; }
 .page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
-.page-head h1 { font-size: 22px; }
+.page-head h1 { font-size: 28px; letter-spacing: -0.045em; }
 
 @media (max-width: 860px) {
   .shell { grid-template-columns: 1fr; }
@@ -101,7 +104,7 @@ main { overflow-y: auto; position: relative; }
 
 /* Ask (ChatGPT-style) */
 .hero { text-align: center; padding: 8vh 0 28px; }
-.hero h1 { font-size: 28px; font-weight: 600; }
+.hero h1 { font-size: 40px; font-weight: 400; letter-spacing: -0.055em; }
 .composer {
   display: flex; align-items: flex-end; gap: 8px; padding: 8px 8px 8px 18px;
   border: 1px solid var(--line); border-radius: 26px; background: var(--bg); box-shadow: var(--shadow);
@@ -135,7 +138,7 @@ main { overflow-y: auto; position: relative; }
 .pill.low, .pill.won { background: #e6f4ea; color: var(--good); }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .stat { border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
-.stat .v { font-size: 22px; font-weight: 600; margin-top: 2px; }
+.stat .v { font-size: 26px; font-weight: 400; letter-spacing: -0.03em; margin-top: 2px; }
 @media (max-width: 640px) { .stats { grid-template-columns: 1fr; } }
 table.simple { width: 100%; border-collapse: collapse; font-size: 14px; }
 table.simple th { text-align: left; font-weight: 500; color: var(--muted); font-size: 13px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
