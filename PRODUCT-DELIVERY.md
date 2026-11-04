@@ -21,7 +21,7 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 
 | Product | Advertised task | Status | Evidence | Next steps |
 |---------|-----------------|--------|----------|------------|
-| **+SPCTR (Spectre)** | AI intelligent CRM. | Partial | Full app.ts + METATRON + research (deduped, single/bulk/contact/shortcut)/query/prospect/execution/rehearse/metrics/export/search/activities/pipeline-stats + filters + UI modals for research/search, rehearse button, export | Typecheck, tests, deploy. |
+| **+SPCTR (Spectre)** | AI intelligent CRM. | Partial | Full app.ts + METATRON + research (deduped, skip-recent bulk)/query/prospect/execution/rehearse/metrics (kinds+industries)/export/search (incl facts)/activities (filter)/pipeline-stats + filters (amount/stage/industry/sort) + UI modals, rehearse, export, version | Typecheck, tests, deploy. |
 | **/CNDCTR/** | Intent → Score → perform → verify. | Partial | Score, executor, autonomy, instruments, Podium + /health + /api/status + Spectre adapter + DEPLOY.md | See DEPLOY.md and apps/conductor/DEPLOY.md. Deploy. |
 | **SCALVS.ai** | AI workforce platform. | Scaffolded | Agent + Context Vault + tools + Team + Conductor evidence + Firmament vault + NEXT.md | See packages/scalus/NEXT.md. Production integration. |
 | **METATRON** | Prediction + analytics. | Scaffolded | Default scorer + analytics + Spectre wrapper + forecast projection | (enabled by default) |
