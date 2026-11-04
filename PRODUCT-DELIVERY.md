@@ -27,7 +27,7 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 | **METATRON** | Prediction + analytics. | Scaffolded | Default scorer + analytics + Spectre wrapper + forecast projection | (enabled by default) |
 | **HRVST** | Capture → privacy filter → Harvest Packet. | Scaffolded | Packet + privacy filter + licensing + Personal Silo | Production privacy model. |
 | **ei·det·ic** | Identity-intelligence (authorized use only). | Scaffolded | Service + Spectre integration | Production sources. |
-| **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM client + wallet signing + DEX + router calldata + contracts + deploy scripts + compile.sh | See DEPLOY.md. Compile and deploy. |
+| **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM client + wallet signing + DEX + router calldata + contracts + deploy scripts + compile.sh + deploy-helper.md | See DEPLOY.md and packages/firm/scripts/deploy-helper.md. Compile and deploy. |
 | **Project-specific tokens** | $HRVST, $CNDT, $SPCTR, $SCLV. | Scaffolded | tokens.ts + ProjectToken.sol + deploy.ts | Compile and deploy. |
 
 ## Supporting / infrastructure concepts
@@ -49,7 +49,7 @@ These cannot be fully built as software.
 
 ## Immediate next build
 
-See **DEPLOY.md** and **apps/spectre/src/server/RESTORE-APP.md**.  
+See **DEPLOY.md**, **apps/spectre/src/server/RESTORE-APP.md**, and **packages/firm/scripts/deploy-helper.md**.  
 - Spectre: full restore of `app.ts`, then deploy.  
 - Conductor: deploy.  
 - FIRM: compile then deploy.  
