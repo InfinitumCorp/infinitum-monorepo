@@ -27,7 +27,7 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 | **METATRON** | Prediction + analytics. | Scaffolded | Default scorer + analytics + Spectre wrapper + forecast projection | Set USE_METATRON=1. |
 | **HRVST** | Capture → privacy filter → Harvest Packet. | Scaffolded | Packet + privacy filter + licensing + Personal Silo | Production privacy model. |
 | **ei·det·ic** | Identity-intelligence (authorized use only). | Scaffolded | Service + Spectre integration | Production sources. |
-| **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM client (tests) + wallet signing (tests) + DEX (Uniswap-style eth_call + tests) + router calldata + EVM wallet + FirmToken.sol + ProjectToken.sol + deploy.ts (tests) + compile.sh (includes Anchor.sol) + **README** + VEIL panel | Compile and deploy. |
+| **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM client (tests) + wallet signing (tests) + DEX (Uniswap-style eth_call + tests) + router calldata + EVM wallet + FirmToken.sol + ProjectToken.sol + deploy.ts (tests) + compile.sh (includes Anchor.sol) + **package.json scripts (compile/deploy/anchor)** + README + VEIL panel | Compile and deploy. |
 | **Project-specific tokens** | $HRVST, $CNDT, $SPCTR, $SCLV. | Scaffolded | tokens.ts (RPC-backed + tests) + ProjectToken.sol + deploy.ts (tests) | Compile and deploy. |
 
 ## Supporting / infrastructure concepts
@@ -50,7 +50,7 @@ These cannot be fully built as software.
 ## Immediate next build
 
 - Spectre / Conductor: deploy.  
-- FIRM: run compile.sh and deploy contracts + Anchor.sol.  
+- FIRM: `pnpm --filter @infinitum/firm compile` then deploy.  
 - Set USE_METATRON=1 in Spectre.  
 
 ## Acceptance criteria (for "performs as advertised")
