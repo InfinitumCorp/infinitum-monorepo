@@ -685,6 +685,7 @@ export function createApp(deps: AppDeps) {
       coverage: companies.length ? Math.round(researched.length / companies.length * 100) : 0,
       recent: researched.filter((c) => c.facts.some((f) => f.source?.includes("ai-research") && Date.now() - Date.parse(f.observedAt) < 86400000 * 7)).length,
       avgConfidence: avgConf,
+      lowConfidence: confs.filter((c) => c < 0.6).length,
     };
   });
 
