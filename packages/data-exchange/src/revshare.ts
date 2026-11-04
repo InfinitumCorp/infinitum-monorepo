@@ -1,4 +1,4 @@
-import type { LicenseSale } from "./types.js";
+import type { LicenseSale } from "./types.ts";
 
 /**
  * Revenue share calculator and payout tracker.

@@ -49,11 +49,13 @@ export function termDurationMs(terms: string): number {
 export class CdatIssuer {
   private tokens = new Map<string, CdatToken>();
   private nextOnchainId = 1;
+  private ledger?: Ledger;
+  private signer?: Signer;
 
-  constructor(
-    private ledger?: Ledger,
-    private signer?: Signer,
-  ) {}
+  constructor(ledger?: Ledger, signer?: Signer) {
+    this.ledger = ledger;
+    this.signer = signer;
+  }
 
   async issue(params: {
     datasetId: string;

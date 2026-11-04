@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Ledger, generateSigner } from "@infinitum/firmament";
-import { CdatIssuer, termDurationMs } from "./cdat.js";
+import { CdatIssuer, termDurationMs } from "./cdat.ts";
 
 test("term duration parses years and days", () => {
   assert.equal(termDurationMs("CDAT-commercial-1y"), 365 * 24 * 60 * 60 * 1000);

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DataExchange } from "./index.js";
+import { DataExchange } from "./index.ts";
 import { Ledger, generateSigner } from "@infinitum/firmament";
 
 test("package dataset and sell with rev share and CDAT", async () => {

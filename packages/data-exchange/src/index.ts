@@ -1,18 +1,18 @@
-export * from "./types.js";
-export * from "./consent.js";
-export * from "./catalog.js";
-export * from "./marketplace.js";
-export * from "./revshare.js";
-export * from "./collectors.js";
-export * from "./cdat.js";
+export * from "./types.ts";
+export * from "./consent.ts";
+export * from "./catalog.ts";
+export * from "./marketplace.ts";
+export * from "./revshare.ts";
+export * from "./collectors.ts";
+export * from "./cdat.ts";
 
-import { ConsentManager } from "./consent.js";
-import { DatasetCatalog } from "./catalog.js";
-import { DataMarketplace } from "./marketplace.js";
-import { RevShareEngine } from "./revshare.js";
-import { CdatIssuer } from "./cdat.js";
+import { ConsentManager } from "./consent.ts";
+import { DatasetCatalog } from "./catalog.ts";
+import { DataMarketplace } from "./marketplace.ts";
+import { RevShareEngine } from "./revshare.ts";
+import { CdatIssuer } from "./cdat.ts";
 import type { Ledger, Signer } from "@infinitum/firmament";
-import type { ProductId } from "./types.js";
+import type { ProductId } from "./types.ts";
 
 /**
  * Main Data Exchange service.

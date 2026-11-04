@@ -1,4 +1,4 @@
-import type { ConsentRecord, ProductId } from "./types.js";
+import type { ConsentRecord, ProductId } from "./types.ts";
 import type { Ledger, Signer } from "@infinitum/firmament";
 
 /**
@@ -7,11 +7,13 @@ import type { Ledger, Signer } from "@infinitum/firmament";
  */
 export class ConsentManager {
   private consents = new Map<string, ConsentRecord>();
+  private ledger?: Ledger;
+  private signer?: Signer;
 
-  constructor(
-    private ledger?: Ledger,
-    private signer?: Signer,
-  ) {}
+  constructor(ledger?: Ledger, signer?: Signer) {
+    this.ledger = ledger;
+    this.signer = signer;
+  }
 
   async grant(params: {
     cid: string;

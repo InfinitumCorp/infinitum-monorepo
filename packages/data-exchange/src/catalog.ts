@@ -1,4 +1,4 @@
-import type { Dataset, ProductId } from "./types.js";
+import type { Dataset, ProductId } from "./types.ts";
 
 /**
  * Dataset catalog. Users package eligible data from any Infinitum product.

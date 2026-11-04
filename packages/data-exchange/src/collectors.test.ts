@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DataExchange } from "./index.js";
-import { createCollectors } from "./collectors.js";
+import { DataExchange } from "./index.ts";
+import { createCollectors } from "./collectors.ts";
 
 test("product collectors package datasets for all software products", async () => {
   const dx = new DataExchange();

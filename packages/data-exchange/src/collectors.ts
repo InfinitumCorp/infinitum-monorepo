@@ -9,8 +9,8 @@
  * - Record provenance on Firmament
  * - Hardware products (POLLEN, ORBIS, NEMESIS, Flower, #THRONE) do not feed the public exchange
  */
-import type { ProductId } from "./types.js";
-import type { DataExchange } from "./index.js";
+import type { ProductId } from "./types.ts";
+import type { DataExchange } from "./index.ts";
 
 export interface CollectorResult {
   datasetId?: string;
@@ -19,7 +19,10 @@ export interface CollectorResult {
 
 export abstract class ProductCollector {
   abstract product: ProductId;
-  constructor(protected dx: DataExchange) {}
+  protected dx: DataExchange;
+  constructor(dx: DataExchange) {
+    this.dx = dx;
+  }
 
   abstract collect(cid: string, opts?: Record<string, unknown>): Promise<CollectorResult> | CollectorResult;
 }

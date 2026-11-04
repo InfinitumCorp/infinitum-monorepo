@@ -1,5 +1,5 @@
-import type { Dataset, LicenseSale, DataBroker } from "./types.js";
-import type { DatasetCatalog } from "./catalog.js";
+import type { Dataset, LicenseSale, DataBroker } from "./types.ts";
+import type { DatasetCatalog } from "./catalog.ts";
 
 /**
  * Marketplace for data brokers to discover and license datasets.
@@ -8,8 +8,11 @@ import type { DatasetCatalog } from "./catalog.js";
 export class DataMarketplace {
   private sales = new Map<string, LicenseSale>();
   private brokers = new Map<string, DataBroker>();
+  private catalog: DatasetCatalog;
 
-  constructor(private catalog: DatasetCatalog) {}
+  constructor(catalog: DatasetCatalog) {
+    this.catalog = catalog;
+  }
 
   registerBroker(broker: Omit<DataBroker, "id">): DataBroker {
     const id = `broker_${Date.now()}`;
