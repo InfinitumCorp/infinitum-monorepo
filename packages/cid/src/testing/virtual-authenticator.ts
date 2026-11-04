@@ -1,5 +1,5 @@
 import { createHash, generateKeyPairSync, randomBytes, sign, type KeyObject } from "node:crypto";
-import { encodeCbor } from "../cbor.ts";
+import { encodeCbor, type CborValue } from "../cbor.ts";
 import type { RegistrationResponse, AssertionResponse } from "../webauthn.ts";
 
 /**
@@ -20,7 +20,7 @@ interface StoredCredential {
 
 export class VirtualAuthenticator {
   readonly credentials = new Map<string, StoredCredential>();
-  private readonly userVerifying: boolean;
+  readonly userVerifying: boolean;
   private readonly useCounter: boolean;
 
   /**
@@ -62,7 +62,7 @@ export class VirtualAuthenticator {
     const clientData = { type: "webauthn.create", challenge: opts.challenge, origin: opts.origin, crossOrigin: false };
     return {
       clientDataJSON: b64u(Buffer.from(JSON.stringify(clientData))),
-      attestationObject: b64u(encodeCbor(new Map<string, string | Uint8Array | Map<never, never>>([
+      attestationObject: b64u(encodeCbor(new Map<string, CborValue>([
         ["fmt", "none"], ["attStmt", new Map()], ["authData", new Uint8Array(authData)],
       ]))),
     };

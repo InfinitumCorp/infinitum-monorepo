@@ -1,4 +1,6 @@
-import { createHash, createPublicKey, verify, type KeyObject, type JsonWebKey } from "node:crypto";
+import { createHash, createPublicKey, verify, type KeyObject, webcrypto } from "node:crypto";
+
+type JsonWebKey = webcrypto.JsonWebKey;
 import { decodeCbor, type CborValue } from "./cbor.ts";
 
 /**

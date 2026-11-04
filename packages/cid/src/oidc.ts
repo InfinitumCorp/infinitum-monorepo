@@ -1,4 +1,6 @@
-import { createPublicKey, verify, type JsonWebKey } from "node:crypto";
+import { createPublicKey, verify, webcrypto } from "node:crypto";
+
+type JsonWebKey = webcrypto.JsonWebKey;
 
 /**
  * Verifies OpenID Connect ID tokens from an organization's identity provider
