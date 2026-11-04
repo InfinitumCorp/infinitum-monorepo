@@ -520,10 +520,12 @@ export function createApp(deps: AppDeps) {
     const ws = ctx.user!.workspace;
     const companies = crm.list("companies", ws);
     const contacts = crm.list("contacts", ws);
+    const researched = companies.filter((c) => c.facts.some((f) => f.source?.includes("ai-research"))).length;
     return {
       duplicateCompanies: findDuplicateCompanies(companies).map((g) => ({ keep: g.keep, duplicates: g.duplicates, reason: g.reason })),
       duplicateContacts: findDuplicateContacts(contacts).map((g) => ({ keep: g.keep, duplicates: g.duplicates, reason: g.reason })),
       issues: dataIssues(contacts, companies, crm.list("activities", ws), crm.now()),
+      researchCoverage: companies.length ? Math.round(researched / companies.length * 100) : 0,
     };
   });
 
