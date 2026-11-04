@@ -233,7 +233,7 @@ const fillBars = (el) => el.querySelectorAll("[data-w]").forEach((b) => { b.styl
 /* ---------------- Today ---------------- */
 
 async function renderToday() {
-  const t = await api("GET", "/api/today");
+  const [t, m] = await Promise.all([api("GET", "/api/today"), api("GET", "/api/metrics")]);
   const first = state.thread.length === 0;
   main().innerHTML = `
     <div class="page narrow">
@@ -253,6 +253,8 @@ async function renderToday() {
         <div class="stat"><div class="muted small">Open deals</div><div class="v">${t.totals.openDeals}</div></div>
         <div class="stat"><div class="muted small">Pipeline</div><div class="v">${money(t.totals.pipeline)}</div></div>
         <div class="stat"><div class="muted small">Weighted</div><div class="v">${money(t.totals.weighted)}</div></div>
+        <div class="stat"><div class="muted small">Accounts</div><div class="v">${m.companies}</div></div>
+        <div class="stat"><div class="muted small">People</div><div class="v">${m.contacts}</div></div>
       </div>
 
       <div class="section"><h2>Next best actions</h2>
