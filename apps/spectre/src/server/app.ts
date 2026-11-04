@@ -585,6 +585,13 @@ export function createApp(deps: AppDeps) {
         }
       }
     }
+    if (persisted > 0) {
+      await crm.logActivity(ctx.user!.workspace, ctx.user!.account.cid, {
+        kind: "note",
+        summary: `AI research added ${persisted} facts`,
+        companyId: company.id,
+      });
+    }
     return { ...result, persisted };
   });
 
