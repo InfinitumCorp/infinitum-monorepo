@@ -378,6 +378,9 @@ export function createApp(deps: AppDeps) {
     const industry = ctx.query.get("industry");
     let list = crm.list("companies", ws);
     if (industry) list = list.filter((c) => (c.industry || "").toLowerCase().includes(industry.toLowerCase()));
+    const researched = ctx.query.get("researched");
+    if (researched === "1") list = list.filter((c) => c.facts.some((f) => f.source?.includes("ai-research")));
+    if (researched === "0") list = list.filter((c) => !c.facts.some((f) => f.source?.includes("ai-research")));
     return list
       .map((c) => ({
         ...c,
