@@ -309,7 +309,7 @@ export function createApp(deps: AppDeps) {
     status: "ok",
     metatron: process.env.USE_METATRON === "1",
     version: "0.1.0",
-    features: ["crm", "research", "agents", "execution", "search", "export", "pipeline-stats"],
+    features: ["crm", "research", "agents", "execution", "rehearse", "search", "export", "pipeline-stats", "filters", "metrics"],
   }), false);
 
   route("GET", "/api/metrics", (ctx) => {
