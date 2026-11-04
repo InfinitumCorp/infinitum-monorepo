@@ -8,6 +8,7 @@
 - [x] Search, activities, pipeline stats, filters (amount/industry/stage/sort), contact research, metrics breakdown
 - [x] Deal rehearsal endpoint + UI, fact deduplication, activity kind filter, industry metrics, export button
 - [x] Research activity logging, avg probability, activity summary, research coverage
+- [x] lastResearch timestamp, closingBefore filter, truncated research titles
 - [ ] `pnpm --filter @infinitum/spectre typecheck`
 - [ ] Deploy via Docker or Vercel (see apps/spectre/Dockerfile and vercel.json)
 
