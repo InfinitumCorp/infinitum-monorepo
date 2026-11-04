@@ -517,10 +517,19 @@ async function renderPeople() {
         <div class="item"><div class="avatar">${esc(initials(c.name))}</div>
           <div class="main"><div class="title">${esc(c.name)}</div><div class="sub">${esc([c.title, c.company].filter(Boolean).join(" · "))}</div></div>
           <div class="muted small">${esc(c.email ?? "")}</div>
+          <button class="btn ghost small" data-research="${esc(c.id)}" data-name="${esc(c.name)}" data-company="${esc(c.company || "")}">Research</button>
           <button class="btn ghost small" data-optout="${esc(c.id)}" title="Erase this person's details and never re-add them">Opt out</button>
         </div>`).join("")}</div>` : `<div class="empty">No people yet.</div>`}
     </div>`;
   $("#new-ct").onclick = () => newContactForm();
+  document.querySelectorAll("[data-research]").forEach((b) => (b.onclick = async () => {
+    toast("Researching…");
+    try {
+      const r = await api("POST", "/api/research/contact", { name: b.dataset.name, company: b.dataset.company });
+      toast("Research done");
+      if (r.summary) alert(r.summary);
+    } catch (e) { toast(e.message); }
+  }));
   document.querySelectorAll("[data-optout]").forEach((b) => (b.onclick = async () => {
     if (!confirm("Erase this person's details? Spectre will keep only a do-not-contact marker.")) return;
     await api("POST", `/api/contacts/${b.dataset.optout}/opt-out`);
