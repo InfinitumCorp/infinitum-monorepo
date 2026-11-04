@@ -14,7 +14,7 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 
 | Product | Advertised task | Status | Evidence | Next steps |
 |---------|-----------------|--------|----------|------------|
-| Firmament Network | Append-only hash-chained Ed25519 ledger. | Core logic | `packages/firmament` + anchoring helper + **Anchor.sol** + anchor client | Deploy anchor. |
+| Firmament Network | Append-only hash-chained Ed25519 ledger. | Core logic | `packages/firmament` + anchoring + Anchor.sol + anchor client | Deploy anchor. |
 | Cumulus://ID (CID) | One account for every product. | Core logic | `packages/cid` | Wire into remaining apps. |
 
 ## Core software products
@@ -23,9 +23,9 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 |---------|-----------------|--------|----------|------------|
 | **+SPCTR (Spectre)** | AI intelligent CRM. | Partial | Full CRM + auth + AI query + METATRON wrapper + ei·det·ic | Deploy. |
 | **/CNDCTR/** | Intent → Score → perform → verify. | Partial | Score, executor, autonomy, instruments, Podium + health | Deploy. |
-| **SCALVS.ai** | AI workforce platform. | Scaffolded | Agent + Context Vault + tools + Team + **Conductor evidence** | Production integration. |
-| **METATRON** | Prediction + analytics. | Scaffolded | Default scorer + analytics + Spectre wrapper | Set USE_METATRON=1. |
-| **HRVST** | Capture → privacy filter → Harvest Packet. | Scaffolded | Packet + privacy filter + licensing + **Personal Silo** | Production privacy model. |
+| **SCALVS.ai** | AI workforce platform. | Scaffolded | Agent + Context Vault + tools + Team + Conductor evidence | Production integration. |
+| **METATRON** | Prediction + analytics. | Scaffolded | Default scorer + analytics + Spectre wrapper + **forecast projection** | Set USE_METATRON=1. |
+| **HRVST** | Capture → privacy filter → Harvest Packet. | Scaffolded | Packet + privacy filter + licensing + Personal Silo | Production privacy model. |
 | **ei·det·ic** | Identity-intelligence (authorized use only). | Scaffolded | Service + Spectre integration | Production sources. |
 | **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM + wallet + DEX + router calldata + EVM wallet + contracts + VEIL panel | Compile and deploy. |
 | **Project-specific tokens** | $HRVST, $CNDT, $SPCTR, $SCLV. | Scaffolded | tokens.ts + contracts | Compile and deploy. |
@@ -35,14 +35,14 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 | Product | Notes | Software path |
 |---------|-------|---------------|
 | Cumulus://Cloud | Storage, licensing, agent runtime | Scaffolded — store + licensing |
-| VEIL</> | Tor-first browser + sidebar | Scaffolded — Conductor + Tor + Wallet + rewards + **privacy helpers** |
-| FABRIC | Encrypted calls/messaging | Scaffolded — AES-256-GCM AEAD |
-| ÆTHER | Distributed communications | Scaffolded — mesh concept stub |
+| VEIL</> | Tor-first browser + sidebar | Scaffolded — Conductor + Tor + Wallet + rewards + privacy helpers |
+| FABRIC | Encrypted calls/messaging | Scaffolded — AES-256-GCM AEAD + **session** |
+| ÆTHER | Distributed communications | Scaffolded — mesh + **BFS routing** |
 
 ## Hardware / physical concepts (software stubs only)
 
 ORBIS, POLLEN, Flower, NEMESIS, EON, ARGUS (sensor fusion), ODIN° (military suite).  
-**Interfaces stubbed** in `packages/hardware` (tasking, telemetry, evidence).  
+**Interfaces stubbed** in `packages/hardware` (tasking, telemetry, **evidence**).  
 These cannot be fully built as software.
 
 **Ignored:** #THRONE — not part of this delivery plan.
