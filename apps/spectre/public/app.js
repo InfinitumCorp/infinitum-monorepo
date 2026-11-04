@@ -263,7 +263,7 @@ async function renderToday() {
       ${first ? `<div class="hero"><h1>What can I help with?</h1></div>` : ""}
       <div class="thread">${state.thread.map((m) => `<div class="msg ${m.role}${m.notice ? " notice" : ""}">${esc(m.text)}</div>`).join("")}</div>
       <form class="composer" id="ask">
-        <textarea id="q" rows="1" placeholder="Ask Spectre anything" aria-label="Ask Spectre"></textarea>
+        <textarea id="q" rows="1" placeholder="Ask +SPCTR™ anything" aria-label="Ask +SPCTR™"></textarea>
         <button class="btn primary send" aria-label="Send">${icon.send}</button>
       </form>
       ${first ? `<div class="suggestions">
@@ -625,7 +625,7 @@ async function renderPeople() {
     } catch (e) { toast(e.message); }
   }));
   document.querySelectorAll("[data-optout]").forEach((b) => (b.onclick = async () => {
-    if (!confirm("Erase this person's details? Spectre will keep only a do-not-contact marker.")) return;
+    if (!confirm("Erase this person's details? +SPCTR™ will keep only a do-not-contact marker.")) return;
     await api("POST", `/api/contacts/${b.dataset.optout}/opt-out`);
     toast("Opted out");
     renderPeople();
@@ -745,7 +745,7 @@ async function renderSettings() {
       <div class="page-head"><h1>Settings</h1></div>
       <div class="section">
         <h2>Account</h2>
-        <p class="faint small">Spectre 0.1.0 · METATRON scoring on</p>
+        <p class="faint small">+SPCTR™ 0.1.0 · METATRON scoring on</p>
         <div class="list"><div class="item"><div class="avatar">${esc(initials(state.me.username))}</div>
           <div class="main"><div class="title">${esc(state.me.username)}</div><div class="sub">${esc(state.me.mailAddress)} · ${esc(state.me.handle)}</div></div></div></div>
       </div>
@@ -774,7 +774,7 @@ async function renderSettings() {
           <div class="item"><div class="main"><div class="title">Research</div><div class="sub">Public web search for account facts</div></div></div>
           <div class="item"><div class="main"><div class="title">Agents</div><div class="sub">Researcher, Prospector, Deal Coach, Query</div></div></div>
         </div>
-        <p class="faint small mt10">Set ANTHROPIC_API_KEY for Ask Spectre. Research uses public search. Filters available on Pipeline and Accounts.</p>
+        <p class="faint small mt10">Set ANTHROPIC_API_KEY for Ask +SPCTR™. Research uses public search. Filters available on Pipeline and Accounts.</p>
       </div>
     </div>`;
   $("#export-data")?.addEventListener("click", async () => {
