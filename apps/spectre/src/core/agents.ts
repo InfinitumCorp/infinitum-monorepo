@@ -53,10 +53,10 @@ export async function runSpectreAgent(agentId: string, prompt: string, ctx: Agen
 /** Simple router for plain-language queries. */
 export function routeQuery(text: string): string {
   const t = text.toLowerCase();
-  if (t.includes("research") || t.includes("look up") || t.includes("find info")) return "researcher";
-  if (t.includes("prospect") || t.includes("new account") || t.includes("icp")) return "prospector";
-  if (t.includes("coach") || t.includes("next step") || t.includes("rehearse")) return "deal-coach";
-  if (t.includes("how many") || t.includes("pipeline") || t.includes("open deals") || t.includes("list")) return "query";
+  if (t.includes("research") || t.includes("look up") || t.includes("find info") || t.includes("who is")) return "researcher";
+  if (t.includes("prospect") || t.includes("new account") || t.includes("icp") || t.includes("suggest")) return "prospector";
+  if (t.includes("coach") || t.includes("next step") || t.includes("rehearse") || t.includes("objection")) return "deal-coach";
+  if (t.includes("how many") || t.includes("pipeline") || t.includes("open deals") || t.includes("list") || t.includes("total")) return "query";
   return "query";
 }
 
