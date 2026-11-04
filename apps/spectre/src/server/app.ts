@@ -368,7 +368,11 @@ export function createApp(deps: AppDeps) {
         openDeals: deals.filter((d) => d.companyId === c.id && OPEN_STAGES.includes(d.stage)).length,
         contacts: contacts.filter((p) => p.companyId === c.id && !p.optedOut).length,
       }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => {
+        const sort = ctx.query.get("sort") || "name";
+        if (sort === "deals") return b.openDeals - a.openDeals;
+        return a.name.localeCompare(b.name);
+      });
   });
 
   route("POST", "/api/companies", async (ctx) => {
