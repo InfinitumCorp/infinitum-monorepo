@@ -27,6 +27,13 @@ Callback URL for each: `{SPECTRE_ORIGIN}/api/auth/oauth/{provider}/callback`. Da
 
 Coming next: AI account research the Spectre agent team, then `$FIRM` and product token contracts.
 
+### Spectre AI endpoints (current)
+- `POST /api/research` — public research for a company (persists facts when `companyId` given)
+- `POST /api/query` — plain-language CRM query via agent team
+- `POST /api/agents/:id/run` — run a specific agent (researcher, prospector, deal-coach, query)
+- `POST /api/prospect` — ICP matching suggestions
+- `GET /api/execution/pending` / `POST /api/execution/run` — self-executing deal actions via Conductor
+
 ## Requirements
 
 Node.js 22.18 or newer (runs TypeScript directly; no build step).
