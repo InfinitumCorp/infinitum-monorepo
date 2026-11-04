@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VEIL</title>
+  <style>
+    :root { --bg: #0a0a0a; --fg: #f5f5f5; --muted: #888; --accent: #fff; --line: #222; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--fg); font-size: 14px; }
+    header { padding: 1rem; border-bottom: 1px solid var(--line); }
+    h1 { margin: 0; font-size: 1rem; font-weight: 500; letter-spacing: 0.05em; }
+    main { padding: 1rem; }
+    .card { border: 1px solid var(--line); border-radius: 6px; padding: 0.75rem; margin-bottom: 0.75rem; }
+    textarea { width: 100%; min-height: 4rem; background: #111; color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 0.5rem; font: inherit; }
+    button { background: var(--accent); color: #000; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font: inherit; }
+    .muted { color: var(--muted); font-size: 0.85rem; }
+    #out { white-space: pre-wrap; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <header><h1>VEIL</h1></header>
+  <main>
+    <div class="card">
+      <div class="muted" style="margin-bottom:0.5rem">Ask the sidebar assistant</div>
+      <textarea id="q" placeholder="Research this page, or ask about Infinitum..."></textarea>
+      <button id="ask" style="margin-top:0.5rem">Ask</button>
+      <pre id="out" class="muted"></pre>
+    </div>
+    <div class="card">
+      <div class="muted">Status</div>
+      <div id="status">Ready</div>
+    </div>
+  </main>
+  <script type="module" src="sidebar.js"></script>
+</body>
+</html>
