@@ -1,6 +1,6 @@
 /**
  * METATRON prediction interface.
- * Can replace Spectre's baseline scorer. Returns a probability with factors.
+ * Default scorer for Spectre. Transparent and explainable.
  */
 
 export interface PredictionInput {
@@ -14,7 +14,7 @@ export interface Prediction {
   model: string;
 }
 
-/** Baseline model — transparent, explainable. Replace with a real engine later. */
+/** Default model — transparent, explainable. */
 export function predict(input: PredictionInput): Prediction {
   const base = 0.25;
   const factors: Prediction["factors"] = [];
@@ -41,6 +41,6 @@ export function predict(input: PredictionInput): Prediction {
   return {
     probability: Math.min(0.97, Math.max(0.01, p)),
     factors,
-    model: "metatron-baseline-v0",
+    model: "metatron-default-v1",
   };
 }
