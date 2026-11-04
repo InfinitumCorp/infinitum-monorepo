@@ -29,10 +29,13 @@ Coming next: AI account research the Spectre agent team, then `$FIRM` and produc
 
 ### Spectre AI endpoints (current)
 - `POST /api/research` — public research for a company (persists facts when `companyId` given)
+- `POST /api/research/all` — bulk research up to 10 accounts
 - `POST /api/query` — plain-language CRM query via agent team
 - `POST /api/agents/:id/run` — run a specific agent (researcher, prospector, deal-coach, query)
 - `POST /api/prospect` — ICP matching suggestions
-- `GET /api/execution/pending` / `POST /api/execution/run` — self-executing deal actions via Conductor
+- `GET /api/execution/pending` / `POST /api/execution/run` — self-executing deal actions via Conductor (logs activities)
+- `GET /api/metrics` — workspace counts
+- `GET /api/export` — dump companies, contacts, deals, activities
 
 ## Requirements
 
