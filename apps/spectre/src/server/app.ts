@@ -661,6 +661,24 @@ export function createApp(deps: AppDeps) {
 
 
 
+
+  route("GET", "/api/research/recommendations", (ctx) => {
+    const ws = ctx.user!.workspace;
+    const companies = crm.list("companies", ws);
+    const now = Date.now();
+    const recommendations = companies
+      .map((c) => {
+        const aiFacts = c.facts.filter((f) => f.source?.includes("ai-research"));
+        const last = aiFacts.sort((a, b) => b.observedAt.localeCompare(a.observedAt))[0];
+        const ageDays = last ? Math.floor((now - Date.parse(last.observedAt)) / 86400000) : 999;
+        const needs = aiFacts.length < 2 || ageDays > 30;
+        return needs ? { id: c.id, name: c.name, factCount: aiFacts.length, ageDays, reason: aiFacts.length < 2 ? "low coverage" : "stale" } : null;
+      })
+      .filter(Boolean)
+      .slice(0, 10);
+    return { recommendations };
+  });
+
   route("GET", "/api/research/history", (ctx) => {
     const ws = ctx.user!.workspace;
     const limit = Number(ctx.query.get("limit") || 20);
