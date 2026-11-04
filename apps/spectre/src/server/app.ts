@@ -617,7 +617,12 @@ export function createApp(deps: AppDeps) {
   route("POST", "/api/research", async (ctx) => {
     need(ctx, "name");
     const { researchCompany } = await import("./research.ts");
-    const result = await researchCompany(String(ctx.body.name));
+    let result;
+    try {
+      result = await researchCompany(String(ctx.body.name));
+    } catch (e) {
+      return { error: String(e), facts: [] };
+    }
     // Persist any returned facts to the company if companyId provided
     if (ctx.body.companyId && result && Array.isArray(result.facts)) {
       const existing = new Set(crm.company(ctx.user!.workspace, String(ctx.body.companyId)).facts.map((f) => `${f.field}:${f.value}`));
