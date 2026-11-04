@@ -381,6 +381,8 @@ export function createApp(deps: AppDeps) {
     const researched = ctx.query.get("researched");
     if (researched === "1") list = list.filter((c) => c.facts.some((f) => f.source?.includes("ai-research")));
     if (researched === "0") list = list.filter((c) => !c.facts.some((f) => f.source?.includes("ai-research")));
+    const minConf = Number(ctx.query.get("minConfidence") || 0);
+    if (minConf) list = list.filter((c) => c.facts.some((f) => f.source?.includes("ai-research") && ((f as any).confidence || 0) >= minConf));
     return list
       .map((c) => ({
         ...c,
