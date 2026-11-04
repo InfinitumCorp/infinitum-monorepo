@@ -252,6 +252,19 @@ export function createApp(deps: AppDeps) {
 
 
 
+
+  route("GET", "/api/pipeline/stats", (ctx) => {
+    const ws = ctx.user!.workspace;
+    const deals = crm.list("deals", ws);
+    const byStage: Record<string, { count: number; amount: number }> = {};
+    for (const d of deals) {
+      byStage[d.stage] ??= { count: 0, amount: 0 };
+      byStage[d.stage].count++;
+      byStage[d.stage].amount += d.amount || 0;
+    }
+    return { byStage, total: deals.length };
+  });
+
   route("GET", "/api/export", (ctx) => {
     const ws = ctx.user!.workspace;
     return {
