@@ -203,6 +203,7 @@ function renderShell(page) {
         <button class="btn ghost small menu-btn" id="menu" aria-label="Menu">${icon.menu}</button>
         <aside class="side">
           <div class="brand">+SPCTR<sup class="tm">™</sup></div>
+          <input class="input small" id="global-search" placeholder="Search…" style="margin:8px 12px;width:calc(100% - 24px)">
           <nav class="nav">
             <a href="#/today" data-p="today">${icon.today}Today</a>
             <a href="#/pipeline" data-p="pipeline">${icon.pipeline}Pipeline</a>
@@ -222,6 +223,24 @@ function renderShell(page) {
       </div>`;
     $("#menu").onclick = () => $(".shell").classList.toggle("open");
     $("#signout").onclick = async () => { await api("POST", "/api/auth/signout"); state.me = null; render(); };
+    const gs = $("#global-search");
+    if (gs) {
+      gs.onkeydown = async (e) => {
+        if (e.key === "Enter") {
+          const q = gs.value.trim();
+          if (!q) return;
+          try {
+            const r = await api("GET", `/api/search?q=${encodeURIComponent(q)}`);
+            const lines = [
+              ...r.companies.map((c) => `Account: ${c.name}`),
+              ...r.contacts.map((c) => `Person: ${c.name}`),
+              ...r.deals.map((d) => `Deal: ${d.name}`),
+            ];
+            alert(lines.length ? lines.join("\n") : "No results");
+          } catch (err) { toast(err.message); }
+        }
+      };
+    }
   }
   $(".shell").classList.remove("open");
   document.querySelectorAll(".nav a").forEach((a) => a.classList.toggle("active", a.dataset.p === page));
