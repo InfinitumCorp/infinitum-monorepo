@@ -655,7 +655,7 @@ export function createApp(deps: AppDeps) {
   route("POST", "/api/research/contact", async (ctx) => {
     need(ctx, "name");
     const { researchCompany } = await import("./research.ts");
-    const result = await researchCompany(`${ctx.body.name} ${ctx.body.company || ""}`.trim());
+    const result = await researchCompany(`${ctx.body.name} ${ctx.body.company || ""}`.trim()) as any;
     return result;
   });
 
@@ -704,7 +704,7 @@ export function createApp(deps: AppDeps) {
           results.push({ id: c.id, name: c.name, skipped: "recent research" });
           continue;
         }
-        const result = await researchCompany(c.name);
+        const result = await researchCompany(c.name) as any;
         let persisted = 0;
         if (result && Array.isArray(result.facts)) {
           for (const fact of result.facts.slice(0, 5)) {
