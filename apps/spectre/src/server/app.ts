@@ -420,7 +420,10 @@ export function createApp(deps: AppDeps) {
     const ws = ctx.user!.workspace;
     const scores = scoresFor(ws);
     const companies = new Map(crm.list("companies", ws).map((c) => [c.id, c.name]));
-    return { stages: STAGES, deals: crm.list("deals", ws).map((d) => ({ ...d, company: companies.get(d.companyId), score: scores.get(d.id) })) };
+    let deals = crm.list("deals", ws);
+    const min = Number(ctx.query.get("minAmount") || 0);
+    if (min) deals = deals.filter((d) => (d.amount || 0) >= min);
+    return { stages: STAGES, deals: deals.map((d) => ({ ...d, company: companies.get(d.companyId), score: scores.get(d.id) })) };
   });
 
   route("POST", "/api/deals", (ctx) => {
