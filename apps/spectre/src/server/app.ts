@@ -658,6 +658,21 @@ export function createApp(deps: AppDeps) {
   });
 
 
+
+  route("GET", "/api/research/history", (ctx) => {
+    const ws = ctx.user!.workspace;
+    const limit = Number(ctx.query.get("limit") || 20);
+    const companies = crm.list("companies", ws);
+    const history = [];
+    for (const c of companies) {
+      for (const f of c.facts.filter((x) => x.source?.includes("ai-research")).slice(0, 3)) {
+        history.push({ companyId: c.id, company: c.name, field: f.field, value: f.value, at: f.observedAt, source: f.source });
+      }
+    }
+    history.sort((a, b) => b.at.localeCompare(a.at));
+    return { history: history.slice(0, limit) };
+  });
+
   route("GET", "/api/research/status", (ctx) => {
     const ws = ctx.user!.workspace;
     const companies = crm.list("companies", ws);
