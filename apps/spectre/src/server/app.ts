@@ -501,6 +501,21 @@ export function createApp(deps: AppDeps) {
   route("POST", "/api/prospect", async (ctx) => {
     const { runSpectreAgent } = await import("../core/agents.ts");
     const result = await runSpectreAgent("prospector", "suggest new accounts matching ideal customer profile", { crm, workspace: ctx.user!.workspace });
+
+  route("GET", "/api/execution/pending", async (ctx) => {
+    const { listPendingActions } = await import("./execution.ts");
+    return { pending: await listPendingActions(crm, ctx.user!.workspace) };
+  });
+
+  route("POST", "/api/execution/run", async (ctx) => {
+    const { executeAll } = await import("../core/conductor-bridge.ts");
+    const { listPendingActions } = await import("./execution.ts");
+    const pending = await listPendingActions(crm, ctx.user!.workspace);
+    const results = await executeAll(pending, { crm, workspace: ctx.user!.workspace, actor: ctx.user!.account.cid });
+    return { results };
+  });
+
+
     return result;
   });
 
