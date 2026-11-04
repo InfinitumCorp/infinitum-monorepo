@@ -571,7 +571,17 @@ export function createApp(deps: AppDeps) {
     const { listPendingActions } = await import("./execution.ts");
     const pending = await listPendingActions(crm, ctx.user!.workspace);
     const results = await executeAll(pending, { crm, workspace: ctx.user!.workspace, actor: ctx.user!.account.cid });
-    return { results };
+    // Log executed actions as activities
+    for (const r of results || []) {
+      if (r && r.dealId) {
+        await crm.logActivity(ctx.user!.workspace, ctx.user!.account.cid, {
+          kind: "note",
+          summary: `AI action: ${r.description || r.type || "executed"}`,
+          dealId: r.dealId,
+        });
+      }
+    }
+    return { results, logged: results?.length || 0 };
   });
 
 
