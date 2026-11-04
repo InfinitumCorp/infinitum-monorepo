@@ -23,19 +23,19 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 |---------|-----------------|--------|----------|----------------------------------------|
 | **+SPCTR (Spectre)** | AI intelligent CRM: auto research every account, predictive pipeline (win probability, risk, forecast, next-best-action with reasoning), relationship map + buying-committee gaps, self-cleaning data, AI agents (Researcher, Prospector, Deal coach, etc.), plain-language queries, Shared Truth Ledger, Deal Rehearsal, self-executing deals. | Partial | Core + web server + research + queries + agents + Deal Rehearsal + Shared Truth Ledger UI + self-executing deals + relationship map + self-cleaning + buying-committee gaps + production polish + Dockerfile + vercel.json | Run deploy. |
 | **/CNDCTR/** | Intent in → Score (plan with steps, permissions, checkpoints) → perform across apps/APIs → verify outcome with evidence. Autonomy levels (Rehearsal / Accompaniment / Autopilot). Triggered by other products. | Partial | Score model, executor, Firmament evidence, Podium UI + server, instruments, Spectre HTTP adapter, autonomy levels, production polish, Dockerfile + vercel.json | Run deploy. |
-| **SCALVS.ai** | AI workforce platform: Agent Studio (templates, tools, memory), Command Center, multi-agent teams coordinated by Conductor, Nexus Context Vault memory, private runtime. | Scaffolded | `packages/scalus` (Agent, improved run loop, tests) + **Context Vault** (`vault.ts`) | Expand tool interface; integrate with Conductor. |
-| **METATRON** | Unified financial/intelligence/analytics environment + prediction engine (used by Spectre forecasts, Deal Rehearsal). | Scaffolded | `packages/metatron` (predict interface + tests); wired into Spectre via `scoreWithMetatron` | Analytics dashboard data model; replace baseline by default. |
+| **SCALVS.ai** | AI workforce platform: Agent Studio (templates, tools, memory), Command Center, multi-agent teams coordinated by Conductor, Nexus Context Vault memory, private runtime. | Scaffolded | Agent run loop + **Context Vault wired into agents** | Expand tools; Conductor integration. |
+| **METATRON** | Unified financial/intelligence/analytics environment + prediction engine (used by Spectre forecasts, Deal Rehearsal). | Scaffolded | predict interface + **analytics data model** (sum/avg/window) | Replace baseline scorer by default. |
 | **HRVST** | Permissioned capture from camera glasses → AI refine (privacy filter) → Harvest Packet with provenance → license or keep in Personal Silo. Proof of Perspective on Firmament. | Scaffolded | Packet model, privacy filter, Firmament provenance, Personal Silo store | Real privacy model; licensing flow. |
 | **ei·det·ic** | Facial-recognition and identity-intelligence platform (authorized, lawful use only). | Scaffolded | `packages/eidetic` (interface + stub service + test; no biometrics) | Spectre integration point. |
-| **FIRM + FIRM Wallet** | Ecosystem token, self-custody wallet, built-in DEX. Product tokens paired with FIRM. | Partial | `packages/firm` (interfaces + real JSON-RPC EVM client + wallet signing + DEX wired to Uniswap-style router + FirmToken.sol scaffold + deploy script) | Compile and deploy. |
-| **Project-specific tokens** | $HRVST, $CNDT, $SPCTR, $SCLV, etc. | Scaffolded | `packages/firm/src/tokens.ts` + ProjectToken.sol + deploy script scaffold | Compile and deploy. |
+| **FIRM + FIRM Wallet** | Ecosystem token, self-custody wallet, built-in DEX. Product tokens paired with FIRM. | Partial | EVM client + wallet signing + DEX + contracts + **VEIL wallet panel** | Compile and deploy. |
+| **Project-specific tokens** | $HRVST, $CNDT, $SPCTR, $SCLV, etc. | Scaffolded | tokens.ts + ProjectToken.sol + deploy script | Compile and deploy. |
 
 ## Supporting / infrastructure concepts
 
 | Product | Notes | Software path |
 |---------|-------|---------------|
 | Cumulus://Cloud | Storage, licensing, agent runtime | Later package |
-| VEIL</> | Tor-first secure browser + sidebar assistant | **Scaffolded** — `apps/veil` Manifest V3 side panel **wired to Conductor** |
+| VEIL</> | Tor-first secure browser + sidebar assistant | **Scaffolded** — side panel wired to Conductor + **Tor proxy scaffold** + **FIRM Wallet panel** |
 | FABRIC | Encrypted calls/messaging | Later |
 | ÆTHER | Distributed communications | Concept |
 
@@ -48,12 +48,13 @@ These cannot be fully built as software. Interfaces (tasking, telemetry, evidenc
 
 ## Immediate next build
 
-- Spectre: `./scripts/deploy-apps.sh docker` or `vercel`.  
-- Conductor: same.  
+- Spectre: deploy.  
+- Conductor: deploy.  
 - FIRM: compile and deploy FirmToken.sol.  
-- Project-specific tokens: compile and deploy ProjectToken.sol.  
-- VEIL: add Tor proxy; FIRM Wallet panel.  
-- SCALVS: expand tools; wire Context Vault into agents.  
+- Project-specific tokens: compile and deploy.  
+- VEIL: real Tor SOCKS; live wallet RPC.  
+- SCALVS: expand tools.  
+- METATRON: replace baseline scorer.  
 
 ## Acceptance criteria (for "performs as advertised")
 
