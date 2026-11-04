@@ -33,6 +33,7 @@ export function parseResults(results: RawResult[]): ParsedFact[] {
           field: p.field,
           value: r.title.slice(0, 200),
           source: r.url ?? "search",
+          confidence: r.snippet ? 0.7 : 0.5,
         });
         break;
       }
