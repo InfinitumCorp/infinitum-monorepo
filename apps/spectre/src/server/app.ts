@@ -675,6 +675,13 @@ export function createApp(deps: AppDeps) {
             }
           }
         }
+        if (persisted > 0) {
+          await crm.logActivity(ctx.user!.workspace, ctx.user!.account.cid, {
+            kind: "note",
+            summary: `Bulk AI research added ${persisted} facts`,
+            companyId: c.id,
+          });
+        }
         results.push({ id: c.id, name: c.name, persisted, summary: result?.summary });
       } catch (e) {
         results.push({ id: c.id, name: c.name, error: String(e) });
