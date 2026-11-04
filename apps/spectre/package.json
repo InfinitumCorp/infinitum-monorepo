@@ -1,0 +1,21 @@
+{
+  "name": "@infinitum/spectre",
+  "version": "0.1.0",
+  "description": "+SPCTR (Spectre): Infinitum's AI-powered intelligent CRM.",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "start": "node src/server/main.ts",
+    "typecheck": "tsc -p . --noEmit",
+    "test": "node --test \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@infinitum/firmament": "workspace:*",
+    "@infinitum/cid": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/node": "^22.0.0"
+  }
+}
