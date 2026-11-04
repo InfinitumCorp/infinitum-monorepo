@@ -254,6 +254,16 @@ export function createApp(deps: AppDeps) {
 
 
 
+
+  route("GET", "/api/activities", (ctx) => {
+    const ws = ctx.user!.workspace;
+    const limit = Number(ctx.query.get("limit") || 50);
+    const kind = ctx.query.get("kind");
+    let acts = crm.list("activities", ws).sort((a, b) => b.at.localeCompare(a.at));
+    if (kind) acts = acts.filter((a) => a.kind === kind);
+    return { activities: acts.slice(0, limit) };
+  });
+
   route("GET", "/api/search", (ctx) => {
     const q = (ctx.query.get("q") || "").toLowerCase().trim();
     if (!q) return { companies: [], contacts: [], deals: [] };
