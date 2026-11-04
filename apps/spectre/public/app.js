@@ -497,7 +497,7 @@ async function renderAccounts() {
         <a class="item" href="#/accounts/${esc(c.id)}">
           <div class="avatar">${esc(initials(c.name))}</div>
           <div class="main"><div class="title">${esc(c.name)}</div><div class="sub">${esc([c.kind, c.industry, c.domain].filter(Boolean).join(" · "))}</div></div>
-          <div class="muted small">${c.openDeals} open deal${c.openDeals === 1 ? "" : "s"} · ${c.contacts} people${c.researchFacts ? ` · ${c.researchFacts} AI facts` : ""}</div>
+          <div class="muted small">${c.openDeals} open deal${c.openDeals === 1 ? "" : "s"} · ${c.contacts} people${c.researchFacts ? ` · ${c.researchFacts} AI facts${c.lastResearch ? ` (${ago(c.lastResearch)})` : ""}` : ""}</div>
         </a>`).join("")}</div>` : `<div class="empty">Add a company or government agency to start.</div>`}
     </div>`;
   $("#new-co").onclick = () => newCompanyForm();
