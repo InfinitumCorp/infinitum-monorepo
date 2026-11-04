@@ -5,6 +5,7 @@
 - [x] Confirm METATRON scoring (default-on via main.ts)
 - [x] Research and query agent endpoints wired
 - [x] Prospect and execution endpoints + UI buttons
+- [x] Search, activities, pipeline stats, filters (amount/industry), contact research, metrics breakdown
 - [ ] `pnpm --filter @infinitum/spectre typecheck`
 - [ ] Deploy via Docker or Vercel (see apps/spectre/Dockerfile and vercel.json)
 
