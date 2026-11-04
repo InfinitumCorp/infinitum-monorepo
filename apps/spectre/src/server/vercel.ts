@@ -1,0 +1,78 @@
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { Ledger, signerFromPrivateKey } from "@infinitum/firmament";
+import { CidService, CidStore, socialFromEnv } from "@infinitum/cid";
+import { SpectreCRM, emptyStore } from "../core/crm.ts";
+import { createApp } from "./app.ts";
+import { aiConfigFromEnv } from "./ai.ts";
+import { RemoteState, HttpGateway } from "./remote.ts";
+
+/**
+ * +SPCTR on Vercel (serverless). All data lives in Supabase behind the private
+ * nexus-store function; each request loads the latest state and saves atomically.
+ *
+ * Required environment variables:
+ *   SPECTRE_ORIGIN         public URL, e.g. https://spectre.example.com (passkeys are bound to it)
+ *   FIRMAMENT_SIGNER_KEY   base64 PKCS#8 Ed25519 key that signs ledger entries (keep secret)
+ *   NEXUS_STORE_URL        https://<project>.supabase.co/functions/v1/nexus-store
+ *   NEXUS_STORE_KEY        gateway key; its SHA-256 is listed in nexus_gateway_keys
+ * Optional: ANTHROPIC_API_KEY, USE_METATRON, and the social sign-in variables (see main.ts).
+ */
+
+process.env.USE_METATRON ??= "1";
+
+function required(name: string): string {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing environment variable ${name}`);
+  return v;
+}
+
+function build() {
+  const origin = required("SPECTRE_ORIGIN").replace(/\/$/, "");
+  const signer = signerFromPrivateKey(required("FIRMAMENT_SIGNER_KEY"));
+  const cidStore = new CidStore();
+  const spectreStore = emptyStore();
+  const state = new RemoteState(new HttpGateway(required("NEXUS_STORE_URL"), required("NEXUS_STORE_KEY")), { cid: cidStore, spectre: spectreStore });
+  const ledger = new Ledger(state.ledgerStore, { authorizedSigners: [signer.publicKey] });
+  const cid = new CidService({ ledger, signer, rpId: new URL(origin).hostname, origins: [origin], store: cidStore, social: { providers: socialFromEnv() } });
+  const crm = new SpectreCRM({ ledger, signer, store: spectreStore });
+
+  // Refuse to serve if the stored ledger fails verification (tampering or a wrong signing key).
+  let verified: Promise<void> | undefined;
+  const verifyOnce = () =>
+    (verified ??= (async () => {
+      await state.sync();
+      const result = await ledger.verify();
+      if (!result.ok) throw new Error(`Firmament ledger failed verification at entry ${result.brokenAt}: ${result.reason}`);
+    })().catch((err) => {
+      verified = undefined; // try again on the next request
+      throw err;
+    }));
+
+  const app = createApp({
+    cid,
+    crm,
+    ai: aiConfigFromEnv(),
+    publicDir: new URL("./public/", import.meta.url).pathname, // static files are served by Vercel's CDN
+    secureCookies: origin.startsWith("https://"),
+    origin,
+    transaction: async (fn) => {
+      await verifyOnce();
+      return state.transaction(fn);
+    },
+  });
+  return app;
+}
+
+let app: ReturnType<typeof build> | undefined;
+
+export default async function handler(req: IncomingMessage, res: ServerResponse) {
+  try {
+    app ??= build();
+  } catch (err) {
+    console.error(err);
+    res.writeHead(503, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+    res.end(JSON.stringify({ error: "+SPCTR isn't configured yet. Please try again later." }));
+    return;
+  }
+  await app.handle(req, res);
+}

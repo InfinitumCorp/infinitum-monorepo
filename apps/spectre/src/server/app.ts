@@ -35,6 +35,11 @@ export interface AppDeps {
   origin: string;
   /** Called after any request that changed data (persistence hook). */
   onChange?: () => void;
+  /**
+   * Wraps each API request (hosted mode): load the latest state first, save all changes
+   * atomically afterwards, and re-run the request if someone else saved in between.
+   */
+  transaction?: <T>(fn: () => Promise<T>) => Promise<T>;
 }
 
 class HttpError extends Error {
@@ -952,19 +957,24 @@ export function createApp(deps: AppDeps) {
       if (r.csrf && MUTATING.has(req.method!) && req.headers["x-spectre"] !== "1") throw new HttpError(403, "Missing request header");
       const m = url.pathname.match(r.pattern)!;
       const ctx: Ctx = { req, res, params: Object.fromEntries(r.keys.map((k, i) => [k, decodeURIComponent(m[i + 1])])), body: await readBody(req), query: url.searchParams };
-      if (r.auth || r.optionalAuth) {
-        const token = parseCookies(req.headers.cookie)[COOKIE];
-        const session = token ? cid.authenticate(token) : null;
-        if (!session && r.auth) throw new HttpError(401, "Please sign in");
-        if (session) {
-          if (r.auth) {
-            const scope = MUTATING.has(req.method!) ? "crm:write" : "crm:read";
-            if (!cid.can(session.account.cid, "spectre", scope)) throw new HttpError(403, "Spectre's access was revoked in your Cumulus://ID permissions");
+      // Authentication runs inside the transaction so it sees the latest sessions and grants.
+      const run = async () => {
+        ctx.user = undefined;
+        if (r.auth || r.optionalAuth) {
+          const token = parseCookies(req.headers.cookie)[COOKIE];
+          const session = token ? cid.authenticate(token) : null;
+          if (!session && r.auth) throw new HttpError(401, "Please sign in");
+          if (session) {
+            if (r.auth) {
+              const scope = MUTATING.has(req.method!) ? "crm:write" : "crm:read";
+              if (!cid.can(session.account.cid, "spectre", scope)) throw new HttpError(403, "Spectre's access was revoked in your Cumulus://ID permissions");
+            }
+            ctx.user = { account: session.account, workspace: session.account.orgId ?? session.account.cid, sessionId: session.session.id };
           }
-          ctx.user = { account: session.account, workspace: session.account.orgId ?? session.account.cid, sessionId: session.session.id };
         }
-      }
-      const result = await r.handler(ctx);
+        return r.handler(ctx);
+      };
+      const result = deps.transaction ? await deps.transaction(run) : await run();
       if (MUTATING.has(req.method!) || result instanceof Redirect) deps.onChange?.();
       if (result instanceof Redirect) {
         res.writeHead(302, { Location: result.location, "Cache-Control": "no-store" });

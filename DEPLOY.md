@@ -24,7 +24,10 @@
 - [x] Confidence filter UI on Accounts
 - [x] AI fact count and last research time on account research section
 - [x] `pnpm --filter @infinitum/spectre typecheck`
-- [ ] Deploy via Docker or Vercel (see apps/spectre/Dockerfile and vercel.json)
+- [x] Hosted storage: Supabase (`supabase/migrations`, `supabase/functions/nexus-store`) with atomic per-request saves
+- [x] Vercel build: `node apps/spectre/scripts/build-vercel.mjs` (Build Output API; project root = repo root, install command skipped)
+- [ ] Vercel env: `SPECTRE_ORIGIN`, `FIRMAMENT_SIGNER_KEY`, `NEXUS_STORE_URL`, `NEXUS_STORE_KEY` (+ optional `ANTHROPIC_API_KEY`, social sign-in)
+- [ ] Deploy to Vercel
 
 ## Conductor (/CNDCTR/)
 - [x] `pnpm --filter @infinitum/conductor typecheck`
