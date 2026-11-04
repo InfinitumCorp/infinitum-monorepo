@@ -461,11 +461,15 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawe
 /* ---------------- Accounts ---------------- */
 
 async function renderAccounts() {
-  const industry = new URLSearchParams(location.search).get("industry") || "";
-  const list = await api("GET", `/api/companies${industry ? `?industry=${encodeURIComponent(industry)}` : ""}`);
+  const params = new URLSearchParams(location.search);
+  const industry = params.get("industry") || "";
+  const sort = params.get("sort") || "";
+  const qs = [industry && `industry=${encodeURIComponent(industry)}`, sort && `sort=${sort}`].filter(Boolean).join("&");
+  const list = await api("GET", `/api/companies${qs ? `?${qs}` : ""}`);
   main().innerHTML = `
     <div class="page">
-      <div class="page-head"><h1>Accounts</h1><div class="row"><input class="input small" id="industry-filter" placeholder="Industry" value="${esc(industry)}" style="width:140px"><button class="btn" id="research-all">Research all</button><button class="btn" id="prospect">Prospect with AI</button><button class="btn primary" id="new-co">New account</button></div></div>
+      <div class="page-head"><h1>Accounts</h1><div class="row"><input class="input small" id="industry-filter" placeholder="Industry" value="${esc(industry)}" style="width:140px">
+            <select class="input small" id="sort-filter" style="width:100px"><option value="">Name</option><option value="deals" ${sort === "deals" ? "selected" : ""}>Deals</option></select><button class="btn" id="research-all">Research all</button><button class="btn" id="prospect">Prospect with AI</button><button class="btn primary" id="new-co">New account</button></div></div>
       ${list.length ? `<div class="list">${list.map((c) => `
         <a class="item" href="#/accounts/${esc(c.id)}">
           <div class="avatar">${esc(initials(c.name))}</div>
@@ -474,12 +478,17 @@ async function renderAccounts() {
         </a>`).join("")}</div>` : `<div class="empty">Add a company or government agency to start.</div>`}
     </div>`;
   $("#new-co").onclick = () => newCompanyForm();
-  $("#industry-filter")?.addEventListener("change", () => {
-    const v = $("#industry-filter").value;
-    if (v) history.replaceState(null, "", `?industry=${encodeURIComponent(v)}`);
-    else history.replaceState(null, "", location.pathname);
+  const apply = () => {
+    const i = $("#industry-filter")?.value || "";
+    const s = $("#sort-filter")?.value || "";
+    const p = [];
+    if (i) p.push(`industry=${encodeURIComponent(i)}`);
+    if (s) p.push(`sort=${s}`);
+    history.replaceState(null, "", p.length ? `?${p.join("&")}` : location.pathname);
     renderAccounts();
-  });
+  };
+  $("#industry-filter")?.addEventListener("change", apply);
+  $("#sort-filter")?.addEventListener("change", apply);
   $("#research-all").onclick = async () => {
     toast("Researching all accounts…");
     try {
