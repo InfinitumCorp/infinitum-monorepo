@@ -14,6 +14,7 @@
 - [x] Average research confidence in /api/research/status
 - [x] Tightened snippet fact limits in research parser
 - [x] Low-confidence fact count in /api/research/status
+- [x] High-confidence fact count in /api/research/status
 - [ ] `pnpm --filter @infinitum/spectre typecheck`
 - [ ] Deploy via Docker or Vercel (see apps/spectre/Dockerfile and vercel.json)
 
