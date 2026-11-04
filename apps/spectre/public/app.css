@@ -15,7 +15,7 @@
   --radius: 12px;
   --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.06);
   /* Matches infinitum-corporation.vercel.app */
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: Arial, Helvetica, sans-serif; /* same stack as infinitum-corporation.vercel.app */
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
@@ -29,6 +29,8 @@ a { color: inherit; }
 h1, h2, h3 { margin: 0; font-weight: 400; letter-spacing: -0.03em; }
 /* Trademark mark, matching the Infinitum site: small, raised, regular weight */
 sup.tm { font-size: .38em; vertical-align: super; line-height: 0; margin-left: .08em; letter-spacing: 0; font-weight: 400; }
+/* As on the site (.pillars .tm, .catalog-status .tm): a larger mark in small text so it stays legible. */
+.muted .tm, .faint .tm, .small .tm, .title .tm, .sub .tm { font-size: .65em; }
 .muted { color: var(--muted); }
 .faint { color: var(--faint); }
 .small { font-size: 13px; }
@@ -167,7 +169,7 @@ table.simple td.num, table.simple th.num { text-align: right; font-variant-numer
 .next .act { font-weight: 500; }
 .timeline .ev { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .timeline .ev .when { color: var(--faint); font-size: 12px; }
-.hash { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--faint); }
+.hash { font-family: monospace; font-size: 11px; color: var(--faint); }
 
 /* Dialog */
 dialog { border: 0; border-radius: 16px; padding: 0; width: min(520px, calc(100% - 32px)); box-shadow: 0 20px 60px rgba(0,0,0,.18); }

@@ -122,7 +122,7 @@ function renderAuth(message = "") {
   root.innerHTML = `
     <div class="auth"><div class="auth-card">
       <div class="logo">+SPCTR<sup class="tm">™</sup> <span>(Spectre)</span></div>
-      <p class="muted">Sign in with your Cumulus://ID</p>
+      <p class="muted">Sign in with your Cumulus://ID<sup class="tm">™</sup></p>
       <button class="btn primary" id="signin">Continue with passkey</button>
       <div class="social" id="social"></div>
       <div class="divider">or create a CID</div>
@@ -437,7 +437,7 @@ async function openDeal(id) {
       </div>
 
       <div class="section timeline"><h2>Audit trail</h2>
-        <p class="faint small">Recorded on Firmament Network. Each entry is signed and linked to the one before it.</p>
+        <p class="faint small">Recorded on Firmament Network<sup class="tm">™</sup>. Each entry is signed and linked to the one before it.</p>
         ${d.history.map((h) => `<div class="ev"><div class="when">${date(h.at)} · ${esc(h.actor === state.me.cid ? "you" : h.actor)}</div>${esc(describeEvent(h.payload))}<div class="hash">${esc(h.hash.slice(0, 16))}…</div></div>`).join("")}
       </div>
     </aside>`;
@@ -785,7 +785,7 @@ async function renderSettings() {
       <div class="page-head"><h1>Settings</h1></div>
       <div class="section">
         <h2>Account</h2>
-        <p class="faint small">+SPCTR™ 0.1.0 · METATRON scoring on</p>
+        <p class="faint small">+SPCTR<sup class="tm">™</sup> 0.1.0 · METATRON¹⁰⁰<sup class="tm">™</sup> scoring on</p>
         <div class="list"><div class="item"><div class="avatar">${esc(initials(state.me.username))}</div>
           <div class="main"><div class="title">${esc(state.me.username)}</div><div class="sub">${esc(state.me.mailAddress)} · ${esc(state.me.handle)}</div></div></div></div>
       </div>
@@ -801,7 +801,7 @@ async function renderSettings() {
                   : data.available.some((p) => p.id === id) ? `<a class="btn small" href="/api/auth/oauth/${esc(id)}/start?link=1">Link</a>` : ""}</div>`;
           }).join("")}
         </div>
-        <p class="faint small mt10">Linked accounts sign you in to this same Cumulus://ID. Your multifactor setting still applies.</p>
+        <p class="faint small mt10">Linked accounts sign you in to this same Cumulus://ID<sup class="tm">™</sup>. Your multifactor setting still applies.</p>
       </div>
       <div class="section">
         <h2>Data</h2>
@@ -810,11 +810,11 @@ async function renderSettings() {
       <div class="section">
         <h2>AI</h2>
         <div class="list">
-          <div class="item"><div class="main"><div class="title">METATRON scoring</div><div class="sub">Default on for win probability</div></div></div>
+          <div class="item"><div class="main"><div class="title">METATRON¹⁰⁰<sup class="tm">™</sup> scoring</div><div class="sub">Default on for win probability</div></div></div>
           <div class="item"><div class="main"><div class="title">Research</div><div class="sub">Public web search for account facts</div></div></div>
           <div class="item"><div class="main"><div class="title">Agents</div><div class="sub">Researcher, Prospector, Deal Coach, Query</div></div></div>
         </div>
-        <p class="faint small mt10">Set ANTHROPIC_API_KEY for Ask +SPCTR™. Research uses public search. Filters available on Pipeline and Accounts.</p>
+        <p class="faint small mt10">Set ANTHROPIC_API_KEY for Ask +SPCTR<sup class="tm">™</sup>. Research uses public search. Filters available on Pipeline and Accounts.</p>
       </div>
     </div>`;
   $("#export-data")?.addEventListener("click", async () => {
