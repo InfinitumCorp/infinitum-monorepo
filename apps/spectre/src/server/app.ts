@@ -665,6 +665,19 @@ export function createApp(deps: AppDeps) {
 
 
 
+
+  route("GET", "/api/research/queue/stats", (ctx) => {
+    const ws = ctx.user!.workspace;
+    const companies = crm.list("companies", ws);
+    const queued = companies.filter((c) => c.facts.some((f) => f.source === "research-queue") && !c.facts.some((f) => f.source === "research-queue-done"));
+    const done = companies.filter((c) => c.facts.some((f) => f.source === "research-queue-done"));
+    return {
+      queued: queued.length,
+      done: done.length,
+      total: companies.length,
+    };
+  });
+
   route("POST", "/api/research/queue/process", async (ctx) => {
     const { researchCompany } = await import("./research.ts") as any;
     const companies = crm.list("companies", ctx.user!.workspace);
