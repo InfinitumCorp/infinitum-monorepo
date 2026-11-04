@@ -589,7 +589,7 @@ export function createApp(deps: AppDeps) {
 
   route("POST", "/api/companies/:id/research", async (ctx) => {
     const company = crm.company(ctx.user!.workspace, ctx.params.id);
-    const { researchCompany } = await import("./research.ts");
+    const { researchCompany } = await import("./research.ts") as any;
     const result = await researchCompany(company.name) as any;
     let persisted = 0;
     if (result && Array.isArray(result.facts)) {
@@ -618,7 +618,7 @@ export function createApp(deps: AppDeps) {
 
   route("POST", "/api/research", async (ctx) => {
     need(ctx, "name");
-    const { researchCompany } = await import("./research.ts");
+    const { researchCompany } = await import("./research.ts") as any;
     let result;
     try {
       result = await researchCompany(String(ctx.body.name));
@@ -654,7 +654,7 @@ export function createApp(deps: AppDeps) {
 
   route("POST", "/api/research/contact", async (ctx) => {
     need(ctx, "name");
-    const { researchCompany } = await import("./research.ts");
+    const { researchCompany } = await import("./research.ts") as any;
     const result = await researchCompany(`${ctx.body.name} ${ctx.body.company || ""}`.trim()) as any;
     return result;
   });
@@ -693,7 +693,7 @@ export function createApp(deps: AppDeps) {
   });
 
   route("POST", "/api/research/all", async (ctx) => {
-    const { researchCompany } = await import("./research.ts");
+    const { researchCompany } = await import("./research.ts") as any;
     const companies = crm.list("companies", ctx.user!.workspace);
     const results = [];
     for (const c of companies.slice(0, 10)) { // limit to avoid long runs
