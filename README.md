@@ -42,7 +42,9 @@ Coming next: AI account research the Spectre agent team, then `$FIRM` and produc
 - `POST /api/research/contact` — research a person
 - `POST /api/companies/:id/research` — research shortcut for an account
 - `GET /api/deals?stage=&minAmount=` — filtered deals
-- `GET /api/companies?industry=` — filtered accounts
+- `GET /api/companies?industry=&sort=` — filtered/sorted accounts
+- `POST /api/rehearse` — deal coach rehearsal
+- `GET /api/activities?kind=` — filtered activities
 
 ## Requirements
 
