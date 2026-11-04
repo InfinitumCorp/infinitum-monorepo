@@ -634,6 +634,7 @@ async function renderHealth() {
   main().innerHTML = `
     <div class="page narrow">
       <div class="page-head"><h1>Data health</h1></div>
+      <div class="section"><div class="muted small">AI research coverage</div><div class="v">${coverage}%</div></div>
       <div class="section"><h2>Possible duplicates</h2>${dups.length ? `<div class="list">${dups.join("")}</div>` : `<div class="empty">No duplicates found.</div>`}</div>
       <div class="section"><h2>Needs attention</h2>${h.issues.length ? `<div class="list">${h.issues.map((i) => `<div class="item"><span class="pill">${i.kind === "stale_contact" ? "stale" : "missing"}</span><div class="main">${esc(i.message)}</div></div>`).join("")}</div>` : `<div class="empty">Everything looks complete.</div>`}</div>
     </div>`;
