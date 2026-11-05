@@ -220,10 +220,17 @@ export class PostOffice {
     const bounced: string[] = [];
     const external: string[] = [];
     const seen = new Set<string>();
+    const isSelf = (address: string) => address === sender.owner.email.toLowerCase();
     for (const person of [...to, ...cc]) {
       const address = person.email.toLowerCase();
       if (seen.has(address)) continue;
       seen.add(address);
+      if (isSelf(address)) {
+        // Mailbox.send already put the sender's own copy in their inbox.
+        this.quota?.charge(cid, "mail", size);
+        delivered++;
+        continue;
+      }
       if (!isCumulus(address)) {
         external.push(address);
         continue;
@@ -237,7 +244,7 @@ export class PostOffice {
         bounced.push(address);
         continue;
       }
-      this.deliver(rcpt, { ...sent, id: `m-${randomUUID()}`, folder: "inbox", unread: rcpt !== cid, starred: false, payment, delivery: "delivered" });
+      this.deliver(rcpt, { ...sent, id: `m-${randomUUID()}`, folder: "inbox", unread: rcpt !== cid, starred: false, payment });
       this.quota?.charge(rcpt, "mail", size);
       delivered++;
     }
@@ -245,8 +252,14 @@ export class PostOffice {
     if (external.length) {
       const job: OutboundMail = { id: `out-${randomUUID()}`, fromCid: cid, from: sender.owner.email, to: external, subject: sent.subject, queuedAt: at, status: "queued" };
       this.store.outbound.set(job.id, job);
-      sent.delivery = "queued";
     }
+    if (bounced.length) {
+      sent.delivery = (sent.delivery ?? []).map((hop) => bounced.includes(hop.email)
+        ? { ...hop, status: "bounced", detail: "Not delivered. No such Cumulus address, or the mailbox is full." }
+        : hop);
+    }
+    const selfCopy = sender.messages.find((m) => m.id === `${id}-in`);
+    if (selfCopy) Object.assign(selfCopy, { delivery: sent.delivery, payment: sent.payment, labels: sent.labels });
     for (const address of bounced) {
       this.notify(cid, "postmaster", {
         subject: `Not delivered: ${sent.subject}`,
@@ -286,7 +299,6 @@ export class PostOffice {
       labels: [from.label],
       system: sender,
       payment: input.payment,
-      delivery: "delivered",
     };
     this.deliver(cid, message);
     return message;

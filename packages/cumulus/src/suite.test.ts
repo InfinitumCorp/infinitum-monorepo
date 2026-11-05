@@ -116,6 +116,24 @@ describe("mail between Cumulus addresses", () => {
     assert.ok(inbox(suite, a.cid).some((m) => m.system === "postmaster"));
   });
 
+  it("marks each recipient's delivery and keeps one copy when you mail yourself", async () => {
+    const { suite } = setup();
+    const a = (await signUp(suite, "alex")).account;
+    await signUp(suite, "leah");
+    const r = await suite.mail.send(a.cid, {
+      to: "leah@cumulusmail.cloud, nobody-here@cumulusmail.cloud, priya@vyral.london", subject: "Hops", body: "Hi",
+      attachments: [{ name: "plan.pdf", size: 2048 }],
+    });
+    const sent = suite.mail.message(a.cid, r.id)!;
+    const status = Object.fromEntries((sent.delivery ?? []).map((h) => [h.email, h.status]));
+    assert.deepEqual(status, { "leah@cumulusmail.cloud": "inside", "nobody-here@cumulusmail.cloud": "bounced", "priya@vyral.london": "outbound" });
+    assert.equal(sent.attachments?.[0]?.name, "plan.pdf");
+
+    const self = await suite.mail.send(a.cid, { to: "alex@cumulusmail.cloud", subject: "Note to self", body: "Hi" });
+    assert.equal(self.delivered, 1);
+    assert.equal(inbox(suite, a.cid).filter((m) => m.subject === "Note to self").length, 1);
+  });
+
   it("one person can't read or change another person's mailbox", async () => {
     const { suite } = setup();
     const a = (await signUp(suite, "alex")).account;

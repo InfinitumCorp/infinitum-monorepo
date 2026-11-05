@@ -94,6 +94,10 @@ async function readBody(req: IncomingMessage): Promise<Record<string, any>> {
 }
 
 const str = (v: unknown, max = 100_000) => String(v ?? "").slice(0, max);
+/** Drive file references on a message: names and sizes only, at most 10, each under 25 MB. */
+const files = (v: unknown) => (Array.isArray(v) ? v : []).slice(0, 10)
+  .map((f) => ({ name: str(f?.name, 200).trim(), size: Math.floor(Number(f?.size)) }))
+  .filter((f) => f.name && Number.isFinite(f.size) && f.size >= 0 && f.size <= 25 * 1024 * 1024);
 
 async function xaiScalvs(mode: "summary" | "draft", owner: string, subject: string, text: string) {
   const apiKey = process.env.XAI_API_KEY;
@@ -237,13 +241,14 @@ export function createMailApp(deps: MailAppDeps) {
     const result = await mail.send(me(ctx), {
       to: str(b.to, 4000), cc: str(b.cc ?? "", 4000), subject: str(b.subject, 300), body: str(b.body),
       threadId: b.threadId ? str(b.threadId, 80) : undefined, draftId: b.draftId ? str(b.draftId, 80) : undefined, payment,
+      attachments: files(b.attachments),
     });
     return { ...result, ok: true, state: state(me(ctx)) };
   });
 
   route("POST", "/api/draft", (ctx) => {
     const b = ctx.body;
-    const saved = mail.saveDraft(me(ctx), { to: str(b.to, 4000), cc: str(b.cc ?? "", 4000), subject: str(b.subject, 300), body: str(b.body), threadId: b.threadId ? str(b.threadId, 80) : undefined, draftId: b.draftId ? str(b.draftId, 80) : undefined });
+    const saved = mail.saveDraft(me(ctx), { to: str(b.to, 4000), cc: str(b.cc ?? "", 4000), subject: str(b.subject, 300), body: str(b.body), threadId: b.threadId ? str(b.threadId, 80) : undefined, draftId: b.draftId ? str(b.draftId, 80) : undefined, attachments: files(b.attachments) });
     return { ...saved, state: state(me(ctx)) };
   });
 

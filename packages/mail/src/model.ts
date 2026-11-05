@@ -12,6 +12,14 @@ export type FolderId = "inbox" | "sent" | "drafts" | "archive" | "trash";
 
 export type BoxId = FolderId | "starred";
 
+export type Attachment = { name: string; size: number };
+
+export type DeliveryHop = {
+  email: string;
+  status: "inside" | "outbound" | "bounced";
+  detail: string;
+};
+
 export type MailMessage = {
   id: string;
   threadId: string;
@@ -25,12 +33,13 @@ export type MailMessage = {
   unread: boolean;
   starred: boolean;
   labels: string[];
+  attachments?: Attachment[];
+  /** Where each recipient's copy went: inside Cumulus, out to the relay, or bounced. */
+  delivery?: DeliveryHop[];
   /** FIRM Wallet payment sent with this message (pay by mail). */
   payment?: MailPayment;
   /** Sent by a Cumulus product (security notice, Cloud share, wallet receipt). */
   system?: string;
-  /** Delivery state for mail leaving Cumulus. */
-  delivery?: "delivered" | "queued" | "bounced";
 };
 
 export type MailPayment = {
