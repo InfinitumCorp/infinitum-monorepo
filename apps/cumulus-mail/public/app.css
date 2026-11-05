@@ -201,3 +201,10 @@ kbd { min-width: 28px; padding: 2px 8px; border: 1px solid var(--line); border-r
   .list-head { overflow-x: auto; scrollbar-width: none; }
   .list-head > * { flex-shrink: 0; }
 }
+
+/* Search refinements */
+.chips { display: flex; align-items: center; gap: 8px; padding: 6px 16px 10px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); }
+.chips > * { flex-shrink: 0; }
+.chip { height: 30px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--text); font-size: 13px; }
+.chip:hover { background: var(--hover); }
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
