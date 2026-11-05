@@ -7,6 +7,8 @@
  * People reach it from inside other Infinitum products (account menu, notices), not from the site.
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { scalvsCleanAgent, type CleanAgent, type CleanSuggestion } from "./clean-agent.ts";
+import { bulkSenders, classify, inboxMix } from "@infinitum/mail";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize, sep } from "node:path";
 import { CidError, type Account } from "@infinitum/cid";
@@ -28,6 +30,8 @@ export interface MailAppDeps {
   secureCookies: boolean;
   onChange?: () => void;
   /** SCALVS briefs; defaults to xAI when XAI_API_KEY is set. */
+  /** SCALVS Clean suggestions; defaults to the SCALVS agent on Claude when ANTHROPIC_API_KEY is set, else the rules. */
+  cleanAgent?: CleanAgent;
   scalvs?: (mode: "summary" | "draft", owner: string, subject: string, text: string) => Promise<{ ok: true; text: string } | { ok: false; error: string }>;
 }
 
@@ -94,6 +98,8 @@ async function readBody(req: IncomingMessage): Promise<Record<string, any>> {
 }
 
 const str = (v: unknown, max = 100_000) => String(v ?? "").slice(0, max);
+/** Your Cumulus://ID is your mail address: "alex@cumulusmail.cloud" and "alex" name the same account. */
+const idName = (v: unknown) => str(v, 80).trim().toLowerCase().replace(/@cumulusmail\.cloud$/, "").slice(0, 40);
 /** Drive file references on a message: names and sizes only, at most 10, each under 25 MB. */
 const files = (v: unknown) => (Array.isArray(v) ? v : []).slice(0, 10)
   .map((f) => ({ name: str(f?.name, 200).trim(), size: Math.floor(Number(f?.size)) }))
@@ -130,6 +136,8 @@ export function createMailApp(deps: MailAppDeps) {
   const { suite } = deps;
   const { cid, mail } = suite;
   const scalvs = deps.scalvs ?? xaiScalvs;
+  const cleanAgent = deps.cleanAgent ?? scalvsCleanAgent({ apiKey: process.env.ANTHROPIC_API_KEY, model: process.env.SCALVS_MODEL || "claude-opus-5-5" });
+  const suggestions = new Map<string, { list: CleanSuggestion[]; note: string }>(); // per CID, in memory until approved
   const routes: { method: string; pattern: RegExp; keys: string[]; auth: boolean; optionalAuth: boolean; csrf: boolean; handler: Handler }[] = [];
   const route = (method: string, path: string, handler: Handler, auth = true, opts: { csrf?: boolean; optionalAuth?: boolean } = {}) => {
     const keys: string[] = [];
@@ -152,17 +160,18 @@ export function createMailApp(deps: MailAppDeps) {
   const me = (ctx: Ctx) => ctx.user!.account.cid;
 
   const state = (cidValue: string) => {
+    mail.autoClean(cidValue); // the Clean rules run on their own, at most once an hour
     const view = mail.view(cidValue);
     const prefix = `${cidValue}|`;
     const own = Object.fromEntries([...briefs].filter(([k]) => k.startsWith(prefix)).map(([k, v]) => [k.slice(prefix.length), v]));
-    return { ...view, briefs: own, account: suite.summary(cidValue) };
+    return { ...view, messages: view.messages.map((m) => ({ ...m, kind: classify(m) })), briefs: own, account: suite.summary(cidValue) };
   };
 
   /* ---------------- Cumulus://ID sign-in ---------------- */
 
   route("POST", "/api/auth/signup", async (ctx) => {
     need(ctx, "username");
-    const account = await cid.createAccount({ username: str(ctx.body.username, 40) });
+    const account = await cid.createAccount({ username: idName(ctx.body.username) });
     return { cid: account.cid, options: cid.startAuthenticatorRegistration(account.cid, "passkey") };
   }, false);
 
@@ -173,7 +182,7 @@ export function createMailApp(deps: MailAppDeps) {
     return { signedUp: true, options: cid.startSignIn(account.username) };
   }, false);
 
-  route("POST", "/api/auth/signin", (ctx) => ({ options: cid.startSignIn(ctx.body.username ? str(ctx.body.username, 40) : undefined) }), false);
+  route("POST", "/api/auth/signin", (ctx) => ({ options: cid.startSignIn(ctx.body.username ? idName(ctx.body.username) : undefined) }), false);
 
   route("POST", "/api/auth/signin/finish", async (ctx) => {
     need(ctx, "response");
@@ -280,6 +289,81 @@ export function createMailApp(deps: MailAppDeps) {
     if (!result.ok) throw new HttpError(400, result.error);
     if (mode === "summary") briefs.set(`${me(ctx)}|${thread.map((m) => m.id).join(":")}`, result.text);
     return result;
+  });
+
+  /* ---------------- SCALVS Clean ---------------- */
+
+  const cleanView = (cidValue: string) => {
+    const c = mail.cleanState(cidValue);
+    const messages = mail.view(cidValue).messages;
+    const s = suggestions.get(cidValue);
+    return {
+      rules: c.rules,
+      lastRun: c.lastRun ?? null,
+      log: c.log.slice(0, 20).map(({ ids, ...e }) => ({ ...e, count: ids.length })),
+      preview: mail.previewClean(cidValue).map((a) => ({ kind: a.kind, count: a.ids.length, reason: a.reason })),
+      mix: inboxMix(messages),
+      senders: bulkSenders(messages, c.rules),
+      suggestions: (s?.list ?? []).map(({ ids, ...x }) => ({ ...x, count: ids.length })),
+      note: s?.note ?? "",
+    };
+  };
+  const withState = (cidValue: string, extra: object = {}) => {
+    const st = state(cidValue);
+    return { ...extra, state: st, clean: cleanView(cidValue) };
+  };
+
+  route("GET", "/api/clean", (ctx) => cleanView(me(ctx)));
+  route("POST", "/api/clean/rules", (ctx) => {
+    const b = ctx.body as Record<string, unknown>;
+    const patch: Record<string, unknown> = {};
+    for (const k of ["auto", "newslettersAfterDays", "notificationsAfterDays", "bouncesAfterDays", "emptyTrashAfterDays"]) if (k in b) patch[k] = b[k];
+    mail.setCleanRules(me(ctx), patch);
+    return withState(me(ctx));
+  });
+  route("POST", "/api/clean/run", (ctx) => {
+    const done = mail.runClean(me(ctx), "you");
+    return withState(me(ctx), { moved: done.reduce((n, e) => n + e.ids.length, 0) });
+  });
+  route("POST", "/api/clean/scalvs", async (ctx) => {
+    const cidValue = me(ctx);
+    const c = mail.cleanState(cidValue);
+    try {
+      const result = await cleanAgent({ messages: mail.view(cidValue).messages, rules: c.rules, preview: mail.previewClean(cidValue), now: new Date() });
+      suggestions.set(cidValue, { list: result.suggestions.slice(0, 12), note: result.note });
+    } catch (err) {
+      throw new HttpError(502, `SCALVS couldn't review your inbox right now (${(err as Error).message.slice(0, 80)}).`);
+    }
+    return withState(cidValue);
+  });
+  route("POST", "/api/clean/approve", (ctx) => {
+    const cidValue = me(ctx);
+    const s = suggestions.get(cidValue);
+    const pick = s?.list.find((x) => x.id === str(ctx.body.id, 80));
+    if (!s || !pick) throw new HttpError(404, "That suggestion is gone. Ask SCALVS again.");
+    if (pick.kind === "mute" && pick.email) mail.muteSender(cidValue, pick.email);
+    else if (pick.kind !== "mute") mail.applyClean(cidValue, [{ kind: pick.kind, ids: pick.ids, reason: pick.reason }], pick.source === "scalvs" ? "scalvs" : "you");
+    s.list = s.list.filter((x) => x.id !== pick.id);
+    return withState(cidValue);
+  });
+  route("POST", "/api/clean/dismiss", (ctx) => {
+    const s = suggestions.get(me(ctx));
+    if (s) s.list = s.list.filter((x) => x.id !== str(ctx.body.id, 80));
+    return withState(me(ctx));
+  });
+  route("POST", "/api/clean/undo", (ctx) => {
+    const restored = mail.undoClean(me(ctx), str(ctx.body.id, 80));
+    return withState(me(ctx), { restored });
+  });
+  route("POST", "/api/clean/mute", (ctx) => {
+    need(ctx, "email");
+    mail.muteSender(me(ctx), str(ctx.body.email, 200));
+    return withState(me(ctx));
+  });
+  route("POST", "/api/clean/unmute", (ctx) => {
+    need(ctx, "email");
+    mail.unmuteSender(me(ctx), str(ctx.body.email, 200));
+    return withState(me(ctx));
   });
 
   /* ---------------- FIRM Wallet, inside Mail ---------------- */

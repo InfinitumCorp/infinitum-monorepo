@@ -21,6 +21,8 @@ Open http://localhost:3010 and sign in with a passkey.
 | `MAIL_ORIGIN` | Public origin; passkeys are bound to it |
 | `MAIL_DATA_DIR` | Where stores and the Firmament ledger live, default `./data` |
 | `XAI_API_KEY` | Turns on SCALVS briefs |
+| `ANTHROPIC_API_KEY` | Turns on SCALVS Clean suggestions (without it, Clean suggests from its rules) |
+| `SCALVS_MODEL` | Model for SCALVS Clean, default `claude-opus-5-5` |
 | Social sign-in | Same variables as +SPCTR; callback `{MAIL_ORIGIN}/api/auth/oauth/{provider}/callback` |
 
 ## What's in it
@@ -39,6 +41,17 @@ Open http://localhost:3010 and sign in with a passkey.
   payment to a message (one Cumulus recipient). The money moves first and all at once, so a message
   never shows a payment that failed. Each payment is a Firmament `payment` entry (amounts and wallet
   IDs only, no mail content). The server never holds wallet private keys.
+
+- **Your address is your Cumulus://ID.** `name@cumulusmail.cloud` and `name` sign in to the same account,
+  in Mail and in every other Infinitum product.
+- **SCALVS Clean.** Sorts mail into people, newsletters, notices, receipts and bounces. Rules archive
+  read newsletters and old notices and trash old bounces, on their own at most once an hour. "Ask SCALVS" runs
+  a SCALVS.ai agent (`@infinitum/scalus`) that proposes clean-ups; nothing moves until you approve.
+  Mute a sender and their future mail skips the inbox. Every clean-up can be undone. Starred mail,
+  unread mail from people, payments and security notices are never moved automatically, and deleting
+  forever is off unless you turn on "Empty Trash".
+- **Layout.** Gmail's pattern (Compose, folders, Primary and Updates tabs, one-line rows, the thread
+  opening in place of the list, a compose window) in the Infinitum look shared with +SPCTR.
 
 ## Local test data
 

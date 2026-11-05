@@ -41,6 +41,9 @@ importers:
       '@infinitum/mail':
         specifier: workspace:*
         version: link:../../packages/mail
+      '@infinitum/scalus':
+        specifier: workspace:*
+        version: link:../../packages/scalus
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
