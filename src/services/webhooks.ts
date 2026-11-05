@@ -1,11 +1,11 @@
 /** Single entry point for payment-provider events. Every event is processed at most once. */
 import type { Ctx } from "../context.js";
-import { audit } from "../context.js";
 import type { PaymentEvent } from "../payments.js";
 import { applyCreditTopup, upsertSubscription } from "./billing.js";
 import { markOrderBalancePaid, markOrderCheckoutPaid } from "./commerce.js";
 import { activateLicence, fundMission } from "./marketplace.js";
 import { applyReferralCommission, markMilestonePaid } from "./contracts.js";
+import { applyRefund, recordPayment } from "./refunds.js";
 
 export async function handlePaymentEvent(ctx: Ctx, e: PaymentEvent) {
   return ctx.db.tx(async (db) => {
@@ -17,6 +17,7 @@ export async function handlePaymentEvent(ctx: Ctx, e: PaymentEvent) {
         await upsertSubscription(db, e);
         break;
       case "checkout.completed":
+        await recordPayment(db, e);
         if (e.purpose === "credits") await applyCreditTopup(db, e.orgId, e.ref, e.sessionId);
         else if (e.purpose === "order") await markOrderCheckoutPaid(db, e.ref);
         else if (e.purpose === "licence") await activateLicence(db, e.ref);
@@ -34,9 +35,12 @@ export async function handlePaymentEvent(ctx: Ctx, e: PaymentEvent) {
           await db.query("update subscriptions set status='past_due', updated_at=now() where provider_subscription_id=$1", [e.providerSubscriptionId]);
         break;
       case "charge.refunded":
-        // Refund reversals for licences / earnings need a human decision (partial refunds, disputes).
-        await audit(db, null, "payments", "refund.needs_review", e);
-        break;
+        return { duplicate: false, refund: await applyRefund(db, { paymentIntentId: e.paymentIntentId, cumulativeCents: e.amountCents, eventId: e.eventId }) };
+      case "dispute.lost": {
+        const [p] = await db.query("select refunded_cents from payments where payment_intent_id=$1", [e.paymentIntentId]);
+        const cumulative = Number(p?.refunded_cents ?? 0) + e.amountCents;
+        return { duplicate: false, refund: await applyRefund(db, { paymentIntentId: e.paymentIntentId, cumulativeCents: cumulative, eventId: e.eventId }) };
+      }
     }
     return { duplicate: false };
   });

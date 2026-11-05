@@ -222,6 +222,17 @@ create table if not exists referral_attributions (
   created_at timestamptz not null default now()
 );
 
+-- One row per completed one-off payment, so refunds can be matched back to what was bought.
+create table if not exists payments (
+  payment_intent_id text primary key,
+  org_id text not null references orgs(id),
+  purpose text not null,                 -- credits | order | licence | mission
+  ref text not null,
+  amount_cents bigint not null,
+  refunded_cents bigint not null default 0,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists webhook_events (
   id text primary key,
   type text not null,

@@ -10,10 +10,13 @@ export interface LineItem { name: string; amountCents: number; quantity: number 
 export type PaymentEvent =
   | { kind: "subscription.updated"; eventId: string; providerSubscriptionId: string; orgId: string; planId: string;
       status: string; quantity: number; periodStart: Date | null; periodEnd: Date | null; cancelAtPeriodEnd: boolean }
-  | { kind: "checkout.completed"; eventId: string; sessionId: string; purpose: string; ref: string; orgId: string; amountCents: number }
+  | { kind: "checkout.completed"; eventId: string; sessionId: string; paymentIntentId?: string; purpose: string; ref: string; orgId: string; amountCents: number }
   | { kind: "invoice.paid"; eventId: string; invoiceId: string; customerId: string; amountCents: number; metadata: Record<string, string> }
   | { kind: "invoice.failed"; eventId: string; invoiceId: string; customerId: string; providerSubscriptionId?: string }
-  | { kind: "charge.refunded"; eventId: string; sessionId?: string; paymentIntentId: string; amountCents: number }
+  /** amountCents is the CUMULATIVE amount refunded on the payment so far. */
+  | { kind: "charge.refunded"; eventId: string; paymentIntentId: string; amountCents: number }
+  /** A chargeback the merchant lost; amountCents is the disputed amount. Treated like a refund. */
+  | { kind: "dispute.lost"; eventId: string; paymentIntentId: string; amountCents: number }
   | { kind: "ignored"; eventId: string; type: string };
 
 export interface PaymentProvider {
@@ -28,6 +31,7 @@ export interface PaymentProvider {
   billingPortal(customerId: string, returnUrl: string): Promise<string>;
   connectOnboarding(a: { existingAccountId?: string | null; email?: string | null; returnUrl: string }): Promise<{ accountId: string; url: string }>;
   transfer(a: { destination: string; amountCents: number; idempotencyKey: string }): Promise<{ id: string }>;
+  refund(a: { paymentIntentId: string; amountCents: number; idempotencyKey: string }): Promise<{ id: string }>;
   parseWebhook(rawBody: string, signature: string | undefined): Promise<PaymentEvent>;
 }
 
@@ -153,6 +157,13 @@ export class StripePayments implements PaymentProvider {
     return { id: t.id };
   }
 
+  async refund(a: Parameters<PaymentProvider["refund"]>[0]) {
+    const r = await this.stripe.refunds.create(
+      { payment_intent: a.paymentIntentId, amount: a.amountCents },
+      { idempotencyKey: a.idempotencyKey });
+    return { id: r.id };
+  }
+
   async parseWebhook(rawBody: string, signature: string | undefined): Promise<PaymentEvent> {
     if (!signature) throw new Error("missing stripe-signature");
     const e = await this.stripe.webhooks.constructEventAsync(rawBody, signature, this.webhookSecret);
@@ -175,7 +186,7 @@ export class StripePayments implements PaymentProvider {
       }
       case "checkout.session.completed":
         if (o.mode !== "payment" || o.payment_status !== "paid") return { kind: "ignored", eventId: e.id, type: e.type };
-        return { kind: "checkout.completed", eventId: e.id, sessionId: o.id, purpose: o.metadata?.purpose,
+        return { kind: "checkout.completed", eventId: e.id, sessionId: o.id, paymentIntentId: o.payment_intent ?? undefined, purpose: o.metadata?.purpose,
           ref: o.metadata?.ref, orgId: o.metadata?.org_id, amountCents: o.amount_total ?? 0 };
       case "invoice.paid":
         return { kind: "invoice.paid", eventId: e.id, invoiceId: o.id, customerId: o.customer,
@@ -185,6 +196,9 @@ export class StripePayments implements PaymentProvider {
           providerSubscriptionId: o.parent?.subscription_details?.subscription ?? o.subscription };
       case "charge.refunded":
         return { kind: "charge.refunded", eventId: e.id, paymentIntentId: o.payment_intent, amountCents: o.amount_refunded };
+      case "charge.dispute.closed":
+        if (o.status !== "lost") return { kind: "ignored", eventId: e.id, type: e.type };
+        return { kind: "dispute.lost", eventId: e.id, paymentIntentId: o.payment_intent, amountCents: o.amount };
       default:
         return { kind: "ignored", eventId: e.id, type: e.type };
     }
@@ -246,6 +260,7 @@ export class FakePayments implements PaymentProvider {
   async billingPortal(c: string) { return this.rec("billingPortal", c, `https://pay.test/portal/${c}`); }
   async connectOnboarding(a: any) { const accountId = a.existingAccountId ?? this.id("acct"); return this.rec("connectOnboarding", a, { accountId, url: `https://pay.test/connect/${accountId}` }); }
   async transfer(a: any) { return this.rec("transfer", a, { id: this.id("tr") }); }
+  async refund(a: any) { return this.rec("refund", a, { id: this.id("re") }); }
   /** Test webhooks are plain JSON PaymentEvents; the signature must equal "test". */
   async parseWebhook(raw: string, sig: string | undefined) {
     if (sig !== "test") throw new Error("bad signature");

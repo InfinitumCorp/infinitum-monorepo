@@ -179,7 +179,7 @@ export function createApp(ctx: Ctx) {
     const b = await body(c, z.object({ accept: z.boolean() }));
     return c.json(await market.reviewSubmission(db, c.get("org"), c.req.param("id"), b.accept));
   });
-  v1.post("/missions/:id/cancel", async (c) => c.json(await market.cancelMission(db, c.get("org"), c.req.param("id"))));
+  v1.post("/missions/:id/cancel", async (c) => c.json(await market.cancelMission(ctx, c.get("org"), c.req.param("id"))));
 
   v1.get("/earnings", async (c) => c.json(await market.earningsBalance(db, c.get("org").id)));
   v1.post("/payout-account", async (c) => {

@@ -12,7 +12,7 @@ See [MONETIZATION.md](MONETIZATION.md) for the strategy behind it.
 
 ```bash
 npm install
-npm test          # 10 end-to-end API tests on embedded Postgres + fake payments
+npm test          # 13 end-to-end API tests on embedded Postgres + fake payments
 npm run dev       # http://localhost:8787, data in ./.data, fake payments
 ```
 
@@ -32,7 +32,7 @@ npm run dev       # http://localhost:8787, data in ./.data, fake payments
 ## Go live
 
 1. `STRIPE_SECRET_KEY=sk_test_... npm run stripe:sync` creates products, prices (lookup keys `inf_<plan>`) and billing meters. Run it again whenever you change `src/catalog.ts`.
-2. In Stripe, add a webhook to `https://<api>/v1/webhooks/payments` for `checkout.session.completed`, `customer.subscription.*`, `invoice.paid`, `invoice.payment_failed` and `charge.refunded`. Enable Connect (Express) for contributor payouts.
+2. In Stripe, add a webhook to `https://<api>/v1/webhooks/payments` for `checkout.session.completed`, `customer.subscription.*`, `invoice.paid`, `invoice.payment_failed`, `charge.refunded` and `charge.dispute.closed`. Enable Connect (Express) for contributor payouts.
 3. Deploy: `vercel deploy` with the env vars above.
 
 ## API
@@ -67,8 +67,8 @@ features with `GET /v1/me/entitlements` (or a 402 from `/usage`).
 
 ## Known gaps
 
-- Refunds and disputes are logged for review (`audit_log`, `refund.needs_review`), not reversed automatically.
-- Mission cancellation reports `refundDueCents`; the refund itself is issued manually in Stripe.
+- Refunds and lost disputes are reversed automatically (credits clawed back, contributor share reversed, licence/order/mission closed on a full refund). Money already paid out to a contributor is not pulled back from their bank; it becomes a negative balance recovered from future earnings.
+- Cancelling a mission refunds the unspent budget automatically; if the original payment can't be matched, the response says `refundIssued: false` and the refund must be issued manually.
 - Token settlement (on-chain payouts via FIRM Wallet) is not implemented; token payouts stay `pending`.
 - No end-user UI; this is the API the site and products call.
 - Not yet run against live Stripe; the Stripe adapter is typechecked, but only the fake provider is exercised by tests.

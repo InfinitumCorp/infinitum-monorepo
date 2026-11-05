@@ -145,7 +145,7 @@ describe("data marketplace", () => {
     const m = await call("POST", "/v1/missions", buyer.apiKey, { product: "hrvst", title: "Accessible entrances", brief: "Photograph ramps on Main St",
       permittedUse: "accessibility_mapping", rewardCents: 1500, slots: 2 });
     expect(m.body).toMatchObject({ budgetCents: 3000, feeCents: 600 });
-    await webhook({ kind: "checkout.completed", sessionId: "cs", purpose: "mission", ref: m.body.missionId, orgId: buyer.orgId, amountCents: 3600 } as any);
+    await webhook({ kind: "checkout.completed", sessionId: "cs", paymentIntentId: "pi_mission", purpose: "mission", ref: m.body.missionId, orgId: buyer.orgId, amountCents: 3600 } as any);
 
     await call("POST", "/v1/consents", seller.apiKey, { product: "hrvst" });
     const a = await call("POST", "/v1/marketplace/assets", seller.apiKey, { product: "hrvst", title: "Ramp at 12 Main", permittedUses: ["accessibility_mapping"], priceCents: 500, contentHash: "sha256:" + "a".repeat(64) });
@@ -162,6 +162,8 @@ describe("data marketplace", () => {
 
     const c = await call("POST", `/v1/missions/${m.body.missionId}/cancel`, buyer.apiKey);
     expect(c.body.refundDueCents).toBe(1500 + 300);
+    expect(c.body.refundIssued).toBe(true);
+    expect(pay.calls.find((x) => x.op === "refund")!.args).toMatchObject({ paymentIntentId: "pi_mission", amountCents: 1800 });
   });
 });
 
@@ -200,5 +202,44 @@ describe("contracts, licences, referrals", () => {
     await call("POST", "/v1/billing/portal", referred.apiKey); // creates the customer
     await webhook({ kind: "invoice.paid", invoiceId: "in_r", customerId: `cus_${referred.orgId}`, amountCents: 9900, metadata: {} } as any);
     expect((await call("GET", "/v1/earnings", partner.apiKey)).body.pendingCents).toBe(1980);
+  });
+});
+
+describe("refunds and disputes", () => {
+  it("reverses the contributor share and ends the licence on a full refund, exactly once", async () => {
+    const seller = await signup("S", "individual");
+    const buyer = await signup("B");
+    await call("POST", "/v1/consents", seller.apiKey, { product: "hrvst" });
+    const a = await call("POST", "/v1/marketplace/assets", seller.apiKey, { product: "hrvst", title: "t", permittedUses: ["research"], priceCents: 10000, contentHash: "sha256:" + "b".repeat(64) });
+    const lic = await call("POST", `/v1/marketplace/assets/${a.body.id}/licence`, buyer.apiKey, { use: "research" });
+    await webhook({ kind: "checkout.completed", sessionId: "cs", paymentIntentId: "pi_l", purpose: "licence", ref: lic.body.licenceId, orgId: buyer.orgId, amountCents: 10000 } as any);
+
+    const r = await webhook({ kind: "charge.refunded", eventId: "evt_ref1", paymentIntentId: "pi_l", amountCents: 10000 } as any);
+    expect(r.refund).toMatchObject({ applied: true, contributorReversedCents: 7000, full: true });
+    expect((await webhook({ kind: "charge.refunded", eventId: "evt_ref1", paymentIntentId: "pi_l", amountCents: 10000 } as any)).duplicate).toBe(true);
+    expect((await webhook({ kind: "charge.refunded", paymentIntentId: "pi_l", amountCents: 10000 } as any)).refund.applied).toBe(false);
+
+    const e = (await call("GET", "/v1/earnings", seller.apiKey)).body;
+    expect(e.availableCents + e.pendingCents).toBe(0); // the held 7,000 is cancelled out by the reversal
+    const report = await call("GET", "/v1/admin/reports/revenue", ADMIN);
+    expect(report.body.marketplace.gmv).toBe(0);
+  });
+
+  it("claws back credits pro rata on a partial refund, blocking paid usage when negative", async () => {
+    const { apiKey, orgId } = await signup("C", "individual");
+    await webhook({ kind: "checkout.completed", sessionId: "cs_c", paymentIntentId: "pi_c", purpose: "credits", ref: "credits_100", orgId, amountCents: 10000 } as any);
+    expect((await call("GET", "/v1/me/entitlements", apiKey)).body.credits_cents).toBe(10500);
+    await webhook({ kind: "charge.refunded", paymentIntentId: "pi_c", amountCents: 5000 } as any);
+    expect((await call("GET", "/v1/me/entitlements", apiKey)).body.credits_cents).toBe(5250);
+    await webhook({ kind: "charge.refunded", paymentIntentId: "pi_c", amountCents: 10000 } as any);
+    expect((await call("GET", "/v1/me/entitlements", apiKey)).body.credits_cents).toBe(0);
+  });
+
+  it("marks an order refunded when a chargeback is lost", async () => {
+    const { apiKey, orgId } = await signup("D");
+    const o = await call("POST", "/v1/orders", apiKey, { items: [{ sku: "eon_wearable", quantity: 1 }] });
+    await webhook({ kind: "checkout.completed", sessionId: "cs", paymentIntentId: "pi_o", purpose: "order", ref: o.body.orderId, orgId, amountCents: o.body.dueNowCents } as any);
+    await webhook({ kind: "dispute.lost", paymentIntentId: "pi_o", amountCents: o.body.dueNowCents } as any);
+    expect((await call("GET", "/v1/orders", apiKey)).body[0].status).toBe("refunded");
   });
 });

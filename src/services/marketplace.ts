@@ -12,6 +12,7 @@ import { newId, type Db } from "../db.js";
 import { type Ctx, fail, audit } from "../context.js";
 import { getMarketplace, PAYOUT_MINIMUM_CENTS } from "../catalog.js";
 import { ensureCustomerId, type Org } from "./billing.js";
+import { paymentFor } from "./refunds.js";
 
 const PURPOSE = "data_licensing";
 
@@ -165,17 +166,28 @@ export async function reviewSubmission(db: Db, buyer: Org, submissionId: string,
   });
 }
 
-/** Cancels a mission; unspent budget (unfilled slots) is reported for refund to the buyer. Fees are refunded pro rata. */
-export async function cancelMission(db: Db, buyer: Org, missionId: string) {
-  const [m] = await db.query(`update missions n set status='cancelled' from missions o
+/**
+ * Cancels a mission and refunds the unspent budget (unfilled slots) plus the matching share of the fee
+ * to the buyer's original payment. Rewards already earned for accepted submissions are not refunded.
+ */
+export async function cancelMission(ctx: Ctx, buyer: Org, missionId: string) {
+  const [m] = await ctx.db.query(`update missions n set status='cancelled' from missions o
     where n.id=o.id and n.id=$1 and n.buyer_org_id=$2 and o.status in ('open','pending_funding')
     returning n.*, o.status as previous_status`, [missionId, buyer.id]);
   if (!m) fail(404, "mission_not_found", "Mission not found or not cancellable");
   const unfilled = m.slots - m.slots_filled;
   // Only funded missions collected money.
   const refundDue = m.previous_status === "open" ? unfilled * Number(m.reward_cents) + Math.floor(Number(m.fee_cents) * unfilled / m.slots) : 0;
-  await audit(db, buyer.id, buyer.id, "mission.cancelled", { missionId, refundDueCents: refundDue });
-  return { missionId, refundDueCents: refundDue };
+  let refundId: string | null = null;
+  if (refundDue > 0) {
+    const payment = await paymentFor(ctx.db, "mission", m.id);
+    if (payment) {
+      refundId = (await ctx.pay.refund({ paymentIntentId: payment.payment_intent_id, amountCents: refundDue, idempotencyKey: `mission_cancel_${m.id}` })).id;
+    }
+  }
+  await audit(ctx.db, buyer.id, buyer.id, "mission.cancelled", { missionId, refundDueCents: refundDue, refundId });
+  // refundId is null only when the original payment cannot be matched; the refund then has to be issued manually.
+  return { missionId, refundDueCents: refundDue, refundId, refundIssued: refundId !== null || refundDue === 0 };
 }
 
 // ------------------------------------------------------------- earnings & payouts
