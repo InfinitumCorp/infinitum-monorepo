@@ -30,3 +30,23 @@ test("every CID wallet opens once and transfers are all-or-nothing", async () =>
   assert.equal(recorded.length, 2);
   assert.equal(wallets.history("cid:b").length, 1);
 });
+
+test("a ledger failure returns the money and leaves no transfer", async () => {
+  let down = false;
+  const wallets = new WalletAccounts({
+    record: () => {
+      if (down) throw new Error("ledger down");
+      return "ok";
+    },
+  });
+  wallets.open("cid:a");
+  wallets.open("cid:b");
+  await wallets.credit("cid:a", "USDC", "10", "seed");
+  down = true;
+  await assert.rejects(wallets.transfer("cid:a", "cid:b", "USDC", "4", "lunch"), /ledger down/);
+  assert.deepEqual(wallets.balances("cid:a"), { FIRM: "0", USDC: "10" });
+  assert.deepEqual(wallets.balances("cid:b"), { FIRM: "0", USDC: "0" });
+  assert.equal(wallets.history("cid:a").length, 1);
+  await assert.rejects(wallets.credit("cid:b", "FIRM", "3", "payout"), /ledger down/);
+  assert.deepEqual(wallets.balances("cid:b"), { FIRM: "0", USDC: "0" });
+});

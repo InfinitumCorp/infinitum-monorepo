@@ -160,9 +160,25 @@ export class WalletAccounts {
 
   private async log(input: Omit<WalletTransfer, "id" | "at">): Promise<WalletTransfer> {
     const transfer: WalletTransfer = { id: `tx_${randomUUID()}`, at: this.clock().toISOString(), ...input };
+    try {
+      const hash = await this.recordFn?.(transfer);
+      if (hash) transfer.ledgerHash = hash;
+    } catch (err) {
+      this.undo(transfer);
+      throw err;
+    }
     this.store.transfers.set(transfer.id, transfer);
-    const hash = await this.recordFn?.(transfer);
-    if (hash) transfer.ledgerHash = hash;
     return transfer;
+  }
+
+  /** The balances already moved. If the ledger refuses the record, put them back and keep no history. */
+  private undo(transfer: WalletTransfer) {
+    const units = parseAmount(transfer.amount);
+    const to = this.require(transfer.to);
+    to.balances[transfer.asset] = (BigInt(to.balances[transfer.asset]) - units).toString();
+    if (transfer.from) {
+      const from = this.require(transfer.from);
+      from.balances[transfer.asset] = (BigInt(from.balances[transfer.asset]) + units).toString();
+    }
   }
 }
