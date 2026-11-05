@@ -1,12 +1,14 @@
 import { EVENTS, ME, SEED_CONTACTS, SEED_MESSAGES, SEED_TASKS } from "./model.ts";
-import type { Attachment, ConductorTask, Contact, FolderId, MailMessage } from "./model.ts";
-import { audienceLabel, isCumulus, parsePeople, planDelivery, quota, validEmail } from "./logic.ts";
+import type { Attachment, ConductorTask, Contact, FolderId, MailMessage, MailRule } from "./model.ts";
+import { applyRules, audienceLabel, isCumulus, parsePeople, planDelivery, quota, validEmail, withSignature } from "./logic.ts";
 
 export interface MailSnapshot {
   messages: MailMessage[];
   aliases: string[];
   tasks: ConductorTask[];
   contacts: Contact[];
+  signature?: string;
+  rules?: MailRule[];
 }
 
 /** Whose mailbox this is. Defaults to the demo account. */
@@ -34,6 +36,8 @@ export class Mailbox {
   tasks: ConductorTask[];
   contacts: Contact[];
   readonly owner: MailOwner;
+  signature: string;
+  rules: MailRule[];
 
   constructor(seed: Partial<MailSnapshot> = {}, owner: MailOwner = ME) {
     this.owner = { name: owner.name, email: owner.email };
@@ -41,10 +45,19 @@ export class Mailbox {
     this.aliases = structuredClone(seed.aliases ?? ["press@cumulusmail.cloud"]);
     this.tasks = structuredClone(seed.tasks ?? SEED_TASKS);
     this.contacts = structuredClone(seed.contacts ?? SEED_CONTACTS);
+    this.signature = seed.signature ?? "Alex Reid\nalex@cumulusmail.cloud";
+    this.rules = structuredClone(seed.rules ?? []);
   }
 
   snapshot(): MailSnapshot {
-    return { messages: this.messages, aliases: this.aliases, tasks: this.tasks, contacts: this.contacts };
+    return {
+      messages: this.messages,
+      aliases: this.aliases,
+      tasks: this.tasks,
+      contacts: this.contacts,
+      signature: this.signature,
+      rules: this.rules,
+    };
   }
 
   view() {
@@ -56,6 +69,8 @@ export class Mailbox {
       contacts: this.contacts,
       events: EVENTS,
       quota: quota(this.messages),
+      signature: this.signature,
+      rules: this.rules,
     };
   }
 
@@ -103,7 +118,7 @@ export class Mailbox {
       to,
       cc,
       subject: input.subject.trim() || "(no subject)",
-      body: input.body,
+      body: withSignature(input.body, this.signature),
       at: input.now ?? new Date().toISOString(),
       unread: false,
       starred: false,
@@ -113,7 +128,7 @@ export class Mailbox {
     };
     this.messages.unshift(sent);
     if ([...to, ...cc].some((person) => person.email.toLowerCase() === this.owner.email.toLowerCase())) {
-      this.messages.unshift({ ...sent, id: `${id}-in`, folder: "inbox", unread: true });
+      this.messages.unshift(applyRules({ ...sent, id: `${id}-in`, folder: "inbox", unread: true }, this.rules));
     }
     return { ok: true, id };
   }
@@ -139,6 +154,26 @@ export class Mailbox {
     if (index >= 0) this.messages[index] = message;
     else this.messages.unshift(message);
     return { id };
+  }
+
+  snooze(id: string, until: string) {
+    const message = this.messages.find((item) => item.id === id);
+    if (message) {
+      message.snoozeUntil = until;
+      message.unread = false;
+    }
+  }
+
+  setSignature(signature: string) {
+    this.signature = signature;
+  }
+
+  addRule(rule: MailRule) {
+    this.rules.push(rule);
+  }
+
+  removeRule(id: string) {
+    this.rules = this.rules.filter((rule) => rule.id !== id);
   }
 
   addAlias(alias: string) {

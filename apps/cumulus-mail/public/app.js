@@ -88,6 +88,11 @@ async function undo(id) {
 const UPDATES = new Set(["newsletter", "notification", "receipt", "bounce"]);
 
 function inBox(message, box) {
+  const until = message.snoozeUntil ? Date.parse(message.snoozeUntil) : 0;
+  const snoozed = Number.isFinite(until) && until > Date.now() && message.folder !== "trash" && message.folder !== "drafts";
+  if (box === "snoozed") return snoozed;
+  if (snoozed) return false;
+  if (box === "outbox") return message.folder === "sent" && (message.delivery || []).some((hop) => hop.status === "outbound");
   if (box === "starred") return message.starred && message.folder !== "trash";
   return message.folder === box;
 }
@@ -204,7 +209,7 @@ function helpDialog() {
 }
 
 function sidebar(data) {
-  const boxes = [["inbox", "Inbox"], ["starred", "Starred"], ["sent", "Sent"], ["drafts", "Drafts"], ["archive", "Archive"], ["trash", "Trash"]];
+  const boxes = [["inbox", "Inbox"], ["snoozed", "Snoozed"], ["outbox", "Outbox"], ["starred", "Starred"], ["sent", "Sent"], ["drafts", "Drafts"], ["archive", "Archive"], ["trash", "Trash"]];
   const views = [["clean", "Clean"], ["wallet", "Wallet"], ["contacts", "People"], ["tasks", "Conductor"]];
   const navButton = (current, label, onClick, extra) => el("button", { "aria-current": current, onClick }, [label, extra ?? none()]);
   return el("nav", { "aria-label": "Mail" }, [
@@ -300,6 +305,14 @@ function reader(message) {
     el("div", { class: "tools" }, [
       el("button", { class: "icon", "aria-label": `Back to ${state.box}`, title: `Back to ${state.box}`, onClick: () => { close(); render(); } }, ["←"]),
       message.system ? none() : el("button", { class: "quiet", onClick: () => reply(message) }, ["Reply"]),
+      el("button", { class: "quiet", title: "Hide until 08:00 UTC tomorrow", onClick: () => act(async () => {
+        const until = new Date();
+        until.setUTCDate(until.getUTCDate() + 1);
+        until.setUTCHours(8, 0, 0, 0);
+        await api("/api/snooze", { id: message.id, until: until.toISOString() });
+        state.selected = null;
+        state.box = "snoozed";
+      }) }, ["Snooze"]),
       message.folder === "archive" || inTrash ? el("button", { class: "quiet", onClick: () => thread_("inbox") }, ["Move to inbox"]) : el("button", { class: "quiet", title: "Archive (e)", onClick: () => thread_("archive") }, ["Archive"]),
       inTrash
         ? el("button", { class: "quiet danger", onClick: () => { if (confirm("Delete this message forever?")) act(async () => { await api("/api/remove", { id: message.id }); close(); }); } }, ["Delete forever"])

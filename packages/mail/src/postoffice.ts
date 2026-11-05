@@ -459,6 +459,21 @@ export class PostOffice {
     return { count: touched.size, before };
   }
 
+  /** Hide a conversation until `until` (ISO). It leaves the inbox and comes back on its own. */
+  snooze(cid: string, id: string, until: string) {
+    const at = Date.parse(until);
+    if (!Number.isFinite(at)) return false;
+    const messages = this.box(cid).messages;
+    const message = messages.find((item) => item.id === id);
+    if (!message) return false;
+    for (const item of messages) {
+      if (item.threadId !== message.threadId || item.folder === "drafts" || item.folder === "trash") continue;
+      item.snoozeUntil = new Date(at).toISOString();
+      item.unread = false;
+    }
+    return true;
+  }
+
   /** Put messages back exactly as they were before an action. Only this mailbox's own messages. */
   restore(cid: string, before: ThreadSnapshot[]): number {
     const box = this.box(cid);

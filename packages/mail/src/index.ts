@@ -10,6 +10,8 @@ export type {
   ViewId,
   Attachment,
   DeliveryHop,
+  MailRule,
+  RuleAction,
 } from "./model.ts";
 export {
   isCumulus,
@@ -33,6 +35,10 @@ export {
   briefKey,
   planDelivery,
   formatSize,
+  isSnoozed,
+  applyRules,
+  withSignature,
+  tomorrowMorning,
 } from "./logic.ts";
 export { Mailbox } from "./mailbox.ts";
 export type { MailSnapshot, SendInput, MailOwner } from "./mailbox.ts";

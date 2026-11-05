@@ -265,6 +265,11 @@ export function createMailApp(deps: MailAppDeps) {
   route("POST", "/api/read", (ctx) => { if (ctx.body.threadId) mail.markThreadRead(me(ctx), str(ctx.body.threadId, 80)); return state(me(ctx)); });
   route("POST", "/api/star", (ctx) => { if (ctx.body.id) mail.toggleStar(me(ctx), str(ctx.body.id, 80)); return state(me(ctx)); });
   route("POST", "/api/move", (ctx) => { need(ctx, "id", "folder"); mail.move(me(ctx), str(ctx.body.id, 80), str(ctx.body.folder, 20) as never); return state(me(ctx)); });
+  route("POST", "/api/snooze", (ctx) => {
+    need(ctx, "id", "until");
+    if (!mail.snooze(me(ctx), str(ctx.body.id, 80), str(ctx.body.until, 40))) throw new HttpError(404, "That message is not in this mailbox.");
+    return state(me(ctx));
+  });
   route("POST", "/api/remove", (ctx) => { if (ctx.body.id) mail.remove(me(ctx), str(ctx.body.id, 80)); return state(me(ctx)); });
   // Conversation actions. Each returns an undo id, kept in memory for 10 minutes.
   const undos = new Map<string, { cid: string; before: ThreadSnapshot[]; at: number }>();
