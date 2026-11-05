@@ -40,14 +40,15 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 | Cumulus://Cloud | Storage, licensing, agent runtime, data exchange | Partial for exchange (API + collectors) |
 | VEIL</> | Tor-first browser + sidebar | Partial — v0.3.1 multi-panel, Conductor Ask, Tor proxy + check, claimable rewards, Base RPC wallet balance | See apps/veil/NEXT.md + PACKAGING.md. VeilCollector ready. |
 | FABRIC | Encrypted calls/messaging | Scaffolded — AES-256-GCM AEAD + session. FabricCollector ready. |
+| >_ARGUS | AI sensor fusion & ISR | Core logic — `packages/argus`: multi-sensor fusion with chi-square gating, global-nearest-neighbour association, 2D constant-velocity Kalman filter, tentative/confirmed/coasting/dropped lifecycle and per-track sensor provenance (6 tests). Next: 3D + bearing-only sensors, sign each picture on Firmament, feed ODIN°. Excluded from public Data Exchange. |
 | ÆTHER | Distributed communications | Scaffolded — mesh + BFS routing. AetherCollector ready. |
 | Firmament Network | Ledger stats | FirmamentCollector ready. |
-| E(O)N | Wearable usage aggregates | EonCollector ready (limited). |
+| E(O)N | AI wearable for secure communications | Core logic — `packages/eon`: X25519 pairing with HKDF directional keys and a 6-digit SAS, AES-256-GCM voice/text frames with counter nonces and replay rejection, on-device intent parsing (call, message, mute, wipe with confirmation), aggregate-only usage meter that feeds EonCollector (9 tests). Next: bind to the ÆTHER Rust core / device firmware, audio codec framing, key rotation. |
 
 ## Hardware / physical concepts (software stubs only)
 
-ORBIS, POLLEN, Flower, NEMESIS, ARGUS (sensor fusion), ODIN° (military suite).  
-**Interfaces stubbed** in `packages/hardware`.  
+DAEMON, SLUG, ORBIS, POLLEN, Flower, NEMESIS, ODIN° (military suite).  
+**Interfaces stubbed** in `packages/hardware`. `catalog.ts` gives every platform a profile (commands, approval-gated commands, declared telemetry, MIL edition); DAEMON (autonomous aircraft) and SLUG (autonomous land drone) were added there. `checkedTask()` rejects commands a product does not accept and flags ones that need a person's approval.  
 These cannot be fully built as software. Data from these is excluded from public Data Exchange.
 
 **Ignored:** #THRONE — not part of this delivery plan.
