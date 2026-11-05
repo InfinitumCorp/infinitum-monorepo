@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import {
-  createSimulation, avgvrStep, avgvrInject, avgvrFork, avgvrReport, avgvrInterview, avgvrEstimate, claudeComplete, AvgvrError,
+  createSimulation, conjureStep, conjureInject, conjureFork, conjureReport, conjureInterview, conjureEstimate, claudeComplete, ConjureError,
   type Complete, type Simulation,
-} from "@infinitum/scalus";
+} from "@infinitum/conjure";
 import type { SpectreCRM } from "../core/crm.ts";
 import type { AiConfig } from "./ai.ts";
 
@@ -25,7 +25,7 @@ export function dealSeed(crm: SpectreCRM, ws: string, dealId: string) {
   return { question: `Will ${company.name} sign "${d.name}" by ${d.closeDate}?`, seed };
 }
 
-export function registerAvgvrRoutes(api: {
+export function registerConjureRoutes(api: {
   route: (method: string, path: string, handler: (ctx: any) => unknown) => void;
   crm: SpectreCRM;
   ai: AiConfig;
@@ -37,11 +37,11 @@ export function registerAvgvrRoutes(api: {
 
   const model = (): Complete => {
     if (api.complete) return api.complete;
-    if (!ai.apiKey) throw httpError(503, "AI isn't connected. Add ANTHROPIC_API_KEY to run AVGVR simulations.");
+    if (!ai.apiKey) throw httpError(503, "AI isn't connected. Add ANTHROPIC_API_KEY to run Conjure simulations.");
     return claudeComplete({ apiKey: ai.apiKey, model: ai.model, fetchImpl: ai.fetchImpl });
   };
   const llm = () => {
-    if (!ai.apiKey && !api.complete) throw httpError(503, "AI isn't connected. Add ANTHROPIC_API_KEY to run AVGVR simulations.");
+    if (!ai.apiKey && !api.complete) throw httpError(503, "AI isn't connected. Add ANTHROPIC_API_KEY to run Conjure simulations.");
     return { apiKey: ai.apiKey ?? "test", model: ai.model, fetchImpl: ai.fetchImpl };
   };
   const get = (ctx: any): StoredSim => {
@@ -53,13 +53,13 @@ export function registerAvgvrRoutes(api: {
     try {
       return await fn();
     } catch (err) {
-      if (err instanceof AvgvrError) throw httpError(400, err.message);
+      if (err instanceof ConjureError) throw httpError(400, err.message);
       throw err;
     }
   };
   const save = async (ctx: any, s: StoredSim, event: string, extra: Record<string, unknown> = {}) => {
     crm.store.simulations.set(s.id, s);
-    await crm.record(ctx.user.account.cid, `avgvr:${s.id}`, { event, round: s.round, calls: s.calls, ...extra });
+    await crm.record(ctx.user.account.cid, `conjure:${s.id}`, { event, round: s.round, calls: s.calls, ...extra });
   };
   /** Summary for lists: everything but the bulky feed and memories. */
   const summary = (s: StoredSim) => ({
@@ -68,21 +68,21 @@ export function registerAvgvrRoutes(api: {
     latest: s.stats.at(-1), outcome: s.report?.outcome, probability: s.report?.probability,
   });
 
-  route("GET", "/api/avgvr", (ctx) => ({
+  route("GET", "/api/conjure", (ctx) => ({
     aiConnected: Boolean(ai.apiKey || api.complete),
     simulations: crm.list("simulations", ctx.user.workspace).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(summary),
   }));
 
-  route("GET", "/api/avgvr/estimate", (ctx) => avgvrEstimate(Number(ctx.query.get("agents") ?? 24), Number(ctx.query.get("rounds") ?? 5)));
+  route("GET", "/api/conjure/estimate", (ctx) => conjureEstimate(Number(ctx.query.get("agents") ?? 24), Number(ctx.query.get("rounds") ?? 5)));
 
-  route("GET", "/api/avgvr/:id", (ctx) => {
+  route("GET", "/api/conjure/:id", (ctx) => {
     const s = get(ctx);
     const names = Object.fromEntries(s.personas.map((p) => [p.id, p.name]));
     return { ...s, feed: s.feed.slice(-300).map((x) => ({ ...x, author: x.authorId === "world" ? "NEWS" : names[x.authorId] })) };
   });
 
   /** New simulation from seed text, or from a deal's records (dealId). */
-  route("POST", "/api/avgvr", (ctx) => wrap(async () => {
+  route("POST", "/api/conjure", (ctx) => wrap(async () => {
     const ws = ctx.user.workspace;
     let { question, seed } = ctx.body as { question?: string; seed?: string };
     const dealId = typeof ctx.body.dealId === "string" ? ctx.body.dealId : undefined;
@@ -99,52 +99,52 @@ export function registerAvgvrRoutes(api: {
     // Keep the most recent simulations per workspace.
     const mine = crm.list("simulations", ws).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     for (const old of mine.slice(MAX_PER_WORKSPACE - 1)) crm.store.simulations.delete(old.id);
-    await save(ctx, stored, "avgvr.created", { agents: sim.personas.length, rounds: sim.rounds, deal: dealId ?? null });
+    await save(ctx, stored, "conjure.created", { agents: sim.personas.length, rounds: sim.rounds, deal: dealId ?? null });
     return summary(stored);
   }));
 
   /** Advance one round (call repeatedly; each call is short enough for serverless hosts). */
-  route("POST", "/api/avgvr/:id/step", (ctx) => wrap(async () => {
+  route("POST", "/api/conjure/:id/step", (ctx) => wrap(async () => {
     const s = get(ctx);
-    await avgvrStep(model(), s);
-    await save(ctx, s, "avgvr.round");
+    await conjureStep(model(), s);
+    await save(ctx, s, "conjure.round");
     return summary(s);
   }));
 
-  route("POST", "/api/avgvr/:id/inject", (ctx) => wrap(async () => {
+  route("POST", "/api/conjure/:id/inject", (ctx) => wrap(async () => {
     const s = get(ctx);
-    avgvrInject(s, String(ctx.body.text ?? ""), ctx.body.round === undefined ? undefined : Number(ctx.body.round));
-    await save(ctx, s, "avgvr.injected");
+    conjureInject(s, String(ctx.body.text ?? ""), ctx.body.round === undefined ? undefined : Number(ctx.body.round));
+    await save(ctx, s, "conjure.injected");
     return { injections: s.injections };
   }));
 
-  route("POST", "/api/avgvr/:id/fork", (ctx) => wrap(async () => {
+  route("POST", "/api/conjure/:id/fork", (ctx) => wrap(async () => {
     const s = get(ctx);
-    const f = avgvrFork(s, `sim_${randomUUID()}`, ctx.body.round === undefined ? s.round : Number(ctx.body.round));
+    const f = conjureFork(s, `sim_${randomUUID()}`, ctx.body.round === undefined ? s.round : Number(ctx.body.round));
     const stored: StoredSim = { ...f, workspace: s.workspace, dealId: s.dealId, createdBy: ctx.user.account.cid, createdAt: crm.now().toISOString(), maxCalls: s.maxCalls };
-    await save(ctx, stored, "avgvr.forked", { from: s.id });
+    await save(ctx, stored, "conjure.forked", { from: s.id });
     return summary(stored);
   }));
 
-  route("POST", "/api/avgvr/:id/report", (ctx) => wrap(async () => {
+  route("POST", "/api/conjure/:id/report", (ctx) => wrap(async () => {
     const s = get(ctx);
-    const report = await avgvrReport(llm(), s);
-    await save(ctx, s, "avgvr.report", { probability: report.probability });
+    const report = await conjureReport(llm(), s);
+    await save(ctx, s, "conjure.report", { probability: report.probability });
     return report;
   }));
 
-  route("POST", "/api/avgvr/:id/interview", (ctx) => wrap(async () => {
+  route("POST", "/api/conjure/:id/interview", (ctx) => wrap(async () => {
     const s = get(ctx);
     const history = Array.isArray(ctx.body.history) ? ctx.body.history.slice(-6).map((h: any) => ({ q: String(h.q ?? ""), a: String(h.a ?? "") })) : [];
-    const answer = await avgvrInterview(model(), s, String(ctx.body.agentId ?? ""), String(ctx.body.question ?? ""), history);
+    const answer = await conjureInterview(model(), s, String(ctx.body.agentId ?? ""), String(ctx.body.question ?? ""), history);
     crm.store.simulations.set(s.id, s); // call count changed
     return { answer };
   }));
 
-  route("DELETE", "/api/avgvr/:id", async (ctx) => {
+  route("DELETE", "/api/conjure/:id", async (ctx) => {
     const s = get(ctx);
     crm.store.simulations.delete(s.id);
-    await crm.record(ctx.user.account.cid, `avgvr:${s.id}`, { event: "avgvr.deleted" });
+    await crm.record(ctx.user.account.cid, `conjure:${s.id}`, { event: "conjure.deleted" });
     return { ok: true };
   });
 }

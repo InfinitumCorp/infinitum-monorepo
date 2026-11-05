@@ -17,8 +17,11 @@ import {
 import { OPEN_STAGES, STAGES } from "../core/model.ts";
 import { askClaude, AiNotConnected, type AiConfig } from "./ai.ts";
 import { registerGrowthRoutes, type GrowthEvent } from "./growth-routes.ts";
-import { registerAvgvrRoutes } from "./avgvr-routes.ts";
-import type { Complete } from "@infinitum/scalus";
+import { registerConjureRoutes } from "./conjure-routes.ts";
+import { registerEngageRoutes, RawResponse } from "./engage-routes.ts";
+import { dispatch, runDue, type AutomationEngine } from "../core/automations.ts";
+import type { Providers } from "../core/messaging.ts";
+import type { Complete } from "@infinitum/conjure";
 import { runLlmAgent, LlmError } from "@infinitum/scalus";
 import { AGENTS, AGENT_IDS, agentDefinition, applyProposal, newProposalId, newRunId, type AgentId, type AgentRunRecord } from "../core/agent-team.ts";
 
@@ -50,8 +53,14 @@ export interface AppDeps {
   transaction?: <T>(fn: () => Promise<T>) => Promise<T>;
   /** Automations: receives events such as form submissions and new tags. */
   emit?: (ws: string, event: GrowthEvent) => Promise<void>;
-  /** Tests: scripted model for AVGVR simulations. */
-  avgvrComplete?: Complete;
+  /** Email and SMS providers (Resend, Twilio). Without them, messages are saved as drafts. */
+  providers?: Providers;
+  /** Shared secret the scheduler sends to resume waiting automation steps. */
+  cronSecret?: string;
+  /** Twilio auth token, to verify inbound SMS webhooks. */
+  twilioAuthToken?: string;
+  /** Tests: scripted model for Conjure simulations. */
+  conjureComplete?: Complete;
 }
 
 class HttpError extends Error {
@@ -127,6 +136,13 @@ async function readBody(req: IncomingMessage): Promise<Record<string, any>> {
 
 export function createApp(deps: AppDeps) {
   const { cid, crm } = deps;
+  const providers: Providers = deps.providers ?? {};
+  /** Events start matching automations, then reach any outside listener. */
+  const raise = async (ws: string, event: GrowthEvent) => {
+    await dispatch(engine, ws, event);
+    await deps.emit?.(ws, event);
+  };
+  const engine: AutomationEngine = { crm, providers, raise };
   const routes: Route[] = [];
   const route = (method: string, path: string, handler: Handler, auth = true, opts: { csrf?: boolean; optionalAuth?: boolean } = {}) => {
     const keys: string[] = [];
@@ -461,10 +477,12 @@ export function createApp(deps: AppDeps) {
       .sort((a, b) => a.name.localeCompare(b.name));
   });
 
-  route("POST", "/api/contacts", (ctx) => {
+  route("POST", "/api/contacts", async (ctx) => {
     need(ctx, "name");
     const { name, title, email, phone, companyId, influence } = ctx.body;
-    return crm.addContact(ctx.user!.workspace, ctx.user!.account.cid, { name, title, email, phone, companyId: companyId || undefined, influence: influence || undefined });
+    const c = await crm.addContact(ctx.user!.workspace, ctx.user!.account.cid, { name, title, email, phone, companyId: companyId || undefined, influence: influence || undefined, source: "manual" });
+    await raise(ctx.user!.workspace, { type: "contact.created", contactId: c.id });
+    return c;
   });
 
   route("PATCH", "/api/contacts/:id", (ctx) => {
@@ -520,9 +538,12 @@ export function createApp(deps: AppDeps) {
     return crm.updateDeal(ctx.user!.workspace, ctx.user!.account.cid, ctx.params.id, Object.fromEntries(Object.entries({ name, amount: amount === undefined ? undefined : Number(amount), closeDate, market, contactIds, ownerCid }).filter(([, v]) => v !== undefined)));
   });
 
-  route("POST", "/api/deals/:id/stage", (ctx) => {
+  route("POST", "/api/deals/:id/stage", async (ctx) => {
     need(ctx, "stage");
-    return crm.moveDeal(ctx.user!.workspace, ctx.user!.account.cid, ctx.params.id, ctx.body.stage, ctx.body.lostReason);
+    const before = crm.deal(ctx.user!.workspace, ctx.params.id).stage;
+    const d = await crm.moveDeal(ctx.user!.workspace, ctx.user!.account.cid, ctx.params.id, ctx.body.stage, ctx.body.lostReason);
+    if (d.stage !== before) await raise(ctx.user!.workspace, { type: "deal.stage_changed", dealId: d.id, toStage: d.stage });
+    return d;
   });
 
   /* ---------------- Activities & relationships ---------------- */
@@ -957,6 +978,9 @@ export function createApp(deps: AppDeps) {
     const updated = { ...p, status: decision === "approve" ? "approved" as const : "dismissed" as const, decidedBy: by, decidedAt: crm.now().toISOString(), resultId };
     crm.store.proposals.set(p.id, updated);
     await crm.auditAgent(by, p.agentId, { event: `proposal.${updated.status}`, proposal: p.id, tool: p.tool, result: resultId ?? null });
+    if (decision === "approve" && p.tool === "move_deal" && resultId) {
+      await raise(ws, { type: "deal.stage_changed", dealId: resultId, toStage: crm.deal(ws, resultId).stage });
+    }
     return updated;
   });
 
@@ -1001,10 +1025,18 @@ export function createApp(deps: AppDeps) {
     route,
     crm,
     httpError: (status, message) => new HttpError(status, message),
-    emit: (ws, event) => deps.emit?.(ws, event) ?? Promise.resolve(),
+    emit: raise,
   });
 
-  registerAvgvrRoutes({ route, crm, ai: deps.ai, httpError: (status, message) => new HttpError(status, message), complete: deps.avgvrComplete });
+  registerEngageRoutes({
+    route, crm, engine, providers,
+    httpError: (status, message) => new HttpError(status, message),
+    cronSecret: deps.cronSecret,
+    twilioAuthToken: deps.twilioAuthToken,
+    origin: deps.origin,
+  });
+
+  registerConjureRoutes({ route, crm, ai: deps.ai, httpError: (status, message) => new HttpError(status, message), complete: deps.conjureComplete });
 
   /* ---------------- Request handling ---------------- */
 
@@ -1064,6 +1096,11 @@ export function createApp(deps: AppDeps) {
       };
       const result = deps.transaction ? await deps.transaction(run) : await run();
       if (MUTATING.has(req.method!) || result instanceof Redirect) deps.onChange?.();
+      if (result instanceof RawResponse) {
+        res.writeHead(result.status, { "Content-Type": result.contentType, "Cache-Control": "no-store" });
+        res.end(result.body);
+        return;
+      }
       if (result instanceof Redirect) {
         res.writeHead(302, { Location: result.location, "Cache-Control": "no-store" });
         res.end();
@@ -1074,7 +1111,7 @@ export function createApp(deps: AppDeps) {
     } catch (err) {
       const status = err instanceof HttpError ? err.status
         : err instanceof CidError ? (["not_found"].includes(err.code) ? 404 : err.code === "forbidden" ? 403 : 400)
-        : err instanceof SpectreError ? (err.code === "not_found" ? 404 : err.code === "inactive" ? 410 : err.code === "slot_taken" ? 409 : 400)
+        : err instanceof SpectreError ? (err.code === "not_found" ? 404 : err.code === "inactive" ? 410 : err.code === "slot_taken" || err.code === "opted_out" ? 409 : 400)
         : 500;
       if (status === 500) console.error(err);
       const code = err instanceof CidError || err instanceof SpectreError ? err.code : undefined;
@@ -1085,5 +1122,13 @@ export function createApp(deps: AppDeps) {
     }
   }
 
-  return { handle, server: () => createServer((req, res) => void handle(req, res)) };
+  /** Resume automation steps whose wait is over (local timer; hosted mode uses the cron endpoint). */
+  const runDueAutomations = async () => {
+    const run = () => runDue(engine);
+    const n = deps.transaction ? await deps.transaction(run) : await run();
+    if (n) deps.onChange?.();
+    return n;
+  };
+
+  return { handle, runDueAutomations, server: () => createServer((req, res) => void handle(req, res)) };
 }

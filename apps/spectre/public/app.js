@@ -45,7 +45,7 @@ const icon = {
   pipeline: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>',
   accounts: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V7l8-4 8 4v14"/><path d="M9 21v-6h6v6"/></svg>',
   people: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.7 3 2.4 3.5 5.2"/></svg>',
-  avgvr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8c3-3 5-3 7 0M12 6c3-3 5-3 7 0M6 15c3-3 5-3 7 0M15 13c2-2 4-2 6 0"/></svg>',
+  conjure: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8c3-3 5-3 7 0M12 6c3-3 5-3 7 0M6 15c3-3 5-3 7 0M15 13c2-2 4-2 6 0"/></svg>',
   agents: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 12h.01M15 12h.01M9 16h6"/></svg>',
   health: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>',
   send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
@@ -114,7 +114,7 @@ function render() {
     return renderAuth(page === "signin-error" && id ? decodeURIComponent(id) : "");
   }
   renderShell(page);
-  const views = { today: renderToday, pipeline: renderPipeline, accounts: id ? () => renderAccount(id) : renderAccounts, people: renderPeople, health: renderHealth, agents: renderAgents, avgvr: id ? () => renderSimulation(id) : renderAvgvr, settings: renderSettings };
+  const views = { today: renderToday, pipeline: renderPipeline, accounts: id ? () => renderAccount(id) : renderAccounts, people: renderPeople, health: renderHealth, agents: renderAgents, conjure: id ? () => renderSimulation(id) : renderConjure, settings: renderSettings };
   (views[page] || renderToday)().catch((e) => { $("main").innerHTML = `<div class="page"><div class="empty">${esc(e.message)}</div></div>`; });
 }
 
@@ -213,7 +213,7 @@ function renderShell(page) {
             <a href="#/people" data-p="people">${icon.people}People</a>
             <a href="#/health" data-p="health">${icon.health}Data health</a>
             <a href="#/agents" data-p="agents">${icon.agents}Agents<span class="badge hidden" id="agents-badge"></span></a>
-            <a href="#/avgvr" data-p="avgvr">${icon.avgvr}<span>AVGVR<sup class="tm">™</sup></span></a>
+            <a href="#/conjure" data-p="conjure">${icon.conjure}<span>Conjure<sup class="tm">™</sup></span></a>
           </nav>
           <div class="spacer"></div>
           <nav class="nav"><a href="#/settings" data-p="settings">${icon.settings}Settings</a></nav>
@@ -423,7 +423,7 @@ async function openDeal(id) {
         ${d.score.factors.map((f) => `<div class="factor"><span>${esc(f.label)}</span><span class="${f.effect >= 1 ? "up" : "down"}">${f.effect >= 1 ? "▲" : "▼"} ×${f.effect}</span></div>`).join("")}
       </div>
       <div class="section"><h2>Next best action</h2><div class="next"><div class="act">${esc(d.next.action)}</div><div class="muted small">${esc(d.next.why)}</div></div>
-        <button class="btn small" id="rehearse">Rehearse with AI</button><button class="btn small" id="simulate">Simulate with AVGVR™</button></div>` : ""}
+        <button class="btn small" id="rehearse">Rehearse with AI</button><button class="btn small" id="simulate">Simulate with Conjure<sup class="tm">™</sup></button></div>` : ""}
 
       <div class="section"><h2>People</h2>
         ${d.contacts.length ? d.contacts.map((c) => `<div class="factor"><span>${esc(c.name)}<span class="muted"> · ${esc(c.title ?? "")}</span></span><span class="pill">${esc(c.influence ?? "contact")}</span></div>`).join("") : `<div class="muted small">No one linked yet.</div>`}
@@ -452,9 +452,9 @@ async function openDeal(id) {
   $("#simulate", wrap)?.addEventListener("click", async () => {
     toast("Building the simulation…");
     try {
-      const sim = await api("POST", "/api/avgvr", { dealId: id, agents: 16, rounds: 4 });
+      const sim = await api("POST", "/api/conjure", { dealId: id, agents: 16, rounds: 4 });
       closeDrawer();
-      location.hash = `#/avgvr/${sim.id}`;
+      location.hash = `#/conjure/${sim.id}`;
     } catch (e) { toast(e.message); }
   });
   $("#rehearse", wrap)?.addEventListener("click", async () => {
@@ -976,7 +976,7 @@ async function renderAgents() {
   main().querySelectorAll("[data-starter]").forEach((b) => b.onclick = () => { q.value = b.textContent; run(); });
 }
 
-/* ---------------- AVGVR™ swarm forecasting ---------------- */
+/* ---------------- Conjure™ swarm forecasting ---------------- */
 
 const stanceLabel = (v) => (v > 0.2 ? "for" : v < -0.2 ? "against" : "undecided");
 
@@ -1005,12 +1005,12 @@ function sizeBars(root) {
   root.querySelectorAll(".split [data-w]").forEach((el) => { el.style.flexGrow = String(Number(el.dataset.w) || 0.0001); });
 }
 
-async function renderAvgvr() {
-  const data = await api("GET", "/api/avgvr");
+async function renderConjure() {
+  const data = await api("GET", "/api/conjure");
   main().innerHTML = `
     <div class="page narrow">
-      <div class="page-head"><h1>AVGVR<sup class="tm">™</sup></h1><span class="faint small">Swarm forecasting by SCALVS.ai<sup class="tm">™</sup></span></div>
-      <p class="muted">Give AVGVR a question and some background. It builds the people involved as AI agents, lets them react to each other over several rounds, and writes a forecast. You can inject “what if” events, compare futures and interview any agent.</p>
+      <div class="page-head"><h1>Conjure<sup class="tm">™</sup></h1><span class="faint small">Swarm forecasting</span></div>
+      <p class="muted">Give Conjure a question and some background. It builds the people involved as AI agents, lets them react to each other over several rounds, and writes a forecast. You can inject “what if” events, compare futures and interview any agent.</p>
       ${data.aiConnected ? "" : `<div class="notice">AI isn't connected yet, so simulations can't run. Add ANTHROPIC_API_KEY to the server environment.</div>`}
       <form id="new-sim" class="section">
         <label class="field">Question<input class="input" name="question" required maxlength="500" placeholder="Will the city approve the new transit budget this quarter?"></label>
@@ -1024,7 +1024,7 @@ async function renderAvgvr() {
         <button class="btn primary" ${data.aiConnected ? "" : "disabled"}>Build simulation</button>
       </form>
       ${data.simulations.length ? `<div class="section"><h2>Simulations</h2><div class="list">${data.simulations.map((s) => `
-        <a class="item" href="#/avgvr/${esc(s.id)}"><div class="main"><div class="title">${esc(s.question)}</div>
+        <a class="item" href="#/conjure/${esc(s.id)}"><div class="main"><div class="title">${esc(s.question)}</div>
         <div class="sub">${s.agents} agents · round ${s.round}/${s.rounds}${s.forkedFrom ? " · fork" : ""}${s.outcome ? ` · ${esc(s.outcome)} (${pct(s.probability)})` : ""}</div></div>
         ${splitBar(s.latest?.split)}</a>`).join("")}</div></div>` : ""}
     </div>`;
@@ -1032,7 +1032,7 @@ async function renderAvgvr() {
   const form = $("#new-sim");
   const est = async () => {
     try {
-      const e = await api("GET", `/api/avgvr/estimate?agents=${form.agents.value}&rounds=${form.rounds.value}`);
+      const e = await api("GET", `/api/conjure/estimate?agents=${form.agents.value}&rounds=${form.rounds.value}`);
       $("#estimate").textContent = `About ${e.calls} AI calls in total. Rounds run one at a time, so you can stop whenever you like.`;
     } catch {}
   };
@@ -1042,8 +1042,8 @@ async function renderAvgvr() {
     const btn = form.querySelector("button");
     btn.disabled = true; btn.textContent = "Building the world…";
     try {
-      const sim = await api("POST", "/api/avgvr", { question: form.question.value, seed: form.seed.value, agents: Number(form.agents.value), rounds: Number(form.rounds.value) });
-      location.hash = `#/avgvr/${sim.id}`;
+      const sim = await api("POST", "/api/conjure", { question: form.question.value, seed: form.seed.value, agents: Number(form.agents.value), rounds: Number(form.rounds.value) });
+      location.hash = `#/conjure/${sim.id}`;
     } catch (err) { $("#sim-err").textContent = err.message; btn.disabled = false; btn.textContent = "Build simulation"; }
   };
 }
@@ -1051,15 +1051,15 @@ async function renderAvgvr() {
 let simRunning = false;
 
 async function renderSimulation(id) {
-  const s = await api("GET", `/api/avgvr/${encodeURIComponent(id)}`);
+  const s = await api("GET", `/api/conjure/${encodeURIComponent(id)}`);
   const latest = s.stats.at(-1);
   const agents = [...s.personas].sort((a, b) => b.influence - a.influence);
   const r = s.report;
   main().innerHTML = `
     <div class="page narrow">
-      <a class="faint small" href="#/avgvr">← AVGVR</a>
+      <a class="faint small" href="#/conjure">← Conjure</a>
       <div class="page-head"><h1 class="sim-q">${esc(s.question)}</h1></div>
-      <p class="muted small">${s.personas.length} agents · round ${s.round} of ${s.rounds} · ${s.calls}/${s.maxCalls} AI calls${s.forkedFrom ? ` · forked from <a href="#/avgvr/${esc(s.forkedFrom.id)}">another simulation</a> at round ${s.forkedFrom.round}` : ""}</p>
+      <p class="muted small">${s.personas.length} agents · round ${s.round} of ${s.rounds} · ${s.calls}/${s.maxCalls} AI calls${s.forkedFrom ? ` · forked from <a href="#/conjure/${esc(s.forkedFrom.id)}">another simulation</a> at round ${s.forkedFrom.round}` : ""}</p>
       ${stanceChart(s.stats, s.poles)}
       ${latest ? `<div class="split-row">${splitBar(latest.split)}<div class="faint small">For ${pct(latest.split.for)} · Undecided ${pct(latest.split.undecided)} · Against ${pct(latest.split.against)}</div></div>` : ""}
       <div class="sim-actions">
@@ -1076,7 +1076,7 @@ async function renderSimulation(id) {
         ${r.drivers.length ? `<h3>Drivers</h3><ul>${r.drivers.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}
         ${r.signals.length ? `<h3>Signals to watch</h3><ul>${r.signals.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}
         ${r.assumptions.length ? `<h3>Assumptions</h3><ul>${r.assumptions.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}
-        <p class="faint small">A simulation is evidence, not proof. The estimate is AVGVR's judgement from ${s.personas.length} simulated agents.</p></div>` : ""}
+        <p class="faint small">A simulation is evidence, not proof. The estimate is Conjure's judgement from ${s.personas.length} simulated agents.</p></div>` : ""}
       <div class="section"><h2>Feed</h2>${s.feed.length ? `<div class="feed">${[...s.feed].reverse().slice(0, 60).map((x) => `
         <div class="post${x.authorId === "world" ? " news" : ""}"><div class="sub">${esc(x.author)} · round ${x.round}${x.replyTo ? " · reply" : ""}</div><div>${esc(x.text)}</div>
         ${x.authorId === "world" ? "" : `<div class="faint small">${x.likes} likes · ${x.reposts} reposts</div>`}</div>`).join("")}</div>` : `<p class="faint">Run a round to see the agents talk.</p>`}</div>
@@ -1087,24 +1087,24 @@ async function renderSimulation(id) {
   sizeBars(main());
   const err = $("#sim-err");
   const act = async (fn) => { err.textContent = ""; try { await fn(); } catch (e) { err.textContent = e.message; } };
-  $("#step")?.addEventListener("click", (e) => act(async () => { e.target.disabled = true; e.target.textContent = "Agents are acting…"; await api("POST", `/api/avgvr/${id}/step`, {}); renderSimulation(id); }));
+  $("#step")?.addEventListener("click", (e) => act(async () => { e.target.disabled = true; e.target.textContent = "Agents are acting…"; await api("POST", `/api/conjure/${id}/step`, {}); renderSimulation(id); }));
   $("#run-all")?.addEventListener("click", (e) => act(async () => {
     if (simRunning) return;
     simRunning = true;
     e.target.textContent = "Running… (stops if you leave)";
     try {
       let cur = s;
-      while (cur.status !== "done" && location.hash === `#/avgvr/${id}`) {
-        cur = await api("POST", `/api/avgvr/${id}/step`, {});
+      while (cur.status !== "done" && location.hash === `#/conjure/${id}`) {
+        cur = await api("POST", `/api/conjure/${id}/step`, {});
         toast(`Round ${cur.round} of ${cur.rounds} done`);
       }
     } finally { simRunning = false; }
-    if (location.hash === `#/avgvr/${id}`) renderSimulation(id);
+    if (location.hash === `#/conjure/${id}`) renderSimulation(id);
   }));
-  $("#report")?.addEventListener("click", (e) => act(async () => { e.target.disabled = true; e.target.textContent = "Investigating…"; await api("POST", `/api/avgvr/${id}/report`, {}); renderSimulation(id); }));
-  $("#fork").onclick = () => act(async () => { const f = await api("POST", `/api/avgvr/${id}/fork`, {}); toast("Forked. Inject a different event to compare."); location.hash = `#/avgvr/${f.id}`; });
+  $("#report")?.addEventListener("click", (e) => act(async () => { e.target.disabled = true; e.target.textContent = "Investigating…"; await api("POST", `/api/conjure/${id}/report`, {}); renderSimulation(id); }));
+  $("#fork").onclick = () => act(async () => { const f = await api("POST", `/api/conjure/${id}/fork`, {}); toast("Forked. Inject a different event to compare."); location.hash = `#/conjure/${f.id}`; });
   const inj = $("#inject");
-  if (inj) inj.onsubmit = (e) => { e.preventDefault(); act(async () => { await api("POST", `/api/avgvr/${id}/inject`, { text: inj.text.value }); toast("Event added to the next round"); renderSimulation(id); }); };
+  if (inj) inj.onsubmit = (e) => { e.preventDefault(); act(async () => { await api("POST", `/api/conjure/${id}/inject`, { text: inj.text.value }); toast("Event added to the next round"); renderSimulation(id); }); };
   main().querySelectorAll("[data-interview]").forEach((b) => b.onclick = () => interviewModal(id, s.personas.find((p) => p.id === b.dataset.interview)));
 }
 
@@ -1114,7 +1114,7 @@ function interviewModal(simId, p) {
     <label class="field">Ask a question<input class="input" name="q" maxlength="1000" placeholder="What would change your mind?"></label>`, async (fd) => {
     const q = String(fd.get("q") || "").trim();
     if (!q) throw new Error("Ask something");
-    const { answer } = await api("POST", `/api/avgvr/${simId}/interview`, { agentId: p.id, question: q, history });
+    const { answer } = await api("POST", `/api/conjure/${simId}/interview`, { agentId: p.id, question: q, history });
     history.push({ q, a: answer });
     $("#iv-log").innerHTML = history.map((h) => `<p><b>You:</b> ${esc(h.q)}</p><p>${esc(h.a)}</p>`).join("");
     $("#modal-form").q.value = "";

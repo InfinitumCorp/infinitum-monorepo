@@ -16,6 +16,7 @@
     "@infinitum/firmament": "workspace:*",
     "@infinitum/cid": "workspace:*",
     "@infinitum/conductor": "workspace:*",
+    "@infinitum/conjure": "workspace:*",
     "@infinitum/cumulus": "workspace:*",
     "@infinitum/metatron": "workspace:*",
     "@infinitum/scalus": "workspace:*"

@@ -113,6 +113,15 @@ export interface Appointment {
 
 export type TriggerType = "contact.created" | "tag.added" | "form.submitted" | "appointment.booked" | "deal.stage_changed";
 
+/** Events that start automations. `depth` counts how many automations led to it (loop guard). */
+export type GrowthEvent = (
+  | { type: "contact.created"; contactId: string }
+  | { type: "tag.added"; contactId: string; tag: string }
+  | { type: "form.submitted"; contactId: string; formId: string }
+  | { type: "appointment.booked"; contactId: string; calendarId: string; appointmentId: string }
+  | { type: "deal.stage_changed"; dealId: string; toStage: string }
+) & { depth?: number };
+
 export interface Trigger {
   type: TriggerType;
   /** Narrow the trigger: a tag, a form, a calendar, or a target stage. */
@@ -153,6 +162,8 @@ export interface WorkflowJob {
   runAt: string;
   contactId?: string;
   dealId?: string;
+  /** How many automations led to the event that started this job (loop guard). */
+  depth?: number;
   status: "waiting" | "done" | "failed" | "cancelled";
   log: { at: string; step: string; result: string }[];
   createdAt: string;

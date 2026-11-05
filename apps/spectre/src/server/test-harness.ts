@@ -8,12 +8,13 @@ import { VirtualAuthenticator } from "../../../../packages/cid/src/testing/virtu
 import { SpectreCRM } from "../core/crm.ts";
 import { createApp } from "./app.ts";
 import type { GrowthEvent } from "./growth-routes.ts";
+import type { Providers } from "../core/messaging.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ORIGIN = "http://localhost";
 
 /** Shared harness for the growth-feature HTTP tests. */
-export async function harness() {
+export async function harness(opts: { providers?: Providers; cronSecret?: string; twilioAuthToken?: string } = {}) {
   const signer = generateSigner();
   const ledger = new Ledger(undefined, { authorizedSigners: [signer.publicKey] });
   const suite = createCumulus({ ledger, signer, rpId: "localhost", origins: [ORIGIN] });
@@ -25,6 +26,7 @@ export async function harness() {
   const app = createApp({
     cid, suite, crm, ai: { model: "m" }, publicDir: join(here, "../../public"), secureCookies: false, origin: ORIGIN,
     emit: (ws, e) => emitImpl(ws, e),
+    ...opts,
   });
   const server: Server = app.server();
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
@@ -44,7 +46,7 @@ export async function harness() {
     return { cookie: res.headers.get("set-cookie")!.split(";")[0], cid: s.body.cid as string };
   };
   return {
-    crm, ledger, suite, events, call, signUp, base,
+    crm, ledger, suite, events, call, signUp, base, app,
     setEmit: (fn: typeof emitImpl) => { emitImpl = fn; },
     advance: (ms: number) => { now = new Date(now.getTime() + ms); },
     now: () => now,
