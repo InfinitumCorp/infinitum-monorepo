@@ -6,6 +6,7 @@ import { CidService, CidStore, socialFromEnv } from "@infinitum/cid";
 import { SpectreCRM, emptyStore } from "../core/crm.ts";
 import { createApp } from "./app.ts";
 import { aiConfigFromEnv } from "./ai.ts";
+import { providersFromEnv } from "../core/messaging.ts";
 import { saveSnapshot, loadSnapshot } from "./persist.ts";
 
 /**
@@ -22,6 +23,10 @@ import { saveSnapshot, loadSnapshot } from "./persist.ts";
  *     APPLE_CLIENT_ID, APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY
  *     CHATGPT_CLIENT_ID, CHATGPT_CLIENT_SECRET, CHATGPT_ISSUER   (OpenAI partner program)
  *   Callback URL to register with each provider: {SPECTRE_ORIGIN}/api/auth/oauth/{provider}/callback
+ *   Conversations (each optional; without them messages are saved as drafts):
+ *     RESEND_API_KEY, MAIL_FROM                         email
+ *     TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM  SMS; inbound webhook: {SPECTRE_ORIGIN}/api/hooks/twilio/sms
+ *   CRON_SECRET          lets an outside scheduler call POST /api/cron/automations (a local timer runs anyway)
  */
 
 // Enable METATRON by default for advertised prediction performance.
@@ -67,6 +72,9 @@ const app = createApp({
   publicDir: join(here, "../../public"),
   secureCookies: origin.startsWith("https://"),
   origin,
+  providers: providersFromEnv(),
+  cronSecret: process.env.CRON_SECRET,
+  twilioAuthToken: process.env.TWILIO_AUTH_TOKEN,
   onChange: () => {
     saveSnapshot(join(dataDir, "cid.json"), cidStore);
     saveSnapshot(join(dataDir, "spectre.json"), spectreStore);
@@ -76,3 +84,6 @@ const app = createApp({
 app.server().listen(port, () => {
   console.log(`+SPCTR running at ${origin}  (ledger: ${verified.length} verified entries, AI: ${ai.apiKey ? "connected" : "not connected"}, METATRON: ${process.env.USE_METATRON === "1" ? "on" : "off"}, sign-in: passkey${Object.keys(social).map((p) => ", " + p).join("")})`);
 });
+
+// Resume automation steps whose wait is over.
+setInterval(() => void app.runDueAutomations().catch((err) => console.error("automations:", err)), 60_000).unref();

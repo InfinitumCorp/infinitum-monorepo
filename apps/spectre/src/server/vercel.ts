@@ -4,6 +4,7 @@ import { CidService, CidStore, socialFromEnv } from "@infinitum/cid";
 import { SpectreCRM, emptyStore } from "../core/crm.ts";
 import { createApp } from "./app.ts";
 import { aiConfigFromEnv } from "./ai.ts";
+import { providersFromEnv } from "../core/messaging.ts";
 import { RemoteState, HttpGateway } from "./remote.ts";
 
 /**
@@ -55,6 +56,9 @@ function build() {
     publicDir: new URL("./public/", import.meta.url).pathname, // static files are served by Vercel's CDN
     secureCookies: origin.startsWith("https://"),
     origin,
+    providers: providersFromEnv(),
+    cronSecret: process.env.CRON_SECRET,
+    twilioAuthToken: process.env.TWILIO_AUTH_TOKEN,
     transaction: async (fn) => {
       await verifyOnce();
       return state.transaction(fn);

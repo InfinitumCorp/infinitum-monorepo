@@ -16,12 +16,8 @@ export interface GrowthApi {
   emit: (ws: string, event: GrowthEvent) => Promise<void>;
 }
 
-export type GrowthEvent =
-  | { type: "contact.created"; contactId: string }
-  | { type: "tag.added"; contactId: string; tag: string }
-  | { type: "form.submitted"; contactId: string; formId: string }
-  | { type: "appointment.booked"; contactId: string; calendarId: string; appointmentId: string }
-  | { type: "deal.stage_changed"; dealId: string; toStage: string };
+export type { GrowthEvent } from "../core/growth-model.ts";
+import type { GrowthEvent } from "../core/growth-model.ts";
 
 /** Per-IP limit for public endpoints (best effort per instance). */
 function limiter(max: number, windowMs: number) {
