@@ -60,3 +60,5 @@ export type { MailKind, CleanRules, CleanAction, CleanLogEntry, CleanState } fro
 export { CumulusTunnel, TunnelStore, TunnelError, parseMasterKey, generateMasterKey, TUNNEL_VERSION } from "./tunnel.ts";
 export type { SealedEnvelope, StoredTunnelKeys, OpenedEnvelope } from "./tunnel.ts";
 export { sealMailStore, openMailStore } from "./at-rest.ts";
+export { THREAD_ACTIONS } from "./postoffice.ts";
+export type { ThreadAction, ThreadSnapshot } from "./postoffice.ts";

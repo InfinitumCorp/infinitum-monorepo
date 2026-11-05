@@ -185,4 +185,24 @@ describe("SCALVS Clean agent", () => {
     assert.equal(out.note, "Mostly newsletters.");
     assert.match(calls[0].system, /untrusted/);
   });
+  it("acts on conversations in bulk and undoes over HTTP", async () => {
+    const ivy = new Browser();
+    const jo = new Browser();
+    await ivy.signUp("ivyb");
+    await jo.signUp("joan");
+    for (const subject of ["One", "Two"]) assert.equal((await jo.call("POST", "/api/send", { to: "ivyb@cumulusmail.cloud", subject, body: "Hi" })).status, 200);
+    const inbox = (await ivy.call("GET", "/api/state")).data.messages.filter((m: any) => m.folder === "inbox" && ["One", "Two"].includes(m.subject));
+    assert.equal(inbox.length, 2);
+    const ids = inbox.map((m: any) => m.threadId);
+    assert.equal((await ivy.call("POST", "/api/threads", { threadIds: ids, action: "nuke" })).status, 400);
+    const done = await ivy.call("POST", "/api/threads", { threadIds: ids, action: "archive", box: "inbox" });
+    assert.equal(done.status, 200, JSON.stringify(done.data));
+    assert.equal(done.data.count, 2);
+    assert.ok(done.data.state.messages.filter((m: any) => ids.includes(m.threadId)).every((m: any) => m.folder === "archive"));
+    assert.equal((await jo.call("POST", "/api/undo", { id: done.data.undo })).status, 404, "someone else can't undo it");
+    const back = await ivy.call("POST", "/api/undo", { id: done.data.undo });
+    assert.equal(back.data.restored, 2);
+    assert.ok(back.data.state.messages.filter((m: any) => ids.includes(m.threadId)).every((m: any) => m.folder === "inbox"));
+    assert.equal((await ivy.call("POST", "/api/undo", { id: done.data.undo })).status, 404, "undo works once");
+  });
 });
