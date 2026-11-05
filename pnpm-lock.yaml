@@ -23,9 +23,40 @@ importers:
 
   apps/cumulus-mail:
     dependencies:
+      '@infinitum/cid':
+        specifier: workspace:*
+        version: link:../../packages/cid
+      '@infinitum/cloud':
+        specifier: workspace:*
+        version: link:../../packages/cloud
+      '@infinitum/cumulus':
+        specifier: workspace:*
+        version: link:../../packages/cumulus
+      '@infinitum/firm':
+        specifier: workspace:*
+        version: link:../../packages/firm
+      '@infinitum/firmament':
+        specifier: workspace:*
+        version: link:../../packages/firmament
       '@infinitum/mail':
         specifier: workspace:*
         version: link:../../packages/mail
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.5
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
+  apps/data-exchange:
+    dependencies:
+      '@infinitum/data-exchange':
+        specifier: workspace:*
+        version: link:../../packages/data-exchange
+      '@infinitum/firmament':
+        specifier: workspace:*
+        version: link:../../packages/firmament
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -52,9 +83,21 @@ importers:
       '@infinitum/cid':
         specifier: workspace:*
         version: link:../../packages/cid
+      '@infinitum/conductor':
+        specifier: workspace:*
+        version: link:../conductor
+      '@infinitum/cumulus':
+        specifier: workspace:*
+        version: link:../../packages/cumulus
       '@infinitum/firmament':
         specifier: workspace:*
         version: link:../../packages/firmament
+      '@infinitum/metatron':
+        specifier: workspace:*
+        version: link:../../packages/metatron
+      '@infinitum/scalus':
+        specifier: workspace:*
+        version: link:../../packages/scalus
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -94,7 +137,39 @@ importers:
         specifier: ^5.9.0
         version: 5.9.3
 
-  packages/eidet ic:
+  packages/cumulus:
+    dependencies:
+      '@infinitum/cid':
+        specifier: workspace:*
+        version: link:../cid
+      '@infinitum/cloud':
+        specifier: workspace:*
+        version: link:../cloud
+      '@infinitum/firm':
+        specifier: workspace:*
+        version: link:../firm
+      '@infinitum/firmament':
+        specifier: workspace:*
+        version: link:../firmament
+      '@infinitum/mail':
+        specifier: workspace:*
+        version: link:../mail
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.5
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
+  packages/data-exchange:
+    dependencies:
+      '@infinitum/cid':
+        specifier: workspace:*
+        version: link:../cid
+      '@infinitum/firmament':
+        specifier: workspace:*
+        version: link:../firmament
     devDependencies:
       '@types/node':
         specifier: ^22.0.0

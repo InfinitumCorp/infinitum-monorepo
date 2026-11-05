@@ -1,0 +1,369 @@
+/**
+ * Cumulus://Mail HTTP app. Sign-in is Cumulus://ID; every request is scoped to the signed-in CID,
+ * and access needs the "cumulus-mail" grant, so revoking it in the CID permissions dashboard
+ * cuts Mail off immediately.
+ *
+ * Mail is unlisted: every response carries noindex headers and robots.txt disallows everything.
+ * People reach it from inside other Infinitum products (account menu, notices), not from the site.
+ */
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { readFile } from "node:fs/promises";
+import { extname, join, normalize, sep } from "node:path";
+import { CidError, type Account } from "@infinitum/cid";
+import { QuotaError } from "@infinitum/cloud";
+import { WalletError } from "@infinitum/firm";
+import { MailError, isE2E, threadOf, transcript, type MailMessage } from "@infinitum/mail";
+import type { CumulusSuite } from "@infinitum/cumulus";
+
+export const MAIL_SCOPES = ["mail:read", "mail:write"];
+const COOKIE = "cmail_session";
+const OAUTH_COOKIE = "cmail_oauth";
+const MAX_BODY = 25_000_000;
+const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+export interface MailAppDeps {
+  suite: CumulusSuite;
+  publicDir: string;
+  origin: string;
+  secureCookies: boolean;
+  onChange?: () => void;
+  /** SCALVS briefs; defaults to xAI when XAI_API_KEY is set. */
+  scalvs?: (mode: "summary" | "draft", owner: string, subject: string, text: string) => Promise<{ ok: true; text: string } | { ok: false; error: string }>;
+}
+
+class HttpError extends Error {
+  readonly status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+class Redirect {
+  readonly location: string;
+  constructor(location: string) {
+    this.location = location;
+  }
+}
+
+interface Ctx {
+  req: IncomingMessage;
+  res: ServerResponse;
+  params: Record<string, string>;
+  body: Record<string, any>;
+  query: URLSearchParams;
+  user?: { account: Account; sessionId: string };
+}
+type Handler = (ctx: Ctx) => Promise<unknown> | unknown;
+
+const MIME: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".txt": "text/plain; charset=utf-8",
+};
+
+function parseCookies(header = ""): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const part of header.split(";")) {
+    const i = part.indexOf("=");
+    if (i > 0) out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+  }
+  return out;
+}
+
+async function readBody(req: IncomingMessage): Promise<Record<string, any>> {
+  if (req.method === "GET" || req.method === "HEAD") return {};
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const c of req) {
+    size += (c as Buffer).length;
+    if (size > MAX_BODY) throw new HttpError(413, "Message too large");
+    chunks.push(c as Buffer);
+  }
+  if (!chunks.length) return {};
+  const text = Buffer.concat(chunks).toString("utf8");
+  if (String(req.headers["content-type"] ?? "").startsWith("application/x-www-form-urlencoded")) return Object.fromEntries(new URLSearchParams(text));
+  try {
+    const parsed = JSON.parse(text);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) throw new Error();
+    return parsed;
+  } catch {
+    throw new HttpError(400, "Body must be a JSON object");
+  }
+}
+
+const str = (v: unknown, max = 100_000) => String(v ?? "").slice(0, max);
+
+async function xaiScalvs(mode: "summary" | "draft", owner: string, subject: string, text: string) {
+  const apiKey = process.env.XAI_API_KEY;
+  if (!apiKey) return { ok: false as const, error: "Set XAI_API_KEY to turn on SCALVS." };
+  const system =
+    mode === "summary"
+      ? "You are SCALVS inside Cumulus://Mail. Three short lines of what matters, then one line that starts with Action:. Plain text. No invented facts."
+      : `You are SCALVS drafting a reply for ${owner}. Reply body only. No subject line. No invented commitments.`;
+  const response = await fetch("https://api.x.ai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: "grok-4.5",
+      max_tokens: 220,
+      temperature: 0.3,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: `Subject: ${subject.slice(0, 200)}\n\n${text.slice(0, 6000)}` },
+      ],
+    }),
+  });
+  if (!response.ok) return { ok: false as const, error: `SCALVS could not read this thread (${response.status}).` };
+  const payload = (await response.json()) as { choices?: { message?: { content?: string } }[] };
+  const reply = payload.choices?.[0]?.message?.content?.trim() ?? "";
+  if (!reply) return { ok: false as const, error: "SCALVS returned an empty brief." };
+  return { ok: true as const, text: reply };
+}
+
+export function createMailApp(deps: MailAppDeps) {
+  const { suite } = deps;
+  const { cid, mail } = suite;
+  const scalvs = deps.scalvs ?? xaiScalvs;
+  const routes: { method: string; pattern: RegExp; keys: string[]; auth: boolean; optionalAuth: boolean; csrf: boolean; handler: Handler }[] = [];
+  const route = (method: string, path: string, handler: Handler, auth = true, opts: { csrf?: boolean; optionalAuth?: boolean } = {}) => {
+    const keys: string[] = [];
+    const pattern = new RegExp("^" + path.replace(/:(\w+)/g, (_, k) => { keys.push(k); return "([^/]+)"; }) + "$");
+    routes.push({ method, pattern, keys, auth, handler, csrf: opts.csrf ?? true, optionalAuth: opts.optionalAuth ?? false });
+  };
+  const briefs = new Map<string, string>(); // `${cid}|${messageIds}` -> brief, kept in memory only
+
+  const sessionCookie = (token: string, maxAge = 30 * 86400) =>
+    `${COOKIE}=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${maxAge}${deps.secureCookies ? "; Secure" : ""}`;
+  const device = (ctx: Ctx) => String(ctx.req.headers["user-agent"] ?? "Browser").slice(0, 120);
+  const need = (ctx: Ctx, ...fields: string[]) => {
+    for (const f of fields) if (ctx.body[f] === undefined || ctx.body[f] === "") throw new HttpError(400, `Missing ${f}`);
+  };
+  /** Signing in to Mail grants Mail access to the mailbox; the grant is recorded on Firmament. */
+  const ensureGrant = async (account: Account) => {
+    if (!MAIL_SCOPES.every((s) => cid.can(account.cid, "cumulus-mail", s))) await cid.grant(account.cid, "cumulus-mail", MAIL_SCOPES);
+    suite.summary(account.cid); // provisions older CIDs on first visit
+  };
+  const me = (ctx: Ctx) => ctx.user!.account.cid;
+
+  const state = (cidValue: string) => {
+    const view = mail.view(cidValue);
+    const prefix = `${cidValue}|`;
+    const own = Object.fromEntries([...briefs].filter(([k]) => k.startsWith(prefix)).map(([k, v]) => [k.slice(prefix.length), v]));
+    return { ...view, briefs: own, account: suite.summary(cidValue) };
+  };
+
+  /* ---------------- Cumulus://ID sign-in ---------------- */
+
+  route("POST", "/api/auth/signup", async (ctx) => {
+    need(ctx, "username");
+    const account = await cid.createAccount({ username: str(ctx.body.username, 40) });
+    return { cid: account.cid, options: cid.startAuthenticatorRegistration(account.cid, "passkey") };
+  }, false);
+
+  route("POST", "/api/auth/signup/finish", async (ctx) => {
+    need(ctx, "cid", "response");
+    await cid.finishAuthenticatorRegistration(str(ctx.body.cid), ctx.body.response, { kind: "passkey", label: str(ctx.body.label ?? "Passkey", 60) });
+    const account = cid.getAccount(str(ctx.body.cid));
+    return { signedUp: true, options: cid.startSignIn(account.username) };
+  }, false);
+
+  route("POST", "/api/auth/signin", (ctx) => ({ options: cid.startSignIn(ctx.body.username ? str(ctx.body.username, 40) : undefined) }), false);
+
+  route("POST", "/api/auth/signin/finish", async (ctx) => {
+    need(ctx, "response");
+    const result = await cid.finishSignIn(ctx.body.response, device(ctx));
+    if (result.status === "mfa_required") return result;
+    ctx.res.setHeader("Set-Cookie", sessionCookie(result.token));
+    await ensureGrant(cid.getAccount(result.session.cid));
+    return { status: "ok" };
+  }, false);
+
+  route("POST", "/api/auth/mfa", async (ctx) => {
+    need(ctx, "mfaToken", "code");
+    const { token, session } = await cid.completeMfa(str(ctx.body.mfaToken), str(ctx.body.code, 10));
+    ctx.res.setHeader("Set-Cookie", sessionCookie(token));
+    await ensureGrant(cid.getAccount(session.cid));
+    return { status: "ok" };
+  }, false);
+
+  route("POST", "/api/auth/signout", async (ctx) => {
+    await cid.revokeSession(me(ctx), ctx.user!.sessionId);
+    ctx.res.setHeader("Set-Cookie", sessionCookie("", 0));
+    return { ok: true };
+  });
+
+  route("GET", "/api/auth/providers", () => cid.socialProvidersEnabled(), false);
+
+  const oauthCookie = (provider: string, value: string, maxAge: number) => {
+    const sameSite = provider === "apple" && deps.secureCookies ? "None" : "Lax";
+    return `${OAUTH_COOKIE}=${value}; HttpOnly; Path=/api/auth/oauth; SameSite=${sameSite}; Max-Age=${maxAge}${deps.secureCookies ? "; Secure" : ""}`;
+  };
+  route("GET", "/api/auth/oauth/:provider/start", async (ctx) => {
+    const { url, state: st } = await cid.startSocialSignIn(ctx.params.provider, `${deps.origin}/api/auth/oauth/${ctx.params.provider}/callback`);
+    ctx.res.setHeader("Set-Cookie", oauthCookie(ctx.params.provider, st, 600));
+    return new Redirect(url);
+  }, false);
+  const oauthCallback: Handler = async (ctx) => {
+    const p = ctx.req.method === "POST" ? ctx.body : Object.fromEntries(ctx.query);
+    if (p.error) return new Redirect(`/#/signin-error/${encodeURIComponent("Sign-in was cancelled.")}`);
+    try {
+      const result = await cid.finishSocialSignIn(ctx.params.provider, { state: str(p.state), code: str(p.code), browserState: parseCookies(ctx.req.headers.cookie)[OAUTH_COOKIE] }, device(ctx));
+      if (result.status === "mfa_required") return new Redirect(`/#/mfa/${result.mfaToken}`);
+      if (result.status === "linked") return new Redirect("/");
+      ctx.res.setHeader("Set-Cookie", [oauthCookie(ctx.params.provider, "", 0), sessionCookie(result.token)]);
+      await ensureGrant(cid.getAccount(result.session.cid));
+      return new Redirect("/");
+    } catch (err) {
+      const message = err instanceof CidError ? err.message : "Sign-in failed. Please try again.";
+      return new Redirect(`/#/signin-error/${encodeURIComponent(message)}`);
+    }
+  };
+  route("GET", "/api/auth/oauth/:provider/callback", oauthCallback, false, { csrf: false });
+  route("POST", "/api/auth/oauth/:provider/callback", oauthCallback, false, { csrf: false });
+
+  /* ---------------- Account: one summary for every product ---------------- */
+
+  route("GET", "/api/me", (ctx) => suite.summary(me(ctx)));
+
+  /* ---------------- Mail ---------------- */
+
+  route("GET", "/api/state", (ctx) => state(me(ctx)));
+
+  route("POST", "/api/send", async (ctx) => {
+    const b = ctx.body;
+    const payment = b.payment && str(b.payment.amount) ? { asset: str(b.payment.asset, 10), amount: str(b.payment.amount, 30) } : undefined;
+    const result = await mail.send(me(ctx), {
+      to: str(b.to, 4000), cc: str(b.cc ?? "", 4000), subject: str(b.subject, 300), body: str(b.body),
+      threadId: b.threadId ? str(b.threadId, 80) : undefined, draftId: b.draftId ? str(b.draftId, 80) : undefined, payment,
+    });
+    return { ...result, ok: true, state: state(me(ctx)) };
+  });
+
+  route("POST", "/api/draft", (ctx) => {
+    const b = ctx.body;
+    const saved = mail.saveDraft(me(ctx), { to: str(b.to, 4000), cc: str(b.cc ?? "", 4000), subject: str(b.subject, 300), body: str(b.body), threadId: b.threadId ? str(b.threadId, 80) : undefined, draftId: b.draftId ? str(b.draftId, 80) : undefined });
+    return { ...saved, state: state(me(ctx)) };
+  });
+
+  route("POST", "/api/read", (ctx) => { if (ctx.body.threadId) mail.markThreadRead(me(ctx), str(ctx.body.threadId, 80)); return state(me(ctx)); });
+  route("POST", "/api/star", (ctx) => { if (ctx.body.id) mail.toggleStar(me(ctx), str(ctx.body.id, 80)); return state(me(ctx)); });
+  route("POST", "/api/move", (ctx) => { need(ctx, "id", "folder"); mail.move(me(ctx), str(ctx.body.id, 80), str(ctx.body.folder, 20) as never); return state(me(ctx)); });
+  route("POST", "/api/remove", (ctx) => { if (ctx.body.id) mail.remove(me(ctx), str(ctx.body.id, 80)); return state(me(ctx)); });
+  route("POST", "/api/trash/empty", (ctx) => ({ removed: mail.emptyTrash(me(ctx)), state: state(me(ctx)) }));
+  route("POST", "/api/alias", (ctx) => ({ ok: mail.addAlias(me(ctx), str(ctx.body.alias, 120)), state: state(me(ctx)) }));
+  route("POST", "/api/task", (ctx) => ({
+    ok: mail.addTask(me(ctx), { title: str(ctx.body.title ?? "Task", 180), detail: str(ctx.body.detail ?? "Queued from mail", 240), messageId: ctx.body.messageId ? str(ctx.body.messageId, 80) : undefined }),
+    state: state(me(ctx)),
+  }));
+  route("POST", "/api/task/toggle", (ctx) => { if (ctx.body.id) mail.toggleTask(me(ctx), str(ctx.body.id, 80)); return state(me(ctx)); });
+  route("POST", "/api/contact", (ctx) => ({ ok: mail.addContact(me(ctx), { name: str(ctx.body.name, 120), email: str(ctx.body.email, 200) }), state: state(me(ctx)) }));
+
+  route("GET", "/api/message", (ctx) => {
+    const message = mail.message(me(ctx), ctx.query.get("id") ?? "");
+    if (!message) throw new HttpError(404, "Not found");
+    return { message, e2e: isE2E(message) };
+  });
+
+  route("POST", "/api/brief", async (ctx) => {
+    const mode = ctx.body.mode === "draft" ? "draft" : "summary";
+    const messages: MailMessage[] = mail.view(me(ctx)).messages;
+    const thread = threadOf(messages, str(ctx.body.threadId, 80));
+    if (!thread.length) throw new HttpError(404, "No such thread");
+    const result = await scalvs(mode, ctx.user!.account.username, str(ctx.body.subject ?? thread[0]!.subject, 300), transcript(thread));
+    if (!result.ok) throw new HttpError(400, result.error);
+    if (mode === "summary") briefs.set(`${me(ctx)}|${thread.map((m) => m.id).join(":")}`, result.text);
+    return result;
+  });
+
+  /* ---------------- FIRM Wallet, inside Mail ---------------- */
+
+  route("GET", "/api/wallet", (ctx) => {
+    const w = suite.wallets.get(me(ctx))!;
+    return { address: w.address, balances: suite.wallets.balances(me(ctx)), history: suite.wallets.history(me(ctx)).map((t) => ({ ...t, direction: t.to === me(ctx) ? "in" : "out", counterparty: t.from === null ? "Settlement" : mail.addressOf(t.to === me(ctx) ? t.from : t.to) })) };
+  });
+  route("POST", "/api/wallet/pay", async (ctx) => {
+    need(ctx, "to", "asset", "amount");
+    const tx = await suite.pay(me(ctx), str(ctx.body.to, 200), str(ctx.body.asset, 10), str(ctx.body.amount, 30), str(ctx.body.memo ?? "", 140));
+    return { tx, state: state(me(ctx)) };
+  });
+
+  /* ---------------- HTTP plumbing ---------------- */
+
+  async function serveStatic(path: string, res: ServerResponse) {
+    const rel = normalize(path === "/" ? "index.html" : path.replace(/^\/+/, ""));
+    if (rel.startsWith("..") || rel.includes("\0")) throw new HttpError(404, "Not found");
+    const full = join(deps.publicDir, rel);
+    const root = deps.publicDir.endsWith(sep) ? deps.publicDir : deps.publicDir + sep;
+    if (!full.startsWith(root)) throw new HttpError(404, "Not found");
+    let data: Buffer;
+    try {
+      data = await readFile(full);
+    } catch {
+      throw new HttpError(404, "Not found");
+    }
+    res.writeHead(200, { "Content-Type": MIME[extname(full)] ?? "application/octet-stream", "Cache-Control": "no-cache" });
+    res.end(data);
+  }
+
+  async function handle(req: IncomingMessage, res: ServerResponse) {
+    // Unlisted: never indexed, never framed.
+    res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Referrer-Policy", "no-referrer");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+    const url = new URL(req.url ?? "/", "http://localhost");
+    try {
+      if (url.pathname === "/robots.txt") {
+        res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+        res.end("User-agent: *\nDisallow: /\n");
+        return;
+      }
+      if (!url.pathname.startsWith("/api/")) {
+        if (req.method !== "GET" && req.method !== "HEAD") throw new HttpError(405, "Method not allowed");
+        return await serveStatic(url.pathname, res);
+      }
+      const r = routes.find((x) => x.method === req.method && x.pattern.test(url.pathname));
+      if (!r) throw new HttpError(404, "Not found");
+      // CSRF: state-changing calls must come from Mail's own script.
+      if (r.csrf && MUTATING.has(req.method!) && req.headers["x-cumulus"] !== "1") throw new HttpError(403, "Missing request header");
+      const m = url.pathname.match(r.pattern)!;
+      const ctx: Ctx = { req, res, params: Object.fromEntries(r.keys.map((k, i) => [k, decodeURIComponent(m[i + 1]!)])), body: await readBody(req), query: url.searchParams };
+      if (r.auth || r.optionalAuth) {
+        const token = parseCookies(req.headers.cookie)[COOKIE];
+        const session = token ? cid.authenticate(token) : null;
+        if (!session && r.auth) throw new HttpError(401, "Please sign in");
+        if (session) {
+          const scope = MUTATING.has(req.method!) ? "mail:write" : "mail:read";
+          if (r.auth && !cid.can(session.account.cid, "cumulus-mail", scope)) throw new HttpError(403, "Mail's access was revoked in your Cumulus://ID permissions");
+          ctx.user = { account: session.account, sessionId: session.session.id };
+        }
+      }
+      const result = await r.handler(ctx);
+      if (MUTATING.has(req.method!) || result instanceof Redirect) deps.onChange?.();
+      if (result instanceof Redirect) {
+        res.writeHead(302, { Location: result.location, "Cache-Control": "no-store" });
+        res.end();
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+      res.end(JSON.stringify(result ?? { ok: true }));
+    } catch (err) {
+      const status =
+        err instanceof HttpError ? err.status
+        : err instanceof CidError ? (err.code === "not_found" ? 404 : err.code === "forbidden" ? 403 : 400)
+        : err instanceof MailError || err instanceof WalletError || err instanceof QuotaError ? 400
+        : 500;
+      if (status === 500) console.error(err);
+      const code = err instanceof CidError || err instanceof MailError || err instanceof WalletError || err instanceof QuotaError ? err.code : undefined;
+      if (!res.headersSent) {
+        res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+        res.end(JSON.stringify({ error: status === 500 ? "Something went wrong" : (err as Error).message, code }));
+      }
+    }
+  }
+
+  return { handle, server: () => createServer((req, res) => void handle(req, res)) };
+}

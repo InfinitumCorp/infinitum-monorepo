@@ -2,7 +2,8 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync } from "n
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Ledger, FileStore, generateSigner, signerFromPrivateKey } from "@infinitum/firmament";
-import { CidService, CidStore, socialFromEnv } from "@infinitum/cid";
+import { socialFromEnv } from "@infinitum/cid";
+import { createCumulus, emptyCumulusStores, loadCumulusStores, saveCumulusStores } from "@infinitum/cumulus";
 import { SpectreCRM, emptyStore } from "../core/crm.ts";
 import { createApp } from "./app.ts";
 import { aiConfigFromEnv } from "./ai.ts";
@@ -51,24 +52,33 @@ if (!verified.ok) {
   process.exit(1);
 }
 
-const cidStore = loadSnapshot(join(dataDir, "cid.json"), new CidStore());
+// cid.json keeps its old name; mail, wallet, quota and suite sit next to it.
+const cumulusStores = loadCumulusStores(dataDir, emptyCumulusStores());
+const cidStore = cumulusStores.cid;
 const spectreStore = loadSnapshot(join(dataDir, "spectre.json"), emptyStore());
 // Social sign-in available to every Infinitum product that uses Cumulus://ID.
 const social = socialFromEnv();
 
-const cid = new CidService({ ledger, signer, rpId, origins: [origin], store: cidStore, social: { providers: social } });
+// Every CID that signs up through +SPCTR gets the full Cumulus account: Mail, Cloud and a FIRM Wallet.
+const suite = createCumulus({
+  ledger, signer, rpId, origins: [origin], stores: cumulusStores, social: { providers: social },
+  mailOrigin: process.env.CUMULUS_MAIL_ORIGIN,
+});
+suite.provisionAll();
+const cid = suite.cid;
 const crm = new SpectreCRM({ ledger, signer, store: spectreStore });
 
 const ai = aiConfigFromEnv();
 const app = createApp({
   cid,
+  suite,
   crm,
   ai,
   publicDir: join(here, "../../public"),
   secureCookies: origin.startsWith("https://"),
   origin,
   onChange: () => {
-    saveSnapshot(join(dataDir, "cid.json"), cidStore);
+    saveCumulusStores(dataDir, cumulusStores);
     saveSnapshot(join(dataDir, "spectre.json"), spectreStore);
   },
 });

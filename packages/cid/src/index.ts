@@ -6,6 +6,7 @@ export {
   FREE_ENTITLEMENTS,
   MAIL_DOMAIN,
 } from "./service.ts";
+export type { CidEvent, CidEventName } from "./service.ts";
 export type { Account, Authenticator, Session, SessionMethod, LinkedIdentity, Grant, Organization, AppId, CidConfig } from "./service.ts";
 export { PROVIDERS, SocialClient, appleClientSecret, socialFromEnv } from "./social.ts";
 export type { SocialProviderId, SocialCredentials, SocialProfile } from "./social.ts";

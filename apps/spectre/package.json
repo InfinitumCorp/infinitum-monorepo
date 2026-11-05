@@ -14,7 +14,11 @@
   },
   "dependencies": {
     "@infinitum/firmament": "workspace:*",
-    "@infinitum/cid": "workspace:*"
+    "@infinitum/cid": "workspace:*",
+    "@infinitum/conductor": "workspace:*",
+    "@infinitum/cumulus": "workspace:*",
+    "@infinitum/metatron": "workspace:*",
+    "@infinitum/scalus": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.0",

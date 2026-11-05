@@ -55,12 +55,15 @@ nav button {
   align-items: center;
 }
 nav button[aria-current="true"] { color: var(--ink); border-left-color: var(--accent); }
-.account {
+nav button.account {
   margin-top: auto;
   border-top: 1px solid var(--line);
   padding: 16px;
   text-align: left;
   width: 100%;
+  height: auto;
+  display: block;
+  color: var(--ink);
 }
 .bar { height: 4px; background: var(--line); margin-top: 12px; }
 .bar span { display: block; height: 4px; background: var(--accent); }
@@ -69,7 +72,8 @@ nav button[aria-current="true"] { color: var(--ink); border-left-color: var(--ac
 .rows { overflow: auto; min-height: 0; }
 .row { display: flex; width: 100%; border-bottom: 1px solid var(--line); border-left: 2px solid transparent; text-align: left; }
 .row[aria-current="true"] { border-left-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, white); }
-.row .body { flex: 1; min-width: 0; padding: 12px; }
+.row .body { flex: 1; min-width: 0; padding: 12px; text-align: left; }
+.row > button:last-child { width: 44px; flex-shrink: 0; }
 .row strong, .row em { display: block; font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .row em, .muted { color: var(--muted); }
 .reader, .pane { flex: 1; min-width: 0; overflow: auto; }
@@ -88,8 +92,42 @@ form.composer textarea, .modal textarea { min-height: 140px; padding: 12px 0; re
 .modal-scrim { position: fixed; inset: 0; background: color-mix(in srgb, var(--ink) 42%, transparent); display: flex; align-items: flex-end; justify-content: center; }
 .modal { background: var(--paper); width: min(680px, 100%); }
 .event, .person, .task { border-top: 1px solid var(--line); padding: 18px 0; display: flex; justify-content: space-between; gap: 16px; }
+.task { width: 100%; text-align: left; }
+nav .mobile-only { display: none; }
+@media (max-width: 860px) { nav .mobile-only { display: flex; } }
+select { font: inherit; color: inherit; border: 0; background: none; height: 44px; }
+.list-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; }
+.list-head h2 { font-size: 18px; margin: 0; text-transform: capitalize; }
+.count { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: var(--accent); }
+.row strong.unread::before { content: "● "; color: var(--accent); }
+.badge { display: inline-block; margin-left: 8px; font-size: 12px; color: var(--accent); border: 1px solid currentColor; padding: 0 6px; }
+.payment { border: 1px solid var(--accent); padding: 12px; margin: 12px 0; max-width: 420px; }
+.payment strong { display: block; font-size: 22px; font-weight: 400; letter-spacing: -0.03em; margin: 4px 0; }
+form.composer label.pay { gap: 8px; }
+.error { color: #b3261e; }
+.small { font-size: 13px; }
+.small-head { font-size: 16px !important; margin-top: 28px !important; }
+.plan { padding-left: 18px; line-height: 1.8; }
+.auth { flex: 1; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.auth-card { width: min(380px, 100%); display: flex; flex-direction: column; gap: 12px; }
+.auth-card .mark { font-size: 28px; }
+.auth-card input { height: 44px; border: 1px solid var(--line); padding: 0 12px; }
+.auth-card .compose, .auth-card .line { height: 44px; text-align: center; }
+.social { display: flex; flex-direction: column; gap: 8px; }
+.social a { display: flex; align-items: center; justify-content: center; text-decoration: none; }
+.divider { border-top: 1px solid var(--line); padding-top: 12px; margin-bottom: 0; }
 @media (max-width: 860px) {
-  nav { display: none; }
+  header { flex-wrap: wrap; }
+  header label { order: 3; flex-basis: 100%; max-width: none; }
+  header .compose { margin-left: auto; }
+  .layout { flex-direction: column; }
+  nav { width: 100%; flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+  nav button { width: auto; flex-shrink: 0; border-left: 0; border-bottom: 2px solid transparent; gap: 6px; }
+  nav button[aria-current="true"] { border-bottom-color: var(--accent); }
+  nav .account { display: none; }
+  .list, .pane { flex: 1; min-height: 0; }
+  .sheet { padding: 20px 16px 40px; }
+  .sheet h2 { font-size: 28px; }
   .list { width: 100%; }
   .reader { display: none; }
   body.reading .list { display: none; }

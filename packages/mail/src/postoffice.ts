@@ -1,0 +1,377 @@
+/**
+ * Cumulus://Mail post office: one mailbox per Cumulus://ID, the way every Google account has Gmail.
+ *
+ * - `provision` gives a CID its address (username@cumulusmail.cloud) when the account is created.
+ * - Mail between Cumulus addresses is delivered directly into the recipient's mailbox.
+ * - Mail to outside addresses is queued for the outbound relay.
+ * - Products send account mail with `notify` (security notices, Cloud shares, wallet receipts).
+ * - Messages count against the person's shared Cumulus storage (Mail + Cloud).
+ * - A message can carry a FIRM Wallet payment to its Cumulus recipient.
+ */
+import { randomUUID } from "node:crypto";
+import { Mailbox, type MailSnapshot, type SendInput } from "./mailbox.ts";
+import type { FolderId, MailMessage, MailPayment, Person } from "./model.ts";
+import { isCumulus, parsePeople, validEmail } from "./logic.ts";
+
+export const MAIL_DOMAIN = "cumulusmail.cloud";
+
+/** Product senders allowed to write account mail. Addresses are reserved; no person can take them. */
+export const SYSTEM_SENDERS = {
+  welcome: { name: "Cumulus", email: `welcome@${MAIL_DOMAIN}`, label: "Cumulus" },
+  security: { name: "Cumulus://ID Security", email: `security@${MAIL_DOMAIN}`, label: "CID" },
+  cloud: { name: "Cumulus://Cloud", email: `cloud@${MAIL_DOMAIN}`, label: "Cloud" },
+  wallet: { name: "FIRM Wallet", email: `wallet@${MAIL_DOMAIN}`, label: "Wallet" },
+  ledger: { name: "Firmament Network", email: `ledger@${MAIL_DOMAIN}`, label: "Firmament" },
+  postmaster: { name: "Mail Delivery", email: `postmaster@${MAIL_DOMAIN}`, label: "Delivery" },
+} as const;
+export type SystemSender = keyof typeof SYSTEM_SENDERS;
+
+export class MailError extends Error {
+  readonly code: string;
+  constructor(code: string, message: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
+export interface StoredMailbox extends MailSnapshot {
+  cid: string;
+  owner: Person;
+  createdAt: string;
+}
+
+export interface OutboundMail {
+  id: string;
+  fromCid: string;
+  from: string;
+  to: string[];
+  subject: string;
+  queuedAt: string;
+  status: "queued" | "sent" | "failed";
+}
+
+export class PostOfficeStore {
+  mailboxes = new Map<string, StoredMailbox>();
+  /** Address or alias (lowercase) -> CID. */
+  addresses = new Map<string, string>();
+  outbound = new Map<string, OutboundMail>();
+}
+
+/** Shared storage (Cumulus://Cloud StorageQuota implements this). */
+export interface MailQuota {
+  charge(cid: string, product: "mail", bytes: number): void;
+  release(cid: string, product: "mail", bytes: number): void;
+  canFit(cid: string, bytes: number): boolean;
+  usage(cid: string): { label: string; pct: number; usedBytes: number; limitBytes: number };
+}
+
+/** FIRM Wallet (WalletAccounts implements this). */
+export interface MailPayments {
+  transfer(fromCid: string, toCid: string, asset: string, amount: string, memo: string): Promise<{ id: string; asset: string; amount: string; ledgerHash?: string }>;
+}
+
+export interface PostOfficeOptions {
+  store?: PostOfficeStore;
+  quota?: MailQuota;
+  payments?: MailPayments;
+  clock?: () => Date;
+}
+
+export interface PostOfficeSendInput extends Omit<SendInput, "id" | "now"> {
+  payment?: { asset: string; amount: string };
+}
+
+export const messageBytes = (m: Pick<MailMessage, "subject" | "body">) =>
+  Buffer.byteLength(m.subject, "utf8") + Buffer.byteLength(m.body, "utf8") + 512; // headers
+
+const RESERVED_LOCAL = new Set([
+  ...Object.values(SYSTEM_SENDERS).map((s) => s.email.split("@")[0]),
+  "admin", "root", "support", "abuse", "noreply", "no-reply", "infinitum", "odin",
+]);
+
+export class PostOffice {
+  readonly store: PostOfficeStore;
+  private readonly quota?: MailQuota;
+  private readonly payments?: MailPayments;
+  private readonly clock: () => Date;
+
+  constructor(opts: PostOfficeOptions = {}) {
+    this.store = opts.store ?? new PostOfficeStore();
+    this.quota = opts.quota;
+    this.payments = opts.payments;
+    this.clock = opts.clock ?? (() => new Date());
+  }
+
+  private now() {
+    return this.clock().toISOString();
+  }
+
+  /* ---------------- Accounts ---------------- */
+
+  /** Create the mailbox for a CID. Idempotent: provisioning twice returns the same mailbox. */
+  provision(input: { cid: string; address: string; name?: string }): StoredMailbox {
+    const existing = this.store.mailboxes.get(input.cid);
+    if (existing) return existing;
+    const address = input.address.trim().toLowerCase();
+    if (!validEmail(address) || !isCumulus(address)) throw new MailError("invalid_address", `Mailboxes live on @${MAIL_DOMAIN}`);
+    const owner = this.store.addresses.get(address);
+    if (owner && owner !== input.cid) throw new MailError("taken", "That address belongs to another Cumulus://ID");
+    const box: StoredMailbox = {
+      cid: input.cid,
+      owner: { name: input.name?.trim() || address.split("@")[0], email: address },
+      createdAt: this.now(),
+      messages: [],
+      aliases: [],
+      tasks: [],
+      contacts: [],
+    };
+    this.store.mailboxes.set(input.cid, box);
+    this.store.addresses.set(address, input.cid);
+    return box;
+  }
+
+  has(cid: string) {
+    return this.store.mailboxes.has(cid);
+  }
+
+  /** The CID behind a Cumulus address or alias, if any. */
+  resolve(address: string): string | undefined {
+    return this.store.addresses.get(address.trim().toLowerCase());
+  }
+
+  addressOf(cid: string): string {
+    return this.box(cid).owner.email;
+  }
+
+  private box(cid: string): StoredMailbox {
+    const box = this.store.mailboxes.get(cid);
+    if (!box) throw new MailError("no_mailbox", "This Cumulus://ID has no mailbox yet");
+    return box;
+  }
+
+  /** Run a Mailbox operation against a stored mailbox and write the result back. */
+  private edit<T>(cid: string, fn: (mail: Mailbox) => T): T {
+    const box = this.box(cid);
+    const mail = new Mailbox(box, box.owner);
+    const result = fn(mail);
+    Object.assign(box, mail.snapshot());
+    return result;
+  }
+
+  view(cid: string) {
+    const box = this.box(cid);
+    const quota = this.quota?.usage(cid) ?? { label: "", pct: 0, usedBytes: 0, limitBytes: 0 };
+    return {
+      me: { ...box.owner, cid },
+      messages: box.messages,
+      aliases: box.aliases,
+      tasks: box.tasks,
+      contacts: box.contacts,
+      events: [],
+      quota: { label: quota.label, pct: quota.pct },
+      unread: new Set(box.messages.filter((m) => m.unread && m.folder === "inbox").map((m) => m.threadId)).size,
+    };
+  }
+
+  unreadCount(cid: string): number {
+    return this.has(cid) ? this.view(cid).unread : 0;
+  }
+
+  /* ---------------- Sending and delivery ---------------- */
+
+  async send(cid: string, input: PostOfficeSendInput): Promise<{ id: string; delivered: number; queued: number; bounced: string[]; payment?: MailPayment }> {
+    const sender = this.box(cid);
+    const to = parsePeople(input.to);
+    const cc = parsePeople(input.cc ?? "");
+    if (to.length === 0 || to.some((p) => !validEmail(p.email))) throw new MailError("bad_address", "Add a real address in To.");
+    if (cc.some((p) => !validEmail(p.email))) throw new MailError("bad_address", "Check the Cc addresses.");
+    if (!input.subject.trim() && !input.body.trim()) throw new MailError("empty", "Write a subject or a message.");
+
+    const size = messageBytes({ subject: input.subject, body: input.body });
+    if (this.quota && !this.quota.canFit(cid, size)) {
+      throw new MailError("quota_exceeded", "Your Cumulus storage is full. Free up space in Mail or Cloud to send.");
+    }
+
+    // Pay by mail: the money moves first, all-or-nothing, so a message never claims a payment that failed.
+    let payment: MailPayment | undefined;
+    let payee: string | undefined;
+    if (input.payment) {
+      if (!this.payments) throw new MailError("payments_off", "FIRM Wallet isn't connected to this mailbox");
+      if (to.length !== 1 || cc.length > 0) throw new MailError("payment_recipient", "Send a payment to exactly one person in To.");
+      payee = this.resolve(to[0].email);
+      if (!payee) throw new MailError("payment_recipient", "Payments go to Cumulus://Mail addresses. This address doesn't have a FIRM Wallet.");
+      if (payee === cid) throw new MailError("payment_recipient", "You can't pay yourself.");
+      const tx = await this.payments.transfer(cid, payee, input.payment.asset, input.payment.amount, input.subject.slice(0, 140));
+      payment = { asset: tx.asset, amount: tx.amount, txId: tx.id, ledgerHash: tx.ledgerHash };
+    }
+
+    const id = `m-${randomUUID()}`;
+    const at = this.now();
+    const result = this.edit(cid, (mail) => mail.send({ ...input, id, now: at }));
+    if (!result.ok) throw new MailError("bad_address", result.error);
+    const sent = sender.messages.find((m) => m.id === id)!;
+    if (payment) {
+      sent.payment = payment;
+      sent.labels = [...new Set([...sent.labels, "Wallet"])];
+    }
+    this.quota?.charge(cid, "mail", size);
+
+    let delivered = 0;
+    const bounced: string[] = [];
+    const external: string[] = [];
+    const seen = new Set<string>();
+    for (const person of [...to, ...cc]) {
+      const address = person.email.toLowerCase();
+      if (seen.has(address)) continue;
+      seen.add(address);
+      if (!isCumulus(address)) {
+        external.push(address);
+        continue;
+      }
+      const rcpt = this.resolve(address);
+      if (!rcpt) {
+        bounced.push(address);
+        continue;
+      }
+      if (this.quota && !this.quota.canFit(rcpt, size)) {
+        bounced.push(address);
+        continue;
+      }
+      this.deliver(rcpt, { ...sent, id: `m-${randomUUID()}`, folder: "inbox", unread: rcpt !== cid, starred: false, payment, delivery: "delivered" });
+      this.quota?.charge(rcpt, "mail", size);
+      delivered++;
+    }
+
+    if (external.length) {
+      const job: OutboundMail = { id: `out-${randomUUID()}`, fromCid: cid, from: sender.owner.email, to: external, subject: sent.subject, queuedAt: at, status: "queued" };
+      this.store.outbound.set(job.id, job);
+      sent.delivery = "queued";
+    }
+    for (const address of bounced) {
+      this.notify(cid, "postmaster", {
+        subject: `Not delivered: ${sent.subject}`,
+        body: `Your message to ${address} wasn't delivered. That Cumulus://Mail address doesn't exist, or its mailbox is full.\n\nEveryone else on the message received it.`,
+        threadId: sent.threadId,
+      });
+    }
+    return { id, delivered, queued: external.length, bounced, payment };
+  }
+
+  private deliver(cid: string, message: MailMessage) {
+    this.box(cid).messages.unshift(message);
+  }
+
+  /**
+   * Account mail from a Cumulus product: sign-in alerts, Cloud shares, wallet receipts.
+   * It goes straight to the inbox, isn't counted against storage, and can't be spoofed by people
+   * because system sender addresses are reserved.
+   */
+  notify(cid: string, sender: SystemSender, input: { subject: string; body: string; threadId?: string; payment?: MailPayment }): MailMessage | null {
+    if (!this.has(cid)) return null;
+    const from = SYSTEM_SENDERS[sender];
+    const box = this.box(cid);
+    const id = `m-${randomUUID()}`;
+    const message: MailMessage = {
+      id,
+      threadId: input.threadId ?? id,
+      folder: "inbox",
+      from: { name: from.name, email: from.email },
+      to: [{ ...box.owner }],
+      cc: [],
+      subject: input.subject,
+      body: input.body,
+      at: this.now(),
+      unread: true,
+      starred: false,
+      labels: [from.label],
+      system: sender,
+      payment: input.payment,
+      delivery: "delivered",
+    };
+    this.deliver(cid, message);
+    return message;
+  }
+
+  /** Queued mail for the outbound relay (SMTP/JMAP bridge) to pick up. */
+  outboundQueue(): OutboundMail[] {
+    return [...this.store.outbound.values()].filter((m) => m.status === "queued");
+  }
+
+  markOutbound(id: string, status: "sent" | "failed") {
+    const job = this.store.outbound.get(id);
+    if (job) job.status = status;
+  }
+
+  /* ---------------- Mailbox actions (scoped to the signed-in CID) ---------------- */
+
+  saveDraft(cid: string, input: Omit<SendInput, "id" | "now">) {
+    return this.edit(cid, (mail) => mail.saveDraft({ ...input, now: this.now() }));
+  }
+
+  markThreadRead(cid: string, threadId: string) {
+    this.edit(cid, (mail) => mail.markThreadRead(threadId));
+  }
+
+  toggleStar(cid: string, id: string) {
+    this.edit(cid, (mail) => mail.toggleStar(id));
+  }
+
+  move(cid: string, id: string, folder: FolderId) {
+    if (!["inbox", "sent", "drafts", "archive", "trash"].includes(folder)) throw new MailError("bad_folder", "Unknown folder");
+    this.edit(cid, (mail) => mail.move(id, folder));
+  }
+
+  /** Delete forever (from trash). Frees the storage it used. */
+  remove(cid: string, id: string) {
+    const message = this.box(cid).messages.find((m) => m.id === id);
+    if (!message) return;
+    this.edit(cid, (mail) => mail.remove(id));
+    if (!message.system && message.folder !== "drafts") this.quota?.release(cid, "mail", messageBytes(message));
+  }
+
+  emptyTrash(cid: string): number {
+    const trash = this.box(cid).messages.filter((m) => m.folder === "trash");
+    for (const m of trash) this.remove(cid, m.id);
+    return trash.length;
+  }
+
+  addAlias(cid: string, alias: string): boolean {
+    const cleaned = alias.trim().toLowerCase();
+    const local = cleaned.split("@")[0] ?? "";
+    if (RESERVED_LOCAL.has(local)) return false;
+    if (this.store.addresses.has(cleaned)) return false; // aliases are unique across all of Cumulus
+    const ok = this.edit(cid, (mail) => mail.addAlias(cleaned));
+    if (ok) this.store.addresses.set(cleaned, cid);
+    return ok;
+  }
+
+  addTask(cid: string, task: { title: string; detail: string; messageId?: string }) {
+    return this.edit(cid, (mail) => mail.addTask({ id: `t-${randomUUID()}`, done: false, ...task }));
+  }
+
+  toggleTask(cid: string, id: string) {
+    this.edit(cid, (mail) => mail.toggleTask(id));
+  }
+
+  addContact(cid: string, contact: { name: string; email: string }) {
+    const email = contact.email.trim();
+    if (!validEmail(email)) return false;
+    return this.edit(cid, (mail) =>
+      mail.addContact({
+        id: `c-${randomUUID()}`,
+        name: contact.name.trim() || email,
+        email,
+        org: isCumulus(email) ? "Cumulus://Mail" : "External",
+        note: "Saved from a message.",
+      }),
+    );
+  }
+
+  message(cid: string, id: string): MailMessage | undefined {
+    return this.box(cid).messages.find((m) => m.id === id);
+  }
+}
+
+export function isReservedMailName(username: string) {
+  return RESERVED_LOCAL.has(username.toLowerCase());
+}

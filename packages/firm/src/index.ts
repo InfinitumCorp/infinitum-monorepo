@@ -5,6 +5,8 @@ export { createRpcClient, erc20BalanceOf, getChainId } from "./evm-client.ts";
 export { PROJECT_TOKENS, createProjectToken, createAllProjectTokens } from "./tokens.ts";
 export type { ProjectToken, ProjectTokenSpec } from "./tokens.ts";
 export { createFirmWallet, FirmWalletImpl } from "./wallet.ts";
+export { WalletAccounts, WalletStore, WalletError, WALLET_ASSETS, parseAmount, formatAmount } from "./accounts.ts";
+export type { WalletAccount, WalletAsset, WalletTransfer, WalletAccountsOptions } from "./accounts.ts";
 export type { FirmWalletOptions, SignedMessage } from "./wallet.ts";
 export { createFirmDex } from "./dex.ts";
 export type { FirmDex, SwapQuote, DexPool } from "./dex.ts";

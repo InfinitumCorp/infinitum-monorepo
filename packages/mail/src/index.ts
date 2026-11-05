@@ -30,4 +30,23 @@ export {
   briefKey,
 } from "./logic.ts";
 export { Mailbox } from "./mailbox.ts";
-export type { MailSnapshot, SendInput } from "./mailbox.ts";
+export type { MailSnapshot, SendInput, MailOwner } from "./mailbox.ts";
+export type { MailPayment } from "./model.ts";
+export {
+  PostOffice,
+  PostOfficeStore,
+  MailError,
+  MAIL_DOMAIN,
+  SYSTEM_SENDERS,
+  messageBytes,
+  isReservedMailName,
+} from "./postoffice.ts";
+export type {
+  StoredMailbox,
+  OutboundMail,
+  MailQuota,
+  MailPayments,
+  PostOfficeOptions,
+  PostOfficeSendInput,
+  SystemSender,
+} from "./postoffice.ts";

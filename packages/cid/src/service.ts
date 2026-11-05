@@ -29,10 +29,14 @@ export const INFINITUM_APPS = [
 ] as const;
 export type AppId = (typeof INFINITUM_APPS)[number];
 
-/** What every new CID comes with, per the Cumulus://ID page. */
+/**
+ * What every new CID comes with, per the Cumulus://ID page. Like a Google account and Gmail,
+ * every CID gets a Cumulus://Mail address, a Cumulus://Cloud drive and a FIRM Wallet on the free tier.
+ */
 export const FREE_ENTITLEMENTS = {
-  storageGb: 15, // shared by Cumulus Drive and Cumulus://Mail
+  storageGb: 15, // shared by Cumulus://Cloud (Drive) and Cumulus://Mail
   mail: true,
+  cloud: true,
   firmWallet: true,
   scalvs: "free",
   cndctr: "free",
@@ -159,6 +163,31 @@ export interface CidConfig {
   sessionDays?: number;
   /** Social sign-in providers with their client credentials. Only configured ones are offered. */
   social?: { providers: Partial<Record<SocialProviderId, SocialCredentials>>; fetchImpl?: typeof fetch };
+  /**
+   * Account events for the rest of the suite: Cumulus://Mail provisions a mailbox on
+   * "account.created" and sends security notices for sign-ins, keys and MFA changes.
+   * A failing listener never blocks sign-in.
+   */
+  onEvent?: (event: CidEvent) => void | Promise<void>;
+}
+
+export type CidEventName =
+  | "account.created"
+  | "authenticator.added"
+  | "authenticator.removed"
+  | "session.created"
+  | "session.revoked_all"
+  | "mfa.enabled"
+  | "mfa.disabled"
+  | "identity.linked"
+  | "identity.unlinked";
+
+export interface CidEvent {
+  event: CidEventName;
+  cid: string;
+  at: string;
+  /** Event details safe to show the account owner (device, method, key kind, provider). */
+  detail: Record<string, string | number>;
 }
 
 export class CidError extends Error {
@@ -170,17 +199,24 @@ export class CidError extends Error {
 }
 
 const USERNAME = /^[a-z0-9][a-z0-9._-]{2,29}$/;
-const RESERVED = new Set(["admin", "root", "support", "security", "odin", "infinitum", "postmaster", "abuse"]);
+// Includes the Cumulus://Mail product senders, so no person can register an address that
+// looks like a security notice or a wallet receipt.
+const RESERVED = new Set([
+  "admin", "root", "support", "security", "odin", "infinitum", "postmaster", "abuse",
+  "welcome", "cloud", "wallet", "ledger", "noreply", "no-reply", "mail", "cumulus", "firm",
+]);
 const CHALLENGE_TTL_MS = 5 * 60_000;
 const hashToken = (t: string) => createHash("sha256").update(t).digest("hex");
 
 export class CidService {
   readonly store: CidStore;
-  private readonly cfg: Required<Omit<CidConfig, "store" | "social">>;
+  private readonly cfg: Required<Omit<CidConfig, "store" | "social" | "onEvent">>;
   private readonly socialProviders: Partial<Record<SocialProviderId, SocialCredentials>>;
   private readonly socialClient: SocialClient;
+  private readonly onEvent?: CidConfig["onEvent"];
 
   constructor(config: CidConfig) {
+    this.onEvent = config.onEvent;
     this.store = config.store ?? new CidStore();
     this.cfg = {
       ledger: config.ledger,
@@ -200,6 +236,15 @@ export class CidService {
 
   private record(type: Entry["type"], actor: string, subject: string, payload: Record<string, unknown>) {
     return this.cfg.ledger.append({ type, product: "cid", actor, subject, payload }, this.cfg.signer);
+  }
+
+  private async emit(event: CidEventName, cid: string, detail: CidEvent["detail"] = {}) {
+    if (!this.onEvent) return;
+    try {
+      await this.onEvent({ event, cid, at: this.now().toISOString(), detail });
+    } catch (err) {
+      console.error(`CID event listener failed for ${event}:`, err);
+    }
   }
 
   private account(cid: string): Account {
@@ -234,6 +279,7 @@ export class CidService {
     this.store.byUsername.set(username, account.cid);
     // Only the event is recorded; the CID is never sold and personal details stay off the ledger.
     await this.record("identity", account.cid, account.cid, { event: "account.created", org: input.orgId ?? null });
+    await this.emit("account.created", account.cid);
     return account;
   }
 
@@ -319,6 +365,7 @@ export class CidService {
     this.store.authenticators.set(auth.id, auth);
     this.store.byCredentialId.set(auth.credentialId, auth.id);
     await this.record("audit", cid, cid, { event: "authenticator.added", kind, authenticator: auth.id });
+    await this.emit("authenticator.added", cid, { kind, label: auth.label });
     return auth;
   }
 
@@ -338,6 +385,7 @@ export class CidService {
     this.store.authenticators.delete(authenticatorId);
     this.store.byCredentialId.delete(auth.credentialId);
     await this.record("audit", cid, cid, { event: "authenticator.removed", authenticator: authenticatorId });
+    await this.emit("authenticator.removed", cid, { kind: auth.kind, label: auth.label });
   }
 
   /** Options for navigator.credentials.get(). Omit the username for discoverable passkey sign-in. */
@@ -426,6 +474,7 @@ export class CidService {
     if (step === null) throw new CidError("mfa_failed", "That code didn't match");
     account.totp = { ...account.totp, confirmed: true, lastStep: step };
     await this.record("audit", cid, cid, { event: "mfa.enabled", method: "totp" });
+    await this.emit("mfa.enabled", cid, { method: "authenticator app" });
   }
 
   async disableTotp(cid: string, code: string) {
@@ -436,6 +485,7 @@ export class CidService {
     }
     account.totp = undefined;
     await this.record("audit", cid, cid, { event: "mfa.disabled", method: "totp" });
+    await this.emit("mfa.disabled", cid, { method: "authenticator app" });
   }
 
   /* ---------------- Sessions ---------------- */
@@ -455,6 +505,7 @@ export class CidService {
     this.store.sessions.set(session.id, session);
     this.store.byTokenHash.set(session.tokenHash, session.id);
     await this.record("audit", cid, cid, { event: "session.created", session: session.id, method });
+    await this.emit("session.created", cid, { device, method, session: session.id });
     return { token, session };
   }
 
@@ -491,6 +542,7 @@ export class CidService {
       }
     }
     await this.record("audit", actor, cid, { event: "session.revoked_all", count });
+    await this.emit("session.revoked_all", cid, { count, by: actor === cid ? "you" : "your organization admin" });
     return count;
   }
 
@@ -606,6 +658,7 @@ export class CidService {
     this.store.byIdentity.set(`${profile.provider}|${profile.subject}`, cid);
     // The provider's account ID and email stay off the ledger; only the event is recorded.
     await this.record("audit", cid, cid, { event: "identity.linked", provider: profile.provider });
+    await this.emit("identity.linked", cid, { provider: PROVIDERS[profile.provider]?.label ?? profile.provider });
   }
 
   linkedIdentities(cid: string): LinkedIdentity[] {
@@ -621,6 +674,7 @@ export class CidService {
     account.identities = account.identities!.filter((i) => i.provider !== provider);
     this.store.byIdentity.delete(`${identity.provider}|${identity.subject}`);
     await this.record("audit", cid, cid, { event: "identity.unlinked", provider });
+    await this.emit("identity.unlinked", cid, { provider: PROVIDERS[provider as SocialProviderId]?.label ?? provider });
   }
 
   /* ---------------- Permissions dashboard ---------------- */

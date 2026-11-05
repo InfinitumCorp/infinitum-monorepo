@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { Ledger, generateSigner } from "@infinitum/firmament";
-import { CidService } from "@infinitum/cid";
+import { createCumulus } from "@infinitum/cumulus";
 import { VirtualAuthenticator } from "../../../../packages/cid/src/testing/virtual-authenticator.ts";
 import { SpectreCRM } from "../core/crm.ts";
 import { createApp } from "./app.ts";
@@ -16,13 +16,14 @@ const ORIGIN = "http://localhost";
 export async function harness() {
   const signer = generateSigner();
   const ledger = new Ledger(undefined, { authorizedSigners: [signer.publicKey] });
-  const cid = new CidService({ ledger, signer, rpId: "localhost", origins: [ORIGIN] });
+  const suite = createCumulus({ ledger, signer, rpId: "localhost", origins: [ORIGIN] });
+  const cid = suite.cid;
   let now = new Date("2026-11-05T09:00:00Z");
   const crm = new SpectreCRM({ ledger, signer, clock: () => now });
   const events: { ws: string; event: GrowthEvent }[] = [];
   let emitImpl = async (ws: string, event: GrowthEvent) => { events.push({ ws, event }); };
   const app = createApp({
-    cid, crm, ai: { model: "m" }, publicDir: join(here, "../../public"), secureCookies: false, origin: ORIGIN,
+    cid, suite, crm, ai: { model: "m" }, publicDir: join(here, "../../public"), secureCookies: false, origin: ORIGIN,
     emit: (ws, e) => emitImpl(ws, e),
   });
   const server: Server = app.server();
@@ -43,7 +44,7 @@ export async function harness() {
     return { cookie: res.headers.get("set-cookie")!.split(";")[0], cid: s.body.cid as string };
   };
   return {
-    crm, ledger, events, call, signUp, base,
+    crm, ledger, suite, events, call, signUp, base,
     setEmit: (fn: typeof emitImpl) => { emitImpl = fn; },
     advance: (ms: number) => { now = new Date(now.getTime() + ms); },
     now: () => now,

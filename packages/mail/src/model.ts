@@ -25,6 +25,19 @@ export type MailMessage = {
   unread: boolean;
   starred: boolean;
   labels: string[];
+  /** FIRM Wallet payment sent with this message (pay by mail). */
+  payment?: MailPayment;
+  /** Sent by a Cumulus product (security notice, Cloud share, wallet receipt). */
+  system?: string;
+  /** Delivery state for mail leaving Cumulus. */
+  delivery?: "delivered" | "queued" | "bounced";
+};
+
+export type MailPayment = {
+  asset: string;
+  amount: string;
+  txId: string;
+  ledgerHash?: string;
 };
 
 export type ConductorTask = {
