@@ -89,6 +89,7 @@ describe("Conjure swarm prediction", () => {
     await step(m.complete, sim);
     const r2 = sim.stats[2];
     assert.ok(r2.likes + r2.replies > 0, JSON.stringify(r2));
+    assert.equal(r2.posts + r2.replies + r2.likes + r2.reposts + r2.idle, sim.personas.length, "every agent is counted once");
     assert.ok(sim.personas.every((p) => p.stance >= -1 && p.stance <= 1));
     assert.ok(!sim.feed.some((x) => x.text === "not in this batch"), "agents outside the batch can't act");
     const someone = sim.personas.find((p) => p.memory.length >= 1)!;
@@ -135,6 +136,18 @@ describe("Conjure swarm prediction", () => {
     assert.equal(sim.round, 2, "the original is untouched");
     assert.ok(f.feed.some((x) => x.authorId === "world"));
     assert.ok(!sim.feed.some((x) => x.authorId === "world"));
+  });
+
+  it("records the stance change that was applied, so a fork rewinds a clamped shift", async () => {
+    const m = fakeModel({ shift: 0.3 });
+    const sim = await createSimulation(m.complete, { id: "clamp", question: "Cut?", seed: SEED, agents: 4, rounds: 2 });
+    for (const p of sim.personas) p.stance = 0.9;
+    const before = sim.personas.map((p) => p.stance);
+    await step(m.complete, sim);
+    assert.ok(sim.personas.every((p) => p.stance === 1));
+    assert.ok(sim.personas.every((p) => p.memory.some((mm) => mm.includes("stance +0.10"))));
+    const f = fork(sim, "rewound", 0);
+    assert.deepEqual(f.personas.map((p) => p.stance), before);
   });
 
   it("writes a report after investigating with tools, and lets you interview agents", async () => {
