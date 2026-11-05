@@ -75,7 +75,7 @@ nav .me { margin-top: auto; padding: 16px 12px 8px 24px; text-align: left; }
 .tabs button[aria-selected="true"]::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--accent); }
 .pill { white-space: nowrap; padding: 0 8px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 700; line-height: 18px; }
 .rows { flex: 1; min-height: 0; overflow: auto; }
-.row { display: grid; grid-template-columns: 36px minmax(120px, 200px) 1fr auto; align-items: center; gap: 8px; height: 40px; padding: 0 16px 0 6px; border-bottom: 1px solid var(--line); background: var(--side); cursor: pointer; }
+.row { display: grid; grid-template-columns: 28px 32px minmax(120px, 200px) 1fr auto; align-items: center; gap: 8px; height: 40px; padding: 0 16px 0 6px; border-bottom: 1px solid var(--line); background: var(--side); cursor: pointer; }
 .row.unread { background: var(--bg); }
 .row:hover { box-shadow: inset 1px 0 0 var(--line), inset -1px 0 0 var(--line), 0 1px 2px rgba(0, 0, 0, .08), 0 1px 3px rgba(0, 0, 0, .06); position: relative; z-index: 1; }
 .row .who, .row .what { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -172,7 +172,8 @@ ul.plan { margin: 8px 0; padding-left: 18px; line-height: 1.9; }
   nav hr, nav .me { display: none; }
   nav .mobile-only { display: flex; }
   .panel { border-radius: 16px 16px 0 0; }
-  .row { grid-template-columns: 32px minmax(0, 1fr) auto; grid-template-areas: "star who when" "star what what"; height: auto; padding: 10px 14px 10px 4px; row-gap: 0; }
+  .row { grid-template-columns: 28px 32px minmax(0, 1fr) auto; grid-template-areas: "pick star who when" "pick star what what"; height: auto; padding: 10px 14px 10px 4px; row-gap: 0; }
+  .row .pick { grid-area: pick; }
   .row .star { grid-area: star; }
   .row .who { grid-area: who; }
   .row .what { grid-area: what; }
@@ -181,4 +182,22 @@ ul.plan { margin: 8px 0; padding-left: 18px; line-height: 1.9; }
   .sheet, .pane .sheet { padding: 16px 16px 96px; }
   .scrim { padding: 0; pointer-events: auto; background: rgba(0, 0, 0, .28); }
   .dialog { width: 100%; }
+}
+
+/* Selection, keyboard cursor, Undo toast, shortcuts */
+.pick { width: 16px; height: 16px; margin: 0 6px; accent-color: var(--accent); cursor: pointer; }
+.row.picked { background: var(--chip); }
+.row.cursor { box-shadow: inset 3px 0 0 var(--accent); }
+.toast { position: fixed; left: 24px; bottom: 24px; z-index: 30; display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 8px 0 16px; border-radius: var(--radius); background: var(--accent); color: var(--on-accent); box-shadow: 0 8px 24px rgba(0, 0, 0, .2); }
+.toast button { height: 32px; padding: 0 10px; border-radius: 8px; color: var(--on-accent); font-weight: 700; }
+.toast button:hover { background: rgba(255, 255, 255, .12); }
+.scrim.center { align-items: center; justify-content: center; pointer-events: auto; background: rgba(0, 0, 0, .28); }
+.dialog.help { border-radius: var(--radius); }
+.keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px 20px; padding: 16px; }
+.key { display: flex; align-items: center; gap: 10px; }
+kbd { min-width: 28px; padding: 2px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--side); font: 12px/1.6 ui-monospace, monospace; text-align: center; }
+@media (max-width: 900px) {
+  .toast { left: 12px; right: 12px; bottom: 84px; }
+  .list-head { overflow-x: auto; scrollbar-width: none; }
+  .list-head > * { flex-shrink: 0; }
 }

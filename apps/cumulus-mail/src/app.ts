@@ -7,8 +7,9 @@
  * People reach it from inside other Infinitum products (account menu, notices), not from the site.
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { randomUUID } from "node:crypto";
 import { scalvsCleanAgent, type CleanAgent, type CleanSuggestion } from "./clean-agent.ts";
-import { bulkSenders, classify, inboxMix } from "@infinitum/mail";
+import { bulkSenders, classify, inboxMix, THREAD_ACTIONS, type ThreadAction, type ThreadSnapshot } from "@infinitum/mail";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize, sep } from "node:path";
 import { CidError, type Account } from "@infinitum/cid";
@@ -265,6 +266,29 @@ export function createMailApp(deps: MailAppDeps) {
   route("POST", "/api/star", (ctx) => { if (ctx.body.id) mail.toggleStar(me(ctx), str(ctx.body.id, 80)); return state(me(ctx)); });
   route("POST", "/api/move", (ctx) => { need(ctx, "id", "folder"); mail.move(me(ctx), str(ctx.body.id, 80), str(ctx.body.folder, 20) as never); return state(me(ctx)); });
   route("POST", "/api/remove", (ctx) => { if (ctx.body.id) mail.remove(me(ctx), str(ctx.body.id, 80)); return state(me(ctx)); });
+  // Conversation actions. Each returns an undo id, kept in memory for 10 minutes.
+  const undos = new Map<string, { cid: string; before: ThreadSnapshot[]; at: number }>();
+  route("POST", "/api/threads", (ctx) => {
+    const action = str(ctx.body.action, 20) as ThreadAction;
+    if (!THREAD_ACTIONS.includes(action)) throw new HttpError(400, "Unknown action");
+    const ids = (Array.isArray(ctx.body.threadIds) ? ctx.body.threadIds : []).map((x: unknown) => str(x, 80)).filter(Boolean);
+    if (!ids.length) throw new HttpError(400, "Pick at least one conversation");
+    const { count, before } = mail.actOnThreads(me(ctx), ids, action, str(ctx.body.box ?? "inbox", 20));
+    const now = Date.now();
+    for (const [k, v] of undos) if (now - v.at > 600_000) undos.delete(k);
+    let undo: string | null = null;
+    if (before.length) {
+      undo = `u-${randomUUID()}`;
+      undos.set(undo, { cid: me(ctx), before, at: now });
+    }
+    return { count, undo, state: state(me(ctx)) };
+  });
+  route("POST", "/api/undo", (ctx) => {
+    const entry = undos.get(str(ctx.body.id, 80));
+    if (!entry || entry.cid !== me(ctx)) throw new HttpError(404, "Nothing to undo.");
+    undos.delete(str(ctx.body.id, 80));
+    return { restored: mail.restore(me(ctx), entry.before), state: state(me(ctx)) };
+  });
   route("POST", "/api/trash/empty", (ctx) => ({ removed: mail.emptyTrash(me(ctx)), state: state(me(ctx)) }));
   route("POST", "/api/alias", (ctx) => ({ ok: mail.addAlias(me(ctx), str(ctx.body.alias, 120)), state: state(me(ctx)) }));
   route("POST", "/api/task", (ctx) => ({

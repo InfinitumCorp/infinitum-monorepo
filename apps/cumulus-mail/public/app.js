@@ -1,10 +1,11 @@
-const state = { view: "mail", box: "inbox", filter: "primary", query: "", selected: null, data: null, composer: null, error: "", wallet: null, clean: null, busy: "" };
+const state = { view: "mail", box: "inbox", filter: "primary", query: "", selected: null, data: null, composer: null, error: "", wallet: null, clean: null, busy: "", picked: new Set(), cursor: -1, toast: null, help: false };
 
 const el = (tag, props = {}, children = []) => {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(props)) {
     if (key === "class") node.className = value;
     else if (key === "value") node.value = value;
+    else if (key === "checked") node.checked = Boolean(value);
     else if (key === "style") node.style.cssText = value; // CSSOM, allowed by the page's CSP (style attributes are not)
     else if (key.startsWith("on")) node.addEventListener(key.slice(2).toLowerCase(), value);
     else if (key.startsWith("aria-")) node.setAttribute(key, String(value));
@@ -44,6 +45,42 @@ async function act(fn) {
     state.error = error.message;
   }
   render();
+}
+
+/* ---------------- Conversation actions and Undo ---------------- */
+
+let toastTimer;
+function showToast(text, undo) {
+  state.toast = { text, undo };
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { state.toast = null; render(); }, 7000);
+}
+
+const DONE = {
+  archive: (n) => (n === 1 ? "Conversation archived." : `${n} conversations archived.`),
+  trash: (n) => (n === 1 ? "Conversation moved to Trash." : `${n} conversations moved to Trash.`),
+  inbox: (n) => (n === 1 ? "Conversation moved to Inbox." : `${n} conversations moved to Inbox.`),
+  read: (n) => (n === 1 ? "Marked as read." : `${n} conversations marked as read.`),
+  unread: (n) => (n === 1 ? "Marked as unread." : `${n} conversations marked as unread.`),
+  star: () => "Starred.",
+  unstar: () => "Star removed.",
+};
+
+async function threadAct(threadIds, action) {
+  if (!threadIds.length) return;
+  await act(async () => {
+    const r = await api("/api/threads", { threadIds, action, box: state.box });
+    state.picked.clear();
+    if (r.count) showToast(DONE[action](r.count), r.undo);
+  });
+}
+
+async function undo(id) {
+  state.toast = null;
+  await act(async () => {
+    const r = await api("/api/undo", { id });
+    showToast(r.restored ? "Action undone." : "Nothing to undo.");
+  });
 }
 
 /* ---------------- Mail ---------------- */
@@ -142,6 +179,28 @@ function render() {
   if (rowsNode) rowsNode.scrollTop = scroll;
   if (state.query) { const input = root.querySelector(".search input"); input.setSelectionRange(input.value.length, input.value.length); }
   if (state.composer && !state.composer.inline) root.append(modal());
+  if (state.toast) root.append(el("div", { class: "toast", role: "status" }, [
+    el("span", {}, [state.toast.text]),
+    state.toast.undo ? el("button", { onClick: () => undo(state.toast.undo) }, ["Undo"]) : none(),
+    el("button", { class: "x", "aria-label": "Dismiss", onClick: () => { state.toast = null; render(); } }, ["×"]),
+  ]));
+  if (state.help) root.append(helpDialog());
+  document.title = data.unread ? `Inbox (${data.unread}) · Cumulus://Mail` : "Cumulus://Mail";
+}
+
+const SHORTCUTS = [
+  ["c", "Compose"], ["/", "Search"], ["j / k", "Next / previous conversation"], ["o or Enter", "Open"], ["u", "Back to the list"],
+  ["e", "Archive"], ["#", "Move to Trash"], ["r", "Reply"], ["s", "Star"], ["x", "Select"],
+  ["Shift + i", "Mark as read"], ["Shift + u", "Mark as unread"], ["z", "Undo"], ["g then i", "Go to Inbox"], ["?", "Show shortcuts"],
+];
+
+function helpDialog() {
+  return el("div", { class: "scrim center", onClick: (e) => { if (e.target === e.currentTarget) { state.help = false; render(); } } }, [
+    el("div", { class: "dialog help", role: "dialog", "aria-label": "Keyboard shortcuts" }, [
+      el("div", { class: "dialog-head" }, [el("h2", {}, ["Keyboard shortcuts"]), el("button", { class: "quiet", "aria-label": "Close", onClick: () => { state.help = false; render(); } }, ["×"])]),
+      el("div", { class: "keys" }, SHORTCUTS.map(([k, label]) => el("div", { class: "key" }, [el("kbd", {}, [k]), el("span", {}, [label])]))),
+    ]),
+  ]);
 }
 
 function sidebar(data) {
@@ -163,8 +222,16 @@ function sidebar(data) {
 }
 
 function list() {
-  const items = rows().map((message) => el("div", { class: `row${message.unread ? " unread" : ""}`, role: "button", tabindex: "0", onClick: () => openMessage(message), onKeydown: (e) => { if (e.key === "Enter") openMessage(message); } }, [
-    el("button", { class: `star${message.starred ? " on" : ""}`, "aria-label": message.starred ? "Unstar" : "Star", onClick: (e) => { e.stopPropagation(); act(() => api("/api/star", { id: message.id })); } }, [message.starred ? "★" : "☆"]),
+  const list_ = rows();
+  state.visible = list_;
+  if (state.cursor >= list_.length) state.cursor = list_.length - 1;
+  const items = list_.map((message, index) => el("div", { class: `row${message.unread ? " unread" : ""}${state.picked.has(message.threadId) ? " picked" : ""}${index === state.cursor ? " cursor" : ""}`, role: "button", tabindex: "0", "data-index": String(index), onClick: () => openMessage(message), onKeydown: (e) => { if (e.key === "Enter") openMessage(message); } }, [
+    el("input", { type: "checkbox", class: "pick", "aria-label": `Select ${message.subject || "conversation"}`, checked: state.picked.has(message.threadId), onClick: (e) => {
+      e.stopPropagation();
+      if (e.target.checked) state.picked.add(message.threadId); else state.picked.delete(message.threadId);
+      render();
+    } }),
+    el("button", { class: `star${message.starred ? " on" : ""}`, "aria-label": message.starred ? "Unstar" : "Star", onClick: (e) => { e.stopPropagation(); threadAct([message.threadId], message.starred ? "unstar" : "star"); } }, [message.starred ? "★" : "☆"]),
     el("span", { class: "who" }, [title(message)]),
     el("span", { class: "what" }, [
       message.payment ? el("span", { class: "tag" }, [`${message.payment.amount} ${message.payment.asset}`]) : none(),
@@ -182,8 +249,26 @@ function list() {
         ["all", "All mail", 0],
       ].map(([id, label, n]) => el("button", { role: "tab", "aria-selected": state.filter === id, onClick: () => { state.filter = id; render(); } }, [label, n ? el("span", { class: "pill" }, [`${n} new`]) : none()])))
     : none();
+  const ids = list_.map((m) => m.threadId);
+  const picked = ids.filter((id) => state.picked.has(id));
+  const all = el("input", { type: "checkbox", class: "pick", "aria-label": "Select all", checked: ids.length > 0 && picked.length === ids.length, onClick: () => {
+    if (picked.length === ids.length) state.picked.clear(); else ids.forEach((id) => state.picked.add(id));
+    render();
+  } });
+  if (picked.length && picked.length < ids.length) all.indeterminate = true;
+  const bulk = (label, action, title) => el("button", { class: "quiet", title, onClick: () => threadAct(picked, action) }, [label]);
   const head = el("div", { class: "list-head" }, [
-    el("button", { class: "icon", "aria-label": "Refresh", title: "Refresh", onClick: () => act(async () => { state.data = await api("/api/state"); }) }, ["↻"]),
+    all,
+    ...(picked.length
+      ? [
+          state.box === "inbox" ? bulk("Archive", "archive", "Archive (e)") : none(),
+          state.box === "archive" || state.box === "trash" ? bulk("Move to inbox", "inbox") : none(),
+          state.box !== "trash" ? bulk("Trash", "trash", "Move to Trash (#)") : none(),
+          bulk("Mark read", "read", "Shift + i"),
+          bulk("Mark unread", "unread", "Shift + u"),
+          el("span", { class: "sub" }, [`${picked.length} selected`]),
+        ]
+      : [el("button", { class: "icon", "aria-label": "Refresh", title: "Refresh", onClick: () => refresh(true) }, ["↻"])]),
     el("span", { class: "spacer" }),
     state.box === "trash" && items.length
       ? el("button", { class: "quiet danger", onClick: () => { if (confirm("Delete everything in Trash forever?")) act(() => api("/api/trash/empty", {})); } }, ["Empty trash now"])
@@ -210,15 +295,16 @@ function reader(message) {
   const brief = state.data.briefs?.[key];
   const inTrash = message.folder === "trash";
   const close = () => { state.selected = null;  };
-  const move = (folder) => act(async () => { await api("/api/move", { id: message.id, folder }); close(); });
+  const thread_ = (action) => { close(); threadAct([message.threadId], action); };
   return el("section", { class: "reader" }, [
     el("div", { class: "tools" }, [
       el("button", { class: "icon", "aria-label": `Back to ${state.box}`, title: `Back to ${state.box}`, onClick: () => { close(); render(); } }, ["←"]),
       message.system ? none() : el("button", { class: "quiet", onClick: () => reply(message) }, ["Reply"]),
-      message.folder === "archive" ? el("button", { class: "quiet", onClick: () => move("inbox") }, ["Move to inbox"]) : el("button", { class: "quiet", onClick: () => move("archive") }, ["Archive"]),
+      message.folder === "archive" || inTrash ? el("button", { class: "quiet", onClick: () => thread_("inbox") }, ["Move to inbox"]) : el("button", { class: "quiet", title: "Archive (e)", onClick: () => thread_("archive") }, ["Archive"]),
       inTrash
         ? el("button", { class: "quiet danger", onClick: () => { if (confirm("Delete this message forever?")) act(async () => { await api("/api/remove", { id: message.id }); close(); }); } }, ["Delete forever"])
-        : el("button", { class: "quiet", onClick: () => move("trash") }, ["Trash"]),
+        : el("button", { class: "quiet", title: "Move to Trash (#)", onClick: () => thread_("trash") }, ["Trash"]),
+      el("button", { class: "quiet", title: "Mark as unread (Shift + u)", onClick: () => thread_("unread") }, ["Mark unread"]),
       message.system || mine(message) ? none() : el("button", { class: "quiet", onClick: () => { if (confirm(`Send future mail from ${message.from.email} to Archive?`)) act(async () => { await api("/api/clean/mute", { email: message.from.email }); close(); }); } }, ["Mute sender"]),
       el("button", { class: "quiet", onClick: () => act(async () => { await api("/api/task", { title: message.subject, detail: "Queued from mail · waiting on you", messageId: message.id }); state.view = "tasks"; }) }, ["Conductor"]),
       message.system ? none() : el("button", { class: "quiet", onClick: () => briefThread(message, key) }, [state.busy === key ? "Briefing…" : "Brief with SCALVS"]),
@@ -594,6 +680,73 @@ function renderAuth(message = "") {
     el("p", { class: "muted small" }, ["Your @cumulusmail.cloud address is your Cumulus://ID. It comes with 15 GB shared with Cumulus://Cloud and a FIRM Wallet. Free."]),
   ])]));
 }
+
+/* ---------------- Keyboard shortcuts and live refresh ---------------- */
+
+let pendingG = false;
+document.addEventListener("keydown", (e) => {
+  if (!state.data || e.ctrlKey || e.metaKey || e.altKey) return;
+  const t = e.target;
+  if (t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) {
+    if (e.key === "Escape") t.blur();
+    return;
+  }
+  const open = state.data.messages.find((m) => m.id === state.selected);
+  const current = open ?? state.visible?.[state.cursor];
+  const go_ = (fn) => { e.preventDefault(); fn(); };
+  if (pendingG) {
+    pendingG = false;
+    const to = { i: "inbox", s: "starred", t: "sent", d: "drafts", a: "archive" }[e.key];
+    if (to) go_(() => { state.box = to; state.filter = "primary"; state.cursor = -1; go("mail"); });
+    return;
+  }
+  switch (e.key) {
+    case "?": return go_(() => { state.help = !state.help; render(); });
+    case "Escape": if (state.help) return go_(() => { state.help = false; render(); }); return;
+    case "c": return go_(() => { state.composer = blankComposer(); render(); document.querySelector(".dialog input")?.focus(); });
+    case "/": return go_(() => document.querySelector(".search input")?.focus());
+    case "g": pendingG = true; setTimeout(() => { pendingG = false; }, 1200); return;
+    case "z": if (state.toast?.undo) return go_(() => undo(state.toast.undo)); return;
+  }
+  if (state.view !== "mail") return;
+  const move = (d) => go_(() => {
+    const n = state.visible?.length ?? 0;
+    if (!n) return;
+    state.cursor = Math.max(0, Math.min(n - 1, state.cursor + d));
+    render();
+    document.querySelector(`.row[data-index="${state.cursor}"]`)?.scrollIntoView({ block: "nearest" });
+  });
+  if (!open && (e.key === "j" || e.key === "ArrowDown")) return move(1);
+  if (!open && (e.key === "k" || e.key === "ArrowUp")) return move(-1);
+  if (!open && (e.key === "o" || e.key === "Enter") && current) return go_(() => openMessage(current));
+  if (open && e.key === "u") return go_(() => { state.selected = null; render(); });
+  if (!current) return;
+  const targets = !open && state.picked.size ? [...state.picked] : [current.threadId];
+  const leave = () => { if (open) state.selected = null; };
+  if (e.key === "e" && current.folder === "inbox") return go_(() => { leave(); threadAct(targets, "archive"); });
+  if (e.key === "#") return go_(() => { leave(); threadAct(targets, "trash"); });
+  if (e.key === "I") return go_(() => threadAct(targets, "read"));
+  if (e.key === "U") return go_(() => { leave(); threadAct(targets, "unread"); });
+  if (e.key === "s") return go_(() => threadAct(targets, current.starred ? "unstar" : "star"));
+  if (e.key === "x" && !open) return go_(() => { if (state.picked.has(current.threadId)) state.picked.delete(current.threadId); else state.picked.add(current.threadId); render(); });
+  if (e.key === "r" && open && !open.system) return go_(() => reply(open));
+});
+
+async function refresh(manual = false) {
+  if (!state.data) return;
+  const typing = document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if (!manual && (document.hidden || state.composer || typing || state.view !== "mail")) return;
+  const before = state.data.unread;
+  try {
+    state.data = { ...state.data, ...(await fetch("/api/state", { headers: { "x-cumulus": "1" }, credentials: "same-origin" }).then((r) => (r.ok ? r.json() : Promise.reject(r)))) };
+  } catch {
+    return;
+  }
+  if (!manual && state.data.unread > before) showToast(state.data.unread - before === 1 ? "New mail arrived." : `${state.data.unread - before} new conversations.`);
+  render();
+}
+setInterval(() => refresh(), 30_000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
 
 async function boot() {
   const [page, arg] = location.hash.replace(/^#\/?/, "").split("/");

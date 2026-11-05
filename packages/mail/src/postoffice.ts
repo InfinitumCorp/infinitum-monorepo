@@ -44,6 +44,10 @@ export interface StoredMailbox extends MailSnapshot {
   clean?: CleanState;
 }
 
+export type ThreadAction = "archive" | "trash" | "inbox" | "read" | "unread" | "star" | "unstar";
+export const THREAD_ACTIONS: ThreadAction[] = ["archive", "trash", "inbox", "read", "unread", "star", "unstar"];
+export interface ThreadSnapshot { id: string; folder: FolderId; unread: boolean; starred: boolean }
+
 export interface OutboundMail {
   id: string;
   fromCid: string;
@@ -411,6 +415,61 @@ export class PostOffice {
         note: "Saved from a message.",
       }),
     );
+  }
+
+  /* ---------------- Conversation actions (with undo) ---------------- */
+
+  /**
+   * Act on whole conversations, the way Gmail does: archive or trash every message of the thread that
+   * is in the box you're looking at, mark it read or unread, star or unstar it. Returns what changed
+   * so the caller can offer Undo.
+   */
+  actOnThreads(cid: string, threadIds: string[], action: ThreadAction, box: string = "inbox"): { count: number; before: ThreadSnapshot[] } {
+    const want = new Set(threadIds.slice(0, 500));
+    const me = this.box(cid).owner.email.toLowerCase();
+    const before: ThreadSnapshot[] = [];
+    const touched = new Set<string>();
+    const remember = (m: MailMessage) => {
+      before.push({ id: m.id, folder: m.folder, unread: m.unread, starred: m.starred });
+      touched.add(m.threadId);
+    };
+    const inView = (m: MailMessage) => (box === "starred" ? m.starred && m.folder !== "trash" : m.folder === box);
+    const messages = this.box(cid).messages.filter((m) => want.has(m.threadId) && m.folder !== "drafts");
+    for (const thread of want) {
+      const all = messages.filter((m) => m.threadId === thread);
+      if (!all.length) continue;
+      const shown = all.filter(inView);
+      if (action === "archive") for (const m of shown.filter((x) => x.folder === "inbox")) { remember(m); m.folder = "archive"; m.unread = false; }
+      else if (action === "trash") for (const m of all.filter((x) => x.folder !== "trash")) { remember(m); m.folder = "trash"; m.unread = false; }
+      else if (action === "inbox") for (const m of shown.filter((x) => x.folder === "archive" || x.folder === "trash")) {
+        remember(m);
+        m.folder = m.from.email.toLowerCase() === me && !m.system ? "sent" : "inbox";
+      }
+      else if (action === "read") for (const m of all.filter((x) => x.unread)) { remember(m); m.unread = false; }
+      else if (action === "unread") {
+        const received = all.filter((x) => x.from.email.toLowerCase() !== me && x.folder !== "trash").sort((a, b) => (a.at < b.at ? 1 : -1))[0];
+        if (received && !received.unread) { remember(received); received.unread = true; }
+      }
+      else if (action === "star" || action === "unstar") {
+        const latest = [...(shown.length ? shown : all)].sort((a, b) => (a.at < b.at ? 1 : -1))[0]!;
+        if (action === "star" && !all.some((x) => x.starred)) { remember(latest); latest.starred = true; }
+        if (action === "unstar") for (const m of all.filter((x) => x.starred)) { remember(m); m.starred = false; }
+      }
+    }
+    return { count: touched.size, before };
+  }
+
+  /** Put messages back exactly as they were before an action. Only this mailbox's own messages. */
+  restore(cid: string, before: ThreadSnapshot[]): number {
+    const box = this.box(cid);
+    let n = 0;
+    for (const s of before) {
+      const m = box.messages.find((x) => x.id === s.id);
+      if (!m) continue;
+      Object.assign(m, { folder: s.folder, unread: s.unread, starred: s.starred });
+      n++;
+    }
+    return n;
   }
 
   /* ---------------- SCALVS Clean ---------------- */
