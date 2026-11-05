@@ -4,6 +4,7 @@ import type { SpectreCRM } from "../core/crm.ts";
 import { SpectreError } from "../core/crm.ts";
 import { cleanFilter, lastActivityAt, leadScore, matchesFilter, normalizeFields, normalizeTags, type LeadSignals } from "../core/contacts-plus.ts";
 import { createForm, submitForm, updateForm } from "../core/forms.ts";
+import { availableSlots, book, cancelAppointment, createCalendar, icsFor, updateCalendar } from "../core/calendar.ts";
 import type { SmartList } from "../core/growth-model.ts";
 
 /** What the growth routes need from the app (kept narrow so app.ts stays the single router). */
@@ -213,5 +214,57 @@ export function registerGrowthRoutes(api: GrowthApi) {
     for (const t of result.addedTags) await emit(f.workspace, { type: "tag.added", contactId: result.contact.id, tag: t });
     await emit(f.workspace, { type: "form.submitted", contactId: result.contact.id, formId: f.id });
     return { ok: true, message: f.successMessage };
+  }, false);
+
+  /* ---------------- Calendars and booking ---------------- */
+
+  const bookingLimit = limiter(6, 60_000);
+
+  route("GET", "/api/crm/calendars", (ctx) => {
+    const ws = ctx.user.workspace;
+    const now = crm.now().toISOString();
+    const appts = crm.list("appointments", ws);
+    return crm.list("calendars", ws).sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({
+      ...c, upcoming: appts.filter((a) => a.calendarId === c.id && a.status === "booked" && a.start >= now).length,
+    }));
+  });
+  route("POST", "/api/crm/calendars", (ctx) => createCalendar(crm, ctx.user.workspace, ctx.user.account.cid, ctx.body));
+  route("PATCH", "/api/crm/calendars/:id", (ctx) => updateCalendar(crm, ctx.user.workspace, ctx.user.account.cid, ctx.params.id, ctx.body));
+
+  route("GET", "/api/crm/appointments", (ctx) => {
+    const ws = ctx.user.workspace;
+    const from = ctx.query.get("from") ?? crm.now().toISOString().slice(0, 10);
+    const cals = new Map(crm.list("calendars", ws).map((c) => [c.id, c.name]));
+    return crm.list("appointments", ws).filter((a) => a.start >= from).sort((a, b) => a.start.localeCompare(b.start)).slice(0, 200)
+      .map((a) => ({ ...a, calendar: cals.get(a.calendarId), contactName: crm.store.contacts.get(a.contactId)?.name }));
+  });
+  route("POST", "/api/crm/appointments/:id/cancel", (ctx) => cancelAppointment(crm, ctx.user.workspace, ctx.user.account.cid, ctx.params.id));
+
+  const publicCalendar = (id: string) => {
+    const c = crm.store.calendars.get(id);
+    if (!c || !c.active) throw httpError(404, "This booking page isn't available");
+    return c;
+  };
+
+  /** Public: calendar details and open times. Times are UTC; the page shows them in the visitor's zone. */
+  route("GET", "/api/public/calendars/:id", (ctx) => {
+    const c = publicCalendar(ctx.params.id);
+    const from = ctx.query.get("from") ? new Date(String(ctx.query.get("from"))) : undefined;
+    const days = Math.max(1, Math.min(31, Number(ctx.query.get("days") ?? 14) || 14));
+    return {
+      id: c.id, name: c.name, description: c.description, durationMin: c.durationMin, timezone: c.timezone,
+      slots: availableSlots(c, crm.list("appointments", c.workspace), crm.now(), { from: from && !Number.isNaN(from.getTime()) ? from : undefined, days }),
+    };
+  }, false);
+
+  route("POST", "/api/public/calendars/:id/book", async (ctx) => {
+    const c = publicCalendar(ctx.params.id);
+    if (!bookingLimit(ctx.req, c.id)) throw httpError(429, "Too many attempts. Please try again in a minute.");
+    if (String(ctx.body.website ?? "").trim()) throw httpError(400, "Couldn't book that time");
+    const r = await book(crm, c, { start: ctx.body.start, name: ctx.body.name, email: ctx.body.email, phone: ctx.body.phone, notes: ctx.body.notes });
+    if (r.created) await emit(c.workspace, { type: "contact.created", contactId: r.contact.id });
+    for (const t of r.addedTags) await emit(c.workspace, { type: "tag.added", contactId: r.contact.id, tag: t });
+    await emit(c.workspace, { type: "appointment.booked", contactId: r.contact.id, calendarId: c.id, appointmentId: r.appointment.id });
+    return { ok: true, start: r.appointment.start, end: r.appointment.end, name: c.name, ics: icsFor(c, r.appointment) };
   }, false);
 }

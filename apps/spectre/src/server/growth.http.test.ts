@@ -1,57 +1,6 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import type { AddressInfo } from "node:net";
-import type { Server } from "node:http";
-import { Ledger, generateSigner } from "@infinitum/firmament";
-import { CidService } from "@infinitum/cid";
-import { VirtualAuthenticator } from "../../../../packages/cid/src/testing/virtual-authenticator.ts";
-import { SpectreCRM } from "../core/crm.ts";
-import { createApp } from "./app.ts";
-import type { GrowthEvent } from "./growth-routes.ts";
-
-const here = dirname(fileURLToPath(import.meta.url));
-const ORIGIN = "http://localhost";
-
-/** Shared harness for the growth-feature HTTP tests. */
-export async function harness() {
-  const signer = generateSigner();
-  const ledger = new Ledger(undefined, { authorizedSigners: [signer.publicKey] });
-  const cid = new CidService({ ledger, signer, rpId: "localhost", origins: [ORIGIN] });
-  let now = new Date("2026-11-05T09:00:00Z");
-  const crm = new SpectreCRM({ ledger, signer, clock: () => now });
-  const events: { ws: string; event: GrowthEvent }[] = [];
-  let emitImpl = async (ws: string, event: GrowthEvent) => { events.push({ ws, event }); };
-  const app = createApp({
-    cid, crm, ai: { model: "m" }, publicDir: join(here, "../../public"), secureCookies: false, origin: ORIGIN,
-    emit: (ws, e) => emitImpl(ws, e),
-  });
-  const server: Server = app.server();
-  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
-  const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-  const call = async (method: string, path: string, body?: unknown, cookie?: string, headers: Record<string, string> = { "x-spectre": "1" }) => {
-    const res = await fetch(base + path, { method, headers: { "content-type": "application/json", ...headers, ...(cookie ? { cookie } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
-    return { status: res.status, body: await res.json().catch(() => null), headers: res.headers };
-  };
-  const signUp = async (username: string) => {
-    const auth = new VirtualAuthenticator();
-    const s = await call("POST", "/api/auth/signup", { username });
-    const f = await call("POST", "/api/auth/signup/finish", { cid: s.body.cid, response: auth.create({ challenge: s.body.options.challenge, origin: ORIGIN, rpId: "localhost" }) });
-    const res = await fetch(base + "/api/auth/signin/finish", {
-      method: "POST", headers: { "content-type": "application/json", "x-spectre": "1" },
-      body: JSON.stringify({ response: auth.get({ credentialId: [...auth.credentials.keys()][0], challenge: f.body.options.challenge, origin: ORIGIN }) }),
-    });
-    return { cookie: res.headers.get("set-cookie")!.split(";")[0], cid: s.body.cid as string };
-  };
-  return {
-    crm, ledger, events, call, signUp, base,
-    setEmit: (fn: typeof emitImpl) => { emitImpl = fn; },
-    advance: (ms: number) => { now = new Date(now.getTime() + ms); },
-    now: () => now,
-    close: () => new Promise<void>((r) => server.close(() => r())),
-  };
-}
+import { harness } from "./test-harness.ts";
 
 const FORM = {
   name: "Book a demo",

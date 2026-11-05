@@ -1069,7 +1069,7 @@ export function createApp(deps: AppDeps) {
     } catch (err) {
       const status = err instanceof HttpError ? err.status
         : err instanceof CidError ? (["not_found"].includes(err.code) ? 404 : err.code === "forbidden" ? 403 : 400)
-        : err instanceof SpectreError ? (err.code === "not_found" ? 404 : err.code === "inactive" ? 410 : 400)
+        : err instanceof SpectreError ? (err.code === "not_found" ? 404 : err.code === "inactive" ? 410 : err.code === "slot_taken" ? 409 : 400)
         : 500;
       if (status === 500) console.error(err);
       const code = err instanceof CidError || err instanceof SpectreError ? err.code : undefined;
