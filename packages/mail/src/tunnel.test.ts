@@ -50,13 +50,22 @@ describe("Cumulus Tunnel", () => {
     po.provision({ cid: "b", address: "leah@cumulusmail.cloud" });
     const r = await po.send("a", { to: "leah@cumulusmail.cloud", subject: "Notes", body: "In Cloud.", attachments: [{ name: "n.pdf", size: 10 }] });
     const got = po.view("b").messages.find((m) => m.subject === "Notes")!;
-    assert.equal(got.body, "In Cloud.");
+    assert.equal(got.body, "In Cloud.\n\nalex\nalex@cumulusmail.cloud");
     assert.equal(got.attachments?.[0]?.name, "n.pdf");
     assert.deepEqual(got.tunnel, { verified: true, fingerprint: po.fingerprint("a") });
     assert.equal(po.message("a", r.id)?.tunnel?.verified, true);
 
     const out = await po.send("a", { to: "priya@vyral.london", subject: "Outside", body: "x" });
     assert.equal(po.message("a", out.id)?.tunnel, undefined, "mail leaving Cumulus isn't claimed as tunnelled");
+  });
+
+  it("signs as the mailbox owner, not the demo account", async () => {
+    const po = new PostOffice();
+    po.provision({ cid: "b", address: "leah@cumulusmail.cloud", name: "Leah Okonkwo" });
+    po.provision({ cid: "c", address: "sam@cumulusmail.cloud", name: "Sam" });
+    await po.send("b", { to: "sam@cumulusmail.cloud", subject: "Hi", body: "Hello Sam." });
+    const got = po.view("c").messages.find((m) => m.subject === "Hi");
+    assert.equal(got?.body, "Hello Sam.\n\nLeah Okonkwo\nleah@cumulusmail.cloud");
   });
 
   it("writes mailboxes sealed at rest and opens them again", async () => {
@@ -76,7 +85,7 @@ describe("Cumulus Tunnel", () => {
     const loaded = structuredClone(onDisk) as PostOfficeStore;
     const reopened = new CumulusTunnel({ store: structuredClone(tunnel.store), masterKey: key });
     assert.equal(openMailStore(loaded, reopened), 0);
-    assert.equal(loaded.mailboxes.get("b")!.messages[0]!.body, "Meet at noon.");
+    assert.equal(loaded.mailboxes.get("b")!.messages[0]!.body, "Meet at noon.\n\nalex\nalex@cumulusmail.cloud");
 
     const locked = structuredClone(onDisk) as PostOfficeStore;
     const wrongKey = new CumulusTunnel({ store: structuredClone(tunnel.store), masterKey: randomBytes(32) });

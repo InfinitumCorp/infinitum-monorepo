@@ -45,7 +45,7 @@ export class Mailbox {
     this.aliases = structuredClone(seed.aliases ?? ["press@cumulusmail.cloud"]);
     this.tasks = structuredClone(seed.tasks ?? SEED_TASKS);
     this.contacts = structuredClone(seed.contacts ?? SEED_CONTACTS);
-    this.signature = seed.signature ?? "Alex Reid\nalex@cumulusmail.cloud";
+    this.signature = seed.signature ?? `${this.owner.name}\n${this.owner.email}`;
     this.rules = structuredClone(seed.rules ?? []);
   }
 

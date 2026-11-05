@@ -239,7 +239,7 @@ describe("Cumulus Tunnel across the suite", () => {
 
     const restored = loadCumulusStores(dir, emptyCumulusStores());
     const again = createCumulus({ ledger, signer, rpId: RP_ID, origins: [ORIGIN], stores: restored, masterKey: loadOrCreateMasterKey(dir, {}) });
-    assert.equal(again.mail.view(b.cid).messages.find((m) => m.subject === "Board deck")?.body, "Draft attached in Cloud.");
+    assert.equal(again.mail.view(b.cid).messages.find((m) => m.subject === "Board deck")?.body, "Draft attached in Cloud.\n\nalex\nalex@cumulusmail.cloud");
     assert.equal(again.tunnel.fingerprint(a.cid), suite.tunnel.fingerprint(a.cid));
   });
 });
