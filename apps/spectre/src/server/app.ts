@@ -16,11 +16,11 @@ import {
 import { OPEN_STAGES, STAGES } from "../core/model.ts";
 import { askClaude, AiNotConnected, type AiConfig } from "./ai.ts";
 import { registerGrowthRoutes, type GrowthEvent } from "./growth-routes.ts";
-import { registerAvgvrRoutes } from "./avgvr-routes.ts";
+import { registerConjureRoutes } from "./conjure-routes.ts";
 import { registerEngageRoutes, RawResponse } from "./engage-routes.ts";
 import { dispatch, runDue, type AutomationEngine } from "../core/automations.ts";
 import type { Providers } from "../core/messaging.ts";
-import type { Complete } from "@infinitum/scalus";
+import type { Complete } from "@infinitum/conjure";
 import { runLlmAgent, LlmError } from "@infinitum/scalus";
 import { AGENTS, AGENT_IDS, agentDefinition, applyProposal, newProposalId, newRunId, type AgentId, type AgentRunRecord } from "../core/agent-team.ts";
 
@@ -56,8 +56,8 @@ export interface AppDeps {
   cronSecret?: string;
   /** Twilio auth token, to verify inbound SMS webhooks. */
   twilioAuthToken?: string;
-  /** Tests: scripted model for AVGVR simulations. */
-  avgvrComplete?: Complete;
+  /** Tests: scripted model for Conjure simulations. */
+  conjureComplete?: Complete;
 }
 
 class HttpError extends Error {
@@ -1031,7 +1031,7 @@ export function createApp(deps: AppDeps) {
     origin: deps.origin,
   });
 
-  registerAvgvrRoutes({ route, crm, ai: deps.ai, httpError: (status, message) => new HttpError(status, message), complete: deps.avgvrComplete });
+  registerConjureRoutes({ route, crm, ai: deps.ai, httpError: (status, message) => new HttpError(status, message), complete: deps.conjureComplete });
 
   /* ---------------- Request handling ---------------- */
 

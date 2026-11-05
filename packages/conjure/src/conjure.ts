@@ -1,7 +1,8 @@
 /**
- * AVGVR™: SCALVS.ai's swarm prediction engine.
+ * Conjure™: the swarm prediction feature built into Infinitum products.
  *
- * Roman augurs read the future in the flight of birds; AVGVR reads it in a swarm of AI agents.
+ * Conjure calls up a swarm of AI agents (running on SCALVS.ai's agent engine) and lets the
+ * future play out among them.
  * Seed material (news, reports, deal notes) becomes a small world: who's involved and how
  * they relate. Each agent gets a persona, goals, a stance and memory. Agents then act over
  * several rounds on a shared feed (post, reply, like, repost, stay quiet), reacting to one
@@ -15,7 +16,7 @@
  * Built for serverless hosts: the simulation is a plain JSON object and advances one round
  * per call, so each request stays short and progress can be shown live.
  */
-import { runLlmAgent, type LlmConfig, type LlmTool } from "./llm.ts";
+import { runLlmAgent, type LlmConfig, type LlmTool } from "@infinitum/scalus";
 
 /* ---------------- Types ---------------- */
 
@@ -111,7 +112,7 @@ export interface Report {
 /** One text completion. Injected so hosts choose the model and tests can script responses. */
 export type Complete = (system: string, user: string, opts?: { maxTokens?: number }) => Promise<string>;
 
-export class AvgvrError extends Error {}
+export class ConjureError extends Error {}
 
 /* ---------------- Helpers ---------------- */
 
@@ -122,7 +123,7 @@ const str = (v: unknown, max = 500) => (typeof v === "string" ? v.trim().slice(0
 /** Pull the first JSON object or array out of a model reply (tolerates prose and code fences). */
 export function parseJson<T>(text: string): T {
   const start = text.search(/[[{]/);
-  if (start < 0) throw new AvgvrError("The model didn't return JSON");
+  if (start < 0) throw new ConjureError("The model didn't return JSON");
   const open = text[start];
   const close = open === "{" ? "}" : "]";
   let depth = 0;
@@ -138,7 +139,7 @@ export function parseJson<T>(text: string): T {
     else if (ch === open) depth++;
     else if (ch === close && --depth === 0) return JSON.parse(text.slice(start, i + 1)) as T;
   }
-  throw new AvgvrError("The model returned incomplete JSON");
+  throw new ConjureError("The model returned incomplete JSON");
 }
 
 /** Deterministic pseudo-random in [0,1) from a string, so runs are reproducible. */
@@ -182,8 +183,8 @@ export interface CreateOptions {
 export async function createSimulation(complete: Complete, o: CreateOptions): Promise<Simulation> {
   const question = str(o.question, 500);
   const seed = str(o.seed, 30_000);
-  if (!question) throw new AvgvrError("Ask a question to forecast");
-  if (seed.length < 40) throw new AvgvrError("Give AVGVR some seed material: news, a report, notes (at least a few sentences)");
+  if (!question) throw new ConjureError("Ask a question to forecast");
+  if (seed.length < 40) throw new ConjureError("Give Conjure some seed material: news, a report, notes (at least a few sentences)");
   const agents = clamp(Math.round(o.agents ?? 24), 4, 200);
   const rounds = clamp(Math.round(o.rounds ?? 5), 1, 20);
   const maxCalls = Math.max(o.maxCalls ?? Math.ceil(estimateCalls(agents, rounds).calls * 1.5), 5);
@@ -194,7 +195,7 @@ export async function createSimulation(complete: Complete, o: CreateOptions): Pr
     createdAt: (o.now ?? new Date()).toISOString(),
   };
   const call = async (system: string, user: string, maxTokens?: number) => {
-    if (sim.calls >= sim.maxCalls) throw new AvgvrError(`Reached this simulation's budget of ${sim.maxCalls} AI calls`);
+    if (sim.calls >= sim.maxCalls) throw new ConjureError(`Reached this simulation's budget of ${sim.maxCalls} AI calls`);
     sim.calls++;
     return complete(system, user, { maxTokens });
   };
@@ -212,7 +213,7 @@ export async function createSimulation(complete: Complete, o: CreateOptions): Pr
     id: str(e.id, 20) || `e${i + 1}`, name: str(e.name, 120) || `Entity ${i + 1}`,
     kind: kinds.has(e.kind) ? e.kind : "group", description: str(e.description, 400),
   }));
-  if (!sim.entities.length) throw new AvgvrError("Couldn't find anyone involved in the seed material");
+  if (!sim.entities.length) throw new ConjureError("Couldn't find anyone involved in the seed material");
   const ids = new Set(sim.entities.map((e) => e.id));
   sim.relations = (Array.isArray(world.relations) ? world.relations : []).filter((r: any) => ids.has(r.from) && ids.has(r.to)).slice(0, 80)
     .map((r: any) => ({ from: r.from, to: r.to, type: str(r.type, 80) }));
@@ -239,7 +240,7 @@ export async function createSimulation(complete: Complete, o: CreateOptions): Pr
     }
     made += list.length;
   }
-  if (sim.personas.length < 2) throw new AvgvrError("Couldn't create enough agents from the seed material");
+  if (sim.personas.length < 2) throw new ConjureError("Couldn't create enough agents from the seed material");
   sim.stats.push(statsFor(sim, 0, { posts: 0, replies: 0, likes: 0, reposts: 0, idle: 0 }));
   return sim;
 }
@@ -258,8 +259,8 @@ function statsFor(sim: Simulation, round: number, counts: Omit<RoundStats, "roun
 /** God's-eye view: inject an event the agents will see from a given round on. */
 export function inject(sim: Simulation, text: string, atRound?: number): Simulation {
   const t = str(text, 1000);
-  if (!t) throw new AvgvrError("Describe the event to inject");
-  if (sim.status === "done") throw new AvgvrError("This simulation has finished; fork it to explore a different future");
+  if (!t) throw new ConjureError("Describe the event to inject");
+  if (sim.status === "done") throw new ConjureError("This simulation has finished; fork it to explore a different future");
   sim.injections.push({ round: Math.max(sim.round + 1, Math.round(atRound ?? sim.round + 1)), text: t });
   return sim;
 }
@@ -278,14 +279,14 @@ function feedFor(sim: Simulation, p: Persona, round: number): Post[] {
 }
 
 export async function step(complete: Complete, sim: Simulation): Promise<Simulation> {
-  if (sim.status === "done" || sim.round >= sim.rounds) throw new AvgvrError("All rounds have run");
+  if (sim.status === "done" || sim.round >= sim.rounds) throw new ConjureError("All rounds have run");
   const round = sim.round + 1;
   // Influential agents act more often; everyone acts in the first round.
   const active = sim.personas.filter((p) => round === 1 || rand(`${sim.id}:${round}:${p.id}`) < 0.3 + p.influence * 0.12);
   // Check the budget for the whole round first, so a round never stops half-way.
   const needed = Math.ceil(active.length / ACT_BATCH);
   if (sim.calls + needed > sim.maxCalls) {
-    throw new AvgvrError(`Reached this simulation's budget of ${sim.maxCalls} AI calls (the next round needs ${needed} more)`);
+    throw new ConjureError(`Reached this simulation's budget of ${sim.maxCalls} AI calls (the next round needs ${needed} more)`);
   }
   sim.status = "running";
   for (const ev of sim.injections.filter((i) => i.round === round)) {
@@ -342,7 +343,7 @@ export async function step(complete: Complete, sim: Simulation): Promise<Simulat
 
 /** Copy a simulation at a given round to explore a different future (e.g. inject another event). */
 export function fork(sim: Simulation, newId: string, atRound = sim.round): Simulation {
-  if (atRound > sim.round) throw new AvgvrError("Can't fork from a round that hasn't run yet");
+  if (atRound > sim.round) throw new ConjureError("Can't fork from a round that hasn't run yet");
   const copy: Simulation = structuredClone(sim);
   copy.id = newId;
   copy.forkedFrom = { id: sim.id, round: atRound };
@@ -391,9 +392,9 @@ function reportTools(sim: Simulation): LlmTool[] {
 }
 
 export async function writeReport(llm: LlmConfig, sim: Simulation): Promise<Report> {
-  if (sim.round === 0) throw new AvgvrError("Run at least one round first");
+  if (sim.round === 0) throw new ConjureError("Run at least one round first");
   const result = await runLlmAgent({ ...llm, maxSteps: Math.min(llm.maxSteps ?? 8, Math.max(2, sim.maxCalls - sim.calls)) }, {
-    system: `You are AVGVR's report analyst. Investigate the simulation with your tools before concluding: look at the stance trend, the most influential agents and the posts that moved opinion. ${UNTRUSTED}
+    system: `You are Conjure's report analyst. Investigate the simulation with your tools before concluding: look at the stance trend, the most influential agents and the posts that moved opinion. ${UNTRUSTED}
 Be calibrated: a simulation of ${sim.personas.length} agents is evidence, not proof. Then reply with JSON only:
 {"outcome": "the most likely outcome, one sentence", "probability": 0..1 (your estimate that '${sim.poles.for}' happens), "forecast": "a short report in plain prose, 150-300 words", "drivers": ["..."], "signals": ["real-world signals to watch"], "assumptions": ["..."], "confidence": "low|medium|high"}`,
     tools: reportTools(sim),
@@ -419,14 +420,14 @@ Be calibrated: a simulation of ${sim.personas.length} agents is evidence, not pr
 
 export async function interview(complete: Complete, sim: Simulation, agentId: string, question: string, history: { q: string; a: string }[] = []): Promise<string> {
   const p = sim.personas.find((x) => x.id === agentId);
-  if (!p) throw new AvgvrError("No such agent");
+  if (!p) throw new ConjureError("No such agent");
   const q = str(question, 1000);
-  if (!q) throw new AvgvrError("Ask the agent something");
-  if (sim.calls >= sim.maxCalls) throw new AvgvrError(`Reached this simulation's budget of ${sim.maxCalls} AI calls`);
+  if (!q) throw new ConjureError("Ask the agent something");
+  if (sim.calls >= sim.maxCalls) throw new ConjureError(`Reached this simulation's budget of ${sim.maxCalls} AI calls`);
   sim.calls++;
   const own = sim.feed.filter((x) => x.authorId === p.id).slice(-8).map((x) => `- R${x.round}: ${x.text}`).join("\n") || "none";
   return (await complete(
-    `You are ${p.name}, ${p.role}, a simulated person in an AVGVR forecast. Traits: ${p.traits}. Goals: ${p.goals}. Your stance on "${sim.question}" is ${p.stance.toFixed(2)} (+1: ${sim.poles.for}; -1: ${sim.poles.against}). Answer in character, briefly, drawing on your memory. If asked, say plainly you are a simulation.`,
+    `You are ${p.name}, ${p.role}, a simulated person in an Conjure forecast. Traits: ${p.traits}. Goals: ${p.goals}. Your stance on "${sim.question}" is ${p.stance.toFixed(2)} (+1: ${sim.poles.for}; -1: ${sim.poles.against}). Answer in character, briefly, drawing on your memory. If asked, say plainly you are a simulation.`,
     `Your memory:\n${p.memory.join("\n") || "none"}\n\nYour posts:\n${own}\n\n${history.slice(-6).map((h) => `Q: ${h.q}\nA: ${h.a}`).join("\n\n")}\n\nQ: ${q}`,
     { maxTokens: 600 },
   )).trim();
@@ -440,7 +441,7 @@ export function claudeComplete(llm: Pick<LlmConfig, "apiKey" | "model" | "fetchI
       headers: { "content-type": "application/json", "x-api-key": llm.apiKey, "anthropic-version": "2023-06-01" },
       body: JSON.stringify({ model: llm.model, max_tokens: opts?.maxTokens ?? 2000, system, messages: [{ role: "user", content: user }] }),
     });
-    if (!res.ok) throw new AvgvrError(`Claude API error ${res.status}`);
+    if (!res.ok) throw new ConjureError(`Claude API error ${res.status}`);
     const body = (await res.json()) as { content?: { type: string; text?: string }[] };
     return (body.content ?? []).filter((b) => b.type === "text").map((b) => b.text).join("");
   };

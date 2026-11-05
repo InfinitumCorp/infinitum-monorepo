@@ -1,10 +1,10 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { createSimulation, step, inject, fork, writeReport, interview, estimateCalls, parseJson, AvgvrError, type Complete } from "./avgvr.ts";
+import { createSimulation, step, inject, fork, writeReport, interview, estimateCalls, parseJson, ConjureError, type Complete } from "./conjure.ts";
 
 const SEED = "The central bank meets on Thursday. Inflation fell to 3.1%. Banks and exporters want a cut; pensioners' groups fear it fuels prices. Two board members have hinted at patience.";
 
-/** Scripted model: answers each AVGVR prompt type with well-formed JSON, and records prompts. */
+/** Scripted model: answers each Conjure prompt type with well-formed JSON, and records prompts. */
 function fakeModel(opts: { shift?: number; bad?: boolean } = {}) {
   const prompts: { system: string; user: string }[] = [];
   const complete: Complete = async (system, user) => {
@@ -47,7 +47,7 @@ function fakeModel(opts: { shift?: number; bad?: boolean } = {}) {
   return { complete, prompts };
 }
 
-describe("AVGVR swarm prediction", () => {
+describe("Conjure swarm prediction", () => {
   it("estimates cost up front", () => {
     const e = estimateCalls(24, 5);
     assert.deepEqual(e.breakdown, { world: 1, personas: 2, rounds: 10, report: 6 });
@@ -56,7 +56,7 @@ describe("AVGVR swarm prediction", () => {
 
   it("parses JSON out of prose and code fences, including braces inside strings", () => {
     assert.deepEqual(parseJson('Sure! {"a": "x } y", "b": [1, {"c": 2}]} trailing'), { a: "x } y", b: [1, { c: 2 }] });
-    assert.throws(() => parseJson("no json here"), AvgvrError);
+    assert.throws(() => parseJson("no json here"), ConjureError);
   });
 
   it("builds a world and a swarm of personas from seed material", async () => {
