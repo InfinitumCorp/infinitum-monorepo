@@ -1,6 +1,6 @@
 import { EVENTS, ME, SEED_CONTACTS, SEED_MESSAGES, SEED_TASKS } from "./model.ts";
-import type { ConductorTask, Contact, FolderId, MailMessage } from "./model.ts";
-import { isCumulus, parsePeople, quota, validEmail } from "./logic.ts";
+import type { Attachment, ConductorTask, Contact, FolderId, MailMessage } from "./model.ts";
+import { isCumulus, parsePeople, planDelivery, quota, validEmail } from "./logic.ts";
 
 export interface MailSnapshot {
   messages: MailMessage[];
@@ -17,6 +17,7 @@ export interface SendInput {
   threadId?: string;
   draftId?: string;
   now?: string;
+  attachments?: Attachment[];
 }
 
 export class Mailbox {
@@ -80,7 +81,7 @@ export class Mailbox {
     }
     const id = `m-${(input.now ?? Date.now().toString(36)).replace(/[^\w-]/g, "").slice(-12)}`;
     if (input.draftId) this.remove(input.draftId);
-    this.messages.unshift({
+    const sent: MailMessage = {
       id,
       threadId: input.threadId ?? id,
       folder: "sent",
@@ -93,7 +94,13 @@ export class Mailbox {
       unread: false,
       starred: false,
       labels: to.every((person) => isCumulus(person.email)) ? ["Personal"] : ["External"],
-    });
+      attachments: input.attachments ?? [],
+      delivery: planDelivery([...to, ...cc]),
+    };
+    this.messages.unshift(sent);
+    if ([...to, ...cc].some((person) => person.email.toLowerCase() === ME.email)) {
+      this.messages.unshift({ ...sent, id: `${id}-in`, folder: "inbox", unread: true });
+    }
     return { ok: true, id };
   }
 
@@ -112,6 +119,7 @@ export class Mailbox {
       unread: false,
       starred: false,
       labels: [],
+      attachments: input.attachments ?? [],
     };
     const index = this.messages.findIndex((item) => item.id === id);
     if (index >= 0) this.messages[index] = message;

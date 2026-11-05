@@ -31,6 +31,7 @@ test("sending drops the draft and files the note under sent", () => {
   assert.equal(sent.ok, true);
   assert.equal(mail.messages.some((message) => message.id === "m-draft-1"), false);
   assert.equal(mail.messages.find((message) => message.folder === "sent" && message.subject === "Notes received")?.labels[0], "Personal");
+  assert.equal(mail.messages.find((message) => message.subject === "Notes received")?.delivery?.[0]?.status, "inside");
 });
 
 test("a bad address is refused", () => {

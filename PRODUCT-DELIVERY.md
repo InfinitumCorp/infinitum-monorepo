@@ -31,7 +31,7 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 | **FIRM + FIRM Wallet** | Ecosystem token, wallet, DEX. | Partial | EVM client + wallet signing + DEX + router calldata + contracts + deploy scripts + compile.sh + deploy-helper.md | See DEPLOY.md and packages/firm/scripts/deploy-helper.md. Compile and deploy. FirmCollector ready. |
 | **Project-specific tokens** | $HRVST, $CNDT, $SPCTR, $SCLV. | Scaffolded | tokens.ts + ProjectToken.sol + deploy.ts | Compile and deploy. TokensCollector ready. |
 | **Cumulus://Cloud** | Storage, licensing, agent runtime, **Data Exchange** | Partial (exchange) | packages/cloud + packages/data-exchange + apps/data-exchange | Wire CumulusCollector; object store production; CDAT settlement. |
-| **Cumulus://Mail** | Free email on every CID, alex@cumulusmail.cloud, encrypted at rest, end-to-end between Cumulus accounts, SCALVS briefs, Conductor tasks. | Core logic | `packages/mail` + `apps/cumulus-mail` | Real mailbox delivery (IMAP/SMTP). SCALVS when `XAI_API_KEY` is set. |
+| **Cumulus://Mail** | Free email on every CID, alex@cumulusmail.cloud, encrypted at rest, end-to-end between Cumulus accounts, SCALVS briefs, Conductor tasks, Drive files on a message. | Core logic + inside-network delivery | `packages/mail` + `apps/cumulus-mail` | SMTP handoff for non-Cumulus recipients. SCALVS when `XAI_API_KEY` is set. |
 
 ## Supporting / infrastructure concepts
 

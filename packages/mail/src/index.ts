@@ -8,6 +8,8 @@ export type {
   Contact,
   CalEvent,
   ViewId,
+  Attachment,
+  DeliveryHop,
 } from "./model.ts";
 export {
   isCumulus,
@@ -28,6 +30,8 @@ export {
   transcript,
   quote,
   briefKey,
+  planDelivery,
+  formatSize,
 } from "./logic.ts";
 export { Mailbox } from "./mailbox.ts";
 export type { MailSnapshot, SendInput } from "./mailbox.ts";

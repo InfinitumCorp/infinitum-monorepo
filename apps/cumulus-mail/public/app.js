@@ -35,8 +35,21 @@ function rows() {
   }
   const q = state.query.trim().toLowerCase();
   return [...latest.values()]
-    .filter((row) => !q || messages.some((item) => item.threadId === row.threadId && `${item.subject} ${item.body} ${item.from.name} ${item.from.email}`.toLowerCase().includes(q)))
+    .filter((row) => !q || messages.some((item) => item.threadId === row.threadId && matches(item, q)))
     .sort((a, b) => (a.at < b.at ? 1 : -1));
+}
+
+function matches(item, query) {
+  return query.split(/\s+/).filter(Boolean).every((token) => {
+    if (token.startsWith("from:")) return `${item.from.name} ${item.from.email}`.toLowerCase().includes(token.slice(5));
+    if (token.startsWith("to:")) return [...item.to, ...item.cc].some((person) => `${person.name} ${person.email}`.toLowerCase().includes(token.slice(3)));
+    if (token.startsWith("subject:")) return item.subject.toLowerCase().includes(token.slice(8));
+    if (token === "is:unread") return item.unread;
+    if (token === "is:starred") return item.starred;
+    if (token === "has:file") return Boolean(item.attachments?.length);
+    const files = (item.attachments || []).map((file) => file.name).join(" ");
+    return `${item.subject} ${item.body} ${item.from.name} ${item.from.email} ${files}`.toLowerCase().includes(token);
+  });
 }
 
 function title(message) {
@@ -50,7 +63,7 @@ function shortDate(iso) {
 
 async function openMessage(message) {
   if (message.folder === "drafts") {
-    state.composer = { draftId: message.id, threadId: message.threadId, to: message.to.map((p) => p.email).join(", "), cc: "", subject: message.subject, body: message.body };
+    state.composer = { draftId: message.id, threadId: message.threadId, to: message.to.map((p) => p.email).join(", "), cc: "", subject: message.subject, body: message.body, attachments: message.attachments || [] };
     render();
     return;
   }
@@ -69,7 +82,7 @@ function render() {
     el("header", {}, [
       el("div", {}, [el("div", { class: "mark" }, ["Cumulus", el("span", {}, ["://"]), "Mail"]), el("div", { class: "sub" }, [data.me.email])]),
       el("label", {}, [el("input", { placeholder: "Search mail", value: state.query, onInput: (event) => { state.query = event.target.value; render(); } })]),
-      el("button", { class: "compose", onClick: () => { state.composer = { to: "", cc: "", subject: "", body: "" }; render(); } }, ["Compose"]),
+      el("button", { class: "compose", onClick: () => { state.composer = { to: "", cc: "", subject: "", body: "", attachments: [] }; render(); } }, ["Compose"]),
     ]),
     el("div", { class: "layout" }, [
       sidebar(data),
@@ -130,10 +143,15 @@ function reader(message) {
     el("div", { class: "sheet" }, [
       el("h2", {}, [message.subject]),
       el("p", { class: e2e ? "e2e" : "muted" }, [e2e ? "End-to-end · Cumulus to Cumulus" : "Encrypted at rest · leaves Cumulus when it is delivered"]),
+      ...(message.delivery || []).map((hop) => el("p", { class: "sub" }, [`${hop.email} · ${hop.detail}`])),
       brief ? el("p", {}, [brief]) : el("span"),
       el("button", { class: "e2e", onClick: () => briefThread(message, thread, key) }, ["Brief with SCALVS"]),
       ...thread.map((item) => el("article", { class: "event" }, [
-        el("div", {}, [el("strong", {}, [`${item.from.name} <${item.from.email}>`]), el("p", { class: "letter" }, [item.body])]),
+        el("div", {}, [
+          el("strong", {}, [`${item.from.name} <${item.from.email}>`]),
+          el("p", { class: "letter" }, [item.body]),
+          ...(item.attachments || []).map((file) => el("p", { class: "sub" }, [`${file.name} · ${Math.max(1, Math.round(file.size / 1024))} KB`])),
+        ]),
       ])),
       state.composer?.inline ? composerForm() : el("span"),
     ]),
@@ -148,6 +166,7 @@ function reply(message) {
     cc: "",
     subject: message.subject.startsWith("Re:") ? message.subject : `Re: ${message.subject}`,
     body: `\n\n—\n${message.from.name} wrote:\n${message.body.split("\n").map((line) => `> ${line}`).join("\n")}`,
+    attachments: [],
   };
   render();
 }
@@ -168,13 +187,29 @@ function composerForm() {
   const field = (label, key) => el("label", {}, [label, el(key === "body" ? "textarea" : "input", { value: form[key], onInput: (event) => { form[key] = event.target.value; } })]);
   return el("form", { class: "composer", onSubmit: async (event) => { event.preventDefault(); await send(); } }, [
     field("To", "to"), field("Cc", "cc"), field("Subject", "subject"), field("Message", "body"),
+    ...(form.attachments || []).map((file, index) => el("p", { class: "sub", style: "padding:0 12px" }, [
+      `${file.name} · ${Math.max(1, Math.round(file.size / 1024))} KB `,
+      el("button", { type: "button", onClick: () => { form.attachments.splice(index, 1); render(); } }, ["Remove"]),
+    ])),
     el("div", { class: "actions" }, [
       el("button", { class: "compose", type: "submit" }, ["Send"]),
       el("button", { class: "line", type: "button", onClick: async () => { await api("/api/draft", form); state.composer = null; state.box = "drafts"; render(); } }, ["Save draft"]),
+      el("button", { class: "line", type: "button", onClick: () => filePicker.click() }, ["Drive file"]),
       state.error ? el("span", {}, [state.error]) : el("span"),
     ]),
+    filePicker,
   ]);
 }
+
+const filePicker = el("input", { type: "file", style: "display:none", onChange: (event) => {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file || !state.composer) return;
+  if (file.size > 25 * 1024 * 1024) { state.error = "Files stay under 25 MB. Larger ones belong in Drive."; render(); return; }
+  state.composer.attachments = [...(state.composer.attachments || []), { name: file.name, size: file.size }];
+  state.error = "";
+  render();
+} });
 
 async function send() {
   try {
@@ -203,7 +238,7 @@ function aux(data) {
   if (state.view === "contacts") {
     return el("section", { class: "pane" }, [el("div", { class: "sheet" }, [el("h2", {}, ["People"]), ...data.contacts.map((contact) => el("article", { class: "person" }, [
       el("div", {}, [el("strong", {}, [contact.name]), el("div", { class: "sub" }, [contact.email]), el("div", { class: "muted" }, [contact.note])]),
-      el("button", { class: "line", onClick: () => { state.composer = { to: contact.email, cc: "", subject: "", body: "" }; state.view = "mail"; render(); } }, ["Write"]),
+      el("button", { class: "line", onClick: () => { state.composer = { to: contact.email, cc: "", subject: "", body: "", attachments: [] }; state.view = "mail"; render(); } }, ["Write"]),
     ]))])]);
   }
   if (state.view === "tasks") {
