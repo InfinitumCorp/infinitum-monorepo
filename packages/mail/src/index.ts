@@ -14,6 +14,7 @@ export type {
 export {
   isCumulus,
   isE2E,
+  audienceLabel,
   inBox,
   formatWhen,
   formatShort,

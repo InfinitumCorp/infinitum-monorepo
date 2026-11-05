@@ -1,6 +1,6 @@
 import { EVENTS, ME, SEED_CONTACTS, SEED_MESSAGES, SEED_TASKS } from "./model.ts";
 import type { Attachment, ConductorTask, Contact, FolderId, MailMessage } from "./model.ts";
-import { isCumulus, parsePeople, planDelivery, quota, validEmail } from "./logic.ts";
+import { audienceLabel, isCumulus, parsePeople, planDelivery, quota, validEmail } from "./logic.ts";
 
 export interface MailSnapshot {
   messages: MailMessage[];
@@ -107,7 +107,7 @@ export class Mailbox {
       at: input.now ?? new Date().toISOString(),
       unread: false,
       starred: false,
-      labels: to.every((person) => isCumulus(person.email)) ? ["Personal"] : ["External"],
+      labels: [audienceLabel([...to, ...cc])],
       attachments: input.attachments ?? [],
       delivery: planDelivery([...to, ...cc]),
     };
