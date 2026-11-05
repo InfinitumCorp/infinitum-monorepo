@@ -21,6 +21,7 @@ Open http://localhost:3010 and sign in with a passkey.
 | `MAIL_ORIGIN` | Public origin; passkeys are bound to it |
 | `MAIL_DATA_DIR` | Where stores and the Firmament ledger live, default `./data` |
 | `XAI_API_KEY` | Turns on SCALVS briefs |
+| `CUMULUS_MAIL_MASTER_KEY` | Base64 32-byte Cumulus Tunnel master key. Without it, one is created at `MAIL_DATA_DIR/tunnel-master.key`; in production set it from a secrets manager instead |
 | `ANTHROPIC_API_KEY` | Turns on SCALVS Clean suggestions (without it, Clean suggests from its rules) |
 | `SCALVS_MODEL` | Model for SCALVS Clean, default `claude-opus-5-5` |
 | Social sign-in | Same variables as +SPCTR; callback `{MAIL_ORIGIN}/api/auth/oauth/{provider}/callback` |
@@ -44,6 +45,12 @@ Open http://localhost:3010 and sign in with a passkey.
 
 - **Your address is your Cumulus://ID.** `name@cumulusmail.cloud` and `name` sign in to the same account,
   in Mail and in every other Infinitum product.
+- **Cumulus Tunnel.** Mail between Cumulus accounts is sealed to the recipient (X25519 + AES-256-GCM) and
+  signed by the sender (Ed25519). The recipient's copy comes only out of that envelope, and the reader shows
+  "sealed and sender verified". Keys are created with the Cumulus://ID, so nobody manages a key. Private keys
+  are stored wrapped with the master key, and mailboxes are written to disk with subjects, bodies and files
+  sealed to their owner (routing metadata stays readable). Because the platform holds the keys, this protects
+  mail in transit and at rest but is not end-to-end against the operator; device-held keys are the next step.
 - **SCALVS Clean.** Sorts mail into people, newsletters, notices, receipts and bounces. Rules archive
   read newsletters and old notices and trash old bounces, on their own at most once an hour. "Ask SCALVS" runs
   a SCALVS.ai agent (`@infinitum/scalus`) that proposes clean-ups; nothing moves until you approve.

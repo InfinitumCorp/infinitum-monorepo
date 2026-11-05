@@ -3,7 +3,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Ledger, FileStore, generateSigner, signerFromPrivateKey } from "@infinitum/firmament";
 import { socialFromEnv } from "@infinitum/cid";
-import { createCumulus, emptyCumulusStores, loadCumulusStores, saveCumulusStores } from "@infinitum/cumulus";
+import { createCumulus, emptyCumulusStores, loadCumulusStores, loadOrCreateMasterKey, saveCumulusStores } from "@infinitum/cumulus";
 import { SpectreCRM, emptyStore } from "../core/crm.ts";
 import { createApp } from "./app.ts";
 import { aiConfigFromEnv } from "./ai.ts";
@@ -68,6 +68,7 @@ const social = socialFromEnv();
 const suite = createCumulus({
   ledger, signer, rpId, origins: [origin], stores: cumulusStores, social: { providers: social },
   mailOrigin: process.env.CUMULUS_MAIL_ORIGIN,
+  masterKey: loadOrCreateMasterKey(dataDir),
 });
 suite.provisionAll();
 const cid = suite.cid;
@@ -86,7 +87,7 @@ const app = createApp({
   cronSecret: process.env.CRON_SECRET,
   twilioAuthToken: process.env.TWILIO_AUTH_TOKEN,
   onChange: () => {
-    saveCumulusStores(dataDir, cumulusStores);
+    saveCumulusStores(dataDir, cumulusStores, { tunnel: suite.tunnel });
     saveSnapshot(join(dataDir, "spectre.json"), spectreStore);
   },
 });

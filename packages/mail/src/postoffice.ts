@@ -12,6 +12,7 @@ import { randomUUID } from "node:crypto";
 import { Mailbox, type MailSnapshot, type SendInput } from "./mailbox.ts";
 import type { FolderId, MailMessage, MailPayment, Person } from "./model.ts";
 import { isCumulus, parsePeople, validEmail } from "./logic.ts";
+import type { CumulusTunnel } from "./tunnel.ts";
 import { DEFAULT_CLEAN_RULES, isProtected, normalizeRules, planSweep, type CleanAction, type CleanLogEntry, type CleanRules, type CleanState } from "./clean.ts";
 
 export const MAIL_DOMAIN = "cumulusmail.cloud";
@@ -78,6 +79,8 @@ export interface PostOfficeOptions {
   quota?: MailQuota;
   payments?: MailPayments;
   clock?: () => Date;
+  /** Seals mail between Cumulus accounts (and, with a master key, mailboxes at rest). */
+  tunnel?: CumulusTunnel;
 }
 
 export interface PostOfficeSendInput extends Omit<SendInput, "id" | "now"> {
@@ -97,11 +100,13 @@ export class PostOffice {
   private readonly quota?: MailQuota;
   private readonly payments?: MailPayments;
   private readonly clock: () => Date;
+  readonly tunnel?: CumulusTunnel;
 
   constructor(opts: PostOfficeOptions = {}) {
     this.store = opts.store ?? new PostOfficeStore();
     this.quota = opts.quota;
     this.payments = opts.payments;
+    this.tunnel = opts.tunnel;
     this.clock = opts.clock ?? (() => new Date());
   }
 
@@ -130,6 +135,7 @@ export class PostOffice {
     };
     this.store.mailboxes.set(input.cid, box);
     this.store.addresses.set(address, input.cid);
+    this.tunnel?.ensure(input.cid); // keys are made for people, never by them
     return box;
   }
 
@@ -247,7 +253,7 @@ export class PostOffice {
         bounced.push(address);
         continue;
       }
-      this.deliver(rcpt, { ...sent, id: `m-${randomUUID()}`, folder: "inbox", unread: rcpt !== cid, starred: false, payment });
+      this.deliver(rcpt, { ...sent, ...this.throughTunnel(cid, rcpt, sent), id: `m-${randomUUID()}`, folder: "inbox", unread: rcpt !== cid, starred: false, payment });
       this.quota?.charge(rcpt, "mail", size);
       delivered++;
     }
@@ -261,6 +267,7 @@ export class PostOffice {
         ? { ...hop, status: "bounced", detail: "Not delivered. No such Cumulus address, or the mailbox is full." }
         : hop);
     }
+    if (this.tunnel && delivered > 0 && external.length === 0 && bounced.length === 0) sent.tunnel = { verified: true, fingerprint: this.tunnel.fingerprint(cid) };
     const selfCopy = sender.messages.find((m) => m.id === `${id}-in`);
     if (selfCopy) Object.assign(selfCopy, { delivery: sent.delivery, payment: sent.payment, labels: sent.labels });
     for (const address of bounced) {
@@ -271,6 +278,24 @@ export class PostOffice {
       });
     }
     return { id, delivered, queued: external.length, bounced, payment };
+  }
+
+  /**
+   * The recipient's copy of the subject, body and files comes only out of an envelope sealed to the
+   * recipient and signed by the sender, so what lands is exactly what the sender's account sealed.
+   */
+  private throughTunnel(from: string, to: string, sent: MailMessage): Partial<MailMessage> {
+    if (!this.tunnel) return {};
+    this.tunnel.ensure(from);
+    this.tunnel.ensure(to);
+    const envelope = this.tunnel.seal(from, [to], { subject: sent.subject, body: sent.body, attachments: sent.attachments ?? [] });
+    const opened = this.tunnel.open<{ subject: string; body: string; attachments: MailMessage["attachments"] }>(to, envelope);
+    return { ...opened.payload, tunnel: { verified: opened.verified, fingerprint: this.tunnel.fingerprint(from) } };
+  }
+
+  /** Tunnel fingerprint for a CID, for showing next to its address. */
+  fingerprint(cid: string): string {
+    return this.tunnel?.fingerprint(cid) ?? "";
   }
 
   private deliver(cid: string, message: MailMessage) {

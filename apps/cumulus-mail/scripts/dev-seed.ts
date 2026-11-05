@@ -10,7 +10,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { Ledger, FileStore, generateSigner, signerFromPrivateKey } from "@infinitum/firmament";
-import { createCumulus, emptyCumulusStores, loadCumulusStores, saveCumulusStores } from "@infinitum/cumulus";
+import { createCumulus, emptyCumulusStores, loadCumulusStores, loadOrCreateMasterKey, saveCumulusStores } from "@infinitum/cumulus";
 import { VirtualAuthenticator } from "../../../packages/cid/src/testing/virtual-authenticator.ts";
 
 const port = Number(process.env.PORT ?? 3010);
@@ -25,7 +25,7 @@ if (!existsSync(keyFile)) writeFileSync(keyFile, signer.exportPrivateKey());
 const ledger = new Ledger(new FileStore(join(dataDir, "firmament.jsonl")), { authorizedSigners: [signer.publicKey] });
 const stores = loadCumulusStores(dataDir, emptyCumulusStores());
 const rpId = new URL(origin).hostname;
-const suite = createCumulus({ ledger, signer, rpId, origins: [origin], stores, mailOrigin: origin });
+const suite = createCumulus({ ledger, signer, rpId, origins: [origin], stores, mailOrigin: origin, masterKey: loadOrCreateMasterKey(dataDir) });
 
 async function account(username: string) {
   const existing = stores.cid.byUsername.get(username);
@@ -48,5 +48,5 @@ if (suite.wallets.balances(alex).USDC === "0") {
   await suite.shareFile(leah, "odin-briefing.pdf", "devalex@cumulusmail.cloud");
 }
 const { token } = await suite.cid["issueSession"](alex, "dev-seed", "passkey");
-saveCumulusStores(dataDir, stores);
+saveCumulusStores(dataDir, stores, { tunnel: suite.tunnel });
 console.log(`Seeded ${dataDir}\nSession cookie for devalex (local only):\ncmail_session=${token}`);
