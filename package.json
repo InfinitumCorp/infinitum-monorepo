@@ -1,0 +1,28 @@
+{
+  "name": "infinitum-revenue",
+  "version": "1.0.0",
+  "description": "Infinitum Corporation revenue & billing backend",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "stripe:sync": "tsx scripts/stripe-sync.ts"
+  },
+  "type": "module",
+  "dependencies": {
+    "@hono/node-server": "^2.1.6",
+    "hono": "^4.13.16",
+    "postgres": "^4.0.0",
+    "stripe": "^23.1.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.15",
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  },
+  "private": true
+}
