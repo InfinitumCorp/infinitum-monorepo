@@ -38,6 +38,29 @@ test("package dataset and sell with rev share and CDAT", async () => {
   assert.equal(dx.revshare.pendingForCid("cid_user123"), 212.5);
 });
 
+test("a sale needs a positive price and the shares add back up", async () => {
+  const dx = new DataExchange();
+  const { dataset } = await dx.packageDataset({
+    cid: "cid_user123",
+    product: "scalus",
+    title: "Small set",
+    description: "Aggregated",
+    schema: "x",
+    sizeEstimate: 1,
+    privacyLevel: "aggregated",
+    licenseTerms: "CDAT-research-1y",
+    priceUsd: 1,
+    scopes: ["usage_metrics"],
+  });
+  dx.catalog.updateStatus(dataset.id, "listed");
+  assert.equal(await dx.sell(dataset.id, "buyer", 0), null);
+  assert.equal(await dx.sell(dataset.id, "buyer", -10), null);
+  const sale = await dx.sell(dataset.id, "buyer", 0.1);
+  assert.ok(sale);
+  assert.equal(Math.round((sale!.userShareUsd + sale!.platformShareUsd) * 100), Math.round(sale!.amountUsd * 100));
+  assert.equal(dx.catalog.get(dataset.id)?.status, "sold");
+});
+
 test("Firmament records consent, license, and payment", async () => {
   const ledger = new Ledger();
   const signer = generateSigner();
