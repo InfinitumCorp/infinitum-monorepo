@@ -40,6 +40,10 @@ export type MailMessage = {
   payment?: MailPayment;
   /** Sent by a Cumulus product (security notice, Cloud share, wallet receipt). */
   system?: string;
+  /** Came through the Cumulus Tunnel: sealed to the recipient, signed by the sender's Cumulus://ID. */
+  tunnel?: { verified: boolean; fingerprint: string };
+  /** At rest only: content that couldn't be opened with this server's keys. */
+  locked?: boolean;
 };
 
 export type MailPayment = {

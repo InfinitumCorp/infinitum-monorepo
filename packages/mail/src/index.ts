@@ -56,3 +56,6 @@ export type {
 } from "./postoffice.ts";
 export { classify, isProtected, planSweep, normalizeRules, inboxMix, bulkSenders, DEFAULT_CLEAN_RULES } from "./clean.ts";
 export type { MailKind, CleanRules, CleanAction, CleanLogEntry, CleanState } from "./clean.ts";
+export { CumulusTunnel, TunnelStore, TunnelError, parseMasterKey, generateMasterKey, TUNNEL_VERSION } from "./tunnel.ts";
+export type { SealedEnvelope, StoredTunnelKeys, OpenedEnvelope } from "./tunnel.ts";
+export { sealMailStore, openMailStore } from "./at-rest.ts";

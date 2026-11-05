@@ -226,7 +226,9 @@ function reader(message) {
     el("div", { class: "sheet" }, [
       el("h1", {}, [message.subject || "(no subject)"]),
       el("div", { class: "meta" }, [
-        el("span", { class: e2e ? "lock" : "" }, [e2e ? "End-to-end · Cumulus to Cumulus" : "Encrypted at rest · leaves Cumulus when delivered"]),
+        message.tunnel
+          ? el("span", { class: "lock", title: `Sender key ${message.tunnel.fingerprint}` }, [message.tunnel.verified ? "🔒 Cumulus Tunnel · sealed and sender verified" : "🔒 Cumulus Tunnel · sealed"])
+          : el("span", {}, [e2e ? "Inside Cumulus" : "Encrypted at rest · leaves Cumulus when delivered"]),
         ...(message.delivery || []).map((hop) => el("span", { class: hop.status === "bounced" ? "danger" : "" }, [`${hop.email} · ${hop.status === "inside" ? "delivered" : hop.status === "bounced" ? "not delivered" : "sent out"}`])),
       ]),
       brief ? el("div", { class: "brief" }, [brief]) : none(),
@@ -500,7 +502,11 @@ function aux(data) {
       el("li", {}, ["FIRM Wallet"]),
       el("li", {}, ["SCALVS Clean, SCALVS.ai and /CNDCTR/"]),
     ]),
-    el("p", { class: "muted" }, ["Encrypted at rest. End-to-end between Cumulus accounts. Never scanned for ads and never sold."]),
+    el("h3", {}, ["Cumulus Tunnel"]),
+    el("p", {}, ["Mail between Cumulus accounts is sealed to the recipient and signed by the sender. Your keys were made for you when your Cumulus://ID was created. There's nothing to set up or remember."]),
+    data.tunnel?.fingerprint ? el("p", { class: "sub" }, ["Your key fingerprint"]) : none(),
+    data.tunnel?.fingerprint ? el("p", { class: "mono" }, [data.tunnel.fingerprint]) : none(),
+    el("p", { class: "muted" }, [data.tunnel?.atRest ? "Your mailbox is stored encrypted. Never scanned for ads and never sold." : "Never scanned for ads and never sold."]),
     el("div", { class: "actions" }, [el("button", { class: "outline", onClick: async () => { await api("/api/auth/signout", {}); state.data = null; renderAuth(); } }, ["Sign out"])]),
   ])]);
 }

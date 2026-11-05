@@ -8,3 +8,4 @@ packages/contracts/typechain-types
 data/
 apps/spectre/screenshots/
 .vercel/
+*.key

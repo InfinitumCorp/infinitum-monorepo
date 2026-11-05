@@ -164,7 +164,7 @@ export function createMailApp(deps: MailAppDeps) {
     const view = mail.view(cidValue);
     const prefix = `${cidValue}|`;
     const own = Object.fromEntries([...briefs].filter(([k]) => k.startsWith(prefix)).map(([k, v]) => [k.slice(prefix.length), v]));
-    return { ...view, messages: view.messages.map((m) => ({ ...m, kind: classify(m) })), briefs: own, account: suite.summary(cidValue) };
+    return { ...view, messages: view.messages.map((m) => ({ ...m, kind: classify(m) })), briefs: own, account: suite.summary(cidValue), tunnel: { fingerprint: mail.fingerprint(cidValue), atRest: suite.tunnel.persistent } };
   };
 
   /* ---------------- Cumulus://ID sign-in ---------------- */

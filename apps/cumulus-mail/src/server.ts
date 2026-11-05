@@ -6,6 +6,7 @@
  *   MAIL_ORIGIN      public origin (passkeys are bound to it), default http://localhost:PORT
  *   MAIL_DATA_DIR    default ./data
  *   XAI_API_KEY      turns on SCALVS briefs
+ *   CUMULUS_MAIL_MASTER_KEY  base64 32-byte Cumulus Tunnel master key (otherwise data/tunnel-master.key)
  *   Social sign-in variables, as in +SPCTR (GOOGLE_CLIENT_ID, ...). Callback:
  *   {MAIL_ORIGIN}/api/auth/oauth/{provider}/callback
  */
@@ -13,7 +14,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync } from "n
 import { join } from "node:path";
 import { Ledger, FileStore, generateSigner, signerFromPrivateKey } from "@infinitum/firmament";
 import { socialFromEnv } from "@infinitum/cid";
-import { createCumulus, emptyCumulusStores, loadCumulusStores, saveCumulusStores } from "@infinitum/cumulus";
+import { createCumulus, emptyCumulusStores, loadCumulusStores, loadOrCreateMasterKey, saveCumulusStores } from "@infinitum/cumulus";
 import { createMailApp } from "./app.ts";
 
 const port = Number(process.env.PORT ?? 3010);
@@ -38,7 +39,8 @@ if (!verified.ok) {
 
 const stores = loadCumulusStores(dataDir, emptyCumulusStores());
 const social = socialFromEnv();
-const suite = createCumulus({ ledger, signer, rpId: new URL(origin).hostname, origins: [origin], stores, social: { providers: social }, mailOrigin: origin });
+const masterKey = loadOrCreateMasterKey(dataDir);
+const suite = createCumulus({ ledger, signer, rpId: new URL(origin).hostname, origins: [origin], stores, social: { providers: social }, mailOrigin: origin, masterKey });
 const backfilled = suite.provisionAll();
 
 const app = createMailApp({
@@ -46,9 +48,9 @@ const app = createMailApp({
   publicDir: join(import.meta.dirname, "..", "public"),
   origin,
   secureCookies: origin.startsWith("https://"),
-  onChange: () => saveCumulusStores(dataDir, stores),
+  onChange: () => saveCumulusStores(dataDir, stores, { tunnel: suite.tunnel }),
 });
-if (backfilled) saveCumulusStores(dataDir, stores);
+if (backfilled) saveCumulusStores(dataDir, stores, { tunnel: suite.tunnel });
 
 app.server().listen(port, () => {
   console.log(`Cumulus://Mail listening on ${origin} (ledger: ${verified.length} verified entries, mailboxes: ${stores.mail.mailboxes.size})`);
