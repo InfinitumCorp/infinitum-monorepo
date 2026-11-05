@@ -151,7 +151,9 @@ export class DataExchange {
   mintCalldata(tokenId: string): string | undefined {
     const token = this.cdat.get(tokenId);
     if (!token) return undefined;
-    return encodeCdatMint(this.cdat.mintIntent(token).args);
+    const intent = this.cdat.mintIntent(token);
+    if (!intent) return undefined;
+    return encodeCdatMint(intent.args);
   }
 
   async load(): Promise<void> {

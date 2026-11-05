@@ -139,10 +139,11 @@ export class CdatIssuer {
     return token;
   }
 
-  mintIntent(token: CdatToken, licenseeAddress?: string): CdatMintIntent {
+  mintIntent(token: CdatToken, licenseeAddress?: string): CdatMintIntent | null {
     const licensee = licenseeAddress
       ?? token.licenseeAddress
-      ?? (isAddress(token.licensee) ? token.licensee : "0x0000000000000000000000000000000000000000");
+      ?? (isAddress(token.licensee) ? token.licensee : undefined);
+    if (!licensee || !isAddress(licensee)) return null;
     return {
       contract: "CdatLicense",
       function: "mint",
