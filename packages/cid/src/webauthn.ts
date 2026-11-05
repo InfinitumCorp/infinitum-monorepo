@@ -151,7 +151,12 @@ export function verifyAssertion(
   const signed = Buffer.concat([authData, sha256(fromB64u(response.clientDataJSON))]);
   const { key, alg } = coseToKey(fromB64u(credential.publicKeyCose));
   const sig = Buffer.from(response.signature, "base64url");
-  const ok = alg === COSE_ALG.EdDSA ? verify(null, signed, key, sig) : verify("sha256", signed, key, sig);
+  // Authenticators send ES256 as raw r||s (IEEE P1363), not DER. RS256 is PKCS#1.
+  const ok = alg === COSE_ALG.EdDSA
+    ? verify(null, signed, key, sig)
+    : alg === COSE_ALG.ES256
+      ? verify("sha256", signed, { key, dsaEncoding: "ieee-p1363" }, sig)
+      : verify("sha256", signed, key, sig);
   if (!ok) throw new Error("WebAuthn: signature check failed");
 
   // A counter that fails to increase signals a cloned authenticator. Synced passkeys report 0.
