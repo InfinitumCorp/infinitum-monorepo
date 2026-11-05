@@ -243,11 +243,18 @@ export async function requestPayout(ctx: Ctx, org: Org) {
     // Settled by the on-chain settlement worker (USDC/product token via FIRM Wallet); stays 'pending' until it confirms.
     return { ...payout, status: "pending" };
   }
+  let sentId: string | undefined;
   try {
     const t = await ctx.pay.transfer({ destination: acct.provider_account_id, amountCents: payout.amountCents, idempotencyKey: payout.id });
+    sentId = t.id;
     await ctx.db.query("update payouts set status='sent', provider_ref=$2 where id=$1", [payout.id, t.id]);
     return { ...payout, status: "sent" };
   } catch (err) {
+    if (sentId) {
+      // The bank already accepted the transfer. Putting the earnings back would let the same money be paid twice.
+      await ctx.db.query("update payouts set status='sent', provider_ref=$2 where id=$1", [payout.id, sentId]).catch(() => {});
+      throw err;
+    }
     await ctx.db.query("update payouts set status='failed' where id=$1", [payout.id]);
     await ctx.db.query("insert into earnings_ledger (id, org_id, delta_cents, source, ref) values ($1,$2,$3,'reversal',$4)", [newId("ern"), org.id, payout.amountCents, payout.id]);
     throw err;

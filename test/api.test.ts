@@ -165,6 +165,46 @@ describe("data marketplace", () => {
     expect(c.body.refundIssued).toBe(true);
     expect(pay.calls.find((x) => x.op === "refund")!.args).toMatchObject({ paymentIntentId: "pi_mission", amountCents: 1800 });
   });
+
+  it("does not pay the same earnings twice when recording a successful transfer fails", async () => {
+    const seller = await signup("Payee", "individual");
+    await call("POST", "/v1/payout-account", seller.apiKey, { method: "bank" });
+    await db.query(
+      "insert into earnings_ledger (id, org_id, delta_cents, source, ref, available_at) values ($1,$2,$3,'mission',$4, now() - interval '1 day')",
+      ["ern_seed", seller.orgId, 5000, "seed"],
+    );
+    const original = ctx.db.query.bind(ctx.db);
+    let tripped = false;
+    ctx.db.query = ((sql: string, params?: unknown[]) => {
+      if (!tripped && sql.includes("status='sent'")) {
+        tripped = true;
+        throw new Error("db blip");
+      }
+      return original(sql, params);
+    }) as typeof ctx.db.query;
+    const res = await call("POST", "/v1/payouts", seller.apiKey);
+    ctx.db.query = original;
+    expect(res.status).toBe(500);
+    expect(pay.calls.filter((c) => c.op === "transfer")).toHaveLength(1);
+    expect((await call("GET", "/v1/earnings", seller.apiKey)).body.availableCents).toBe(0);
+    const [row] = await db.query<{ status: string }>("select status from payouts where org_id=$1", [seller.orgId]);
+    expect(row.status).toBe("sent");
+  });
+
+  it("restores earnings when the bank transfer itself fails", async () => {
+    const seller = await signup("Payee", "individual");
+    await call("POST", "/v1/payout-account", seller.apiKey, { method: "bank" });
+    await db.query(
+      "insert into earnings_ledger (id, org_id, delta_cents, source, ref, available_at) values ($1,$2,$3,'mission',$4, now() - interval '1 day')",
+      ["ern_seed", seller.orgId, 5000, "seed"],
+    );
+    pay.transfer = async () => { throw new Error("stripe down"); };
+    const res = await call("POST", "/v1/payouts", seller.apiKey);
+    expect(res.status).toBe(500);
+    expect((await call("GET", "/v1/earnings", seller.apiKey)).body.availableCents).toBe(5000);
+    const [row] = await db.query<{ status: string }>("select status from payouts where org_id=$1", [seller.orgId]);
+    expect(row.status).toBe("failed");
+  });
 });
 
 describe("contracts, licences, referrals", () => {
