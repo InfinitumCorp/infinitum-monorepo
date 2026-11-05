@@ -12,6 +12,7 @@ import { randomUUID } from "node:crypto";
 import { Mailbox, type MailSnapshot, type SendInput } from "./mailbox.ts";
 import type { FolderId, MailMessage, MailPayment, Person } from "./model.ts";
 import { isCumulus, parsePeople, validEmail } from "./logic.ts";
+import { DEFAULT_CLEAN_RULES, isProtected, normalizeRules, planSweep, type CleanAction, type CleanLogEntry, type CleanRules, type CleanState } from "./clean.ts";
 
 export const MAIL_DOMAIN = "cumulusmail.cloud";
 
@@ -38,6 +39,8 @@ export interface StoredMailbox extends MailSnapshot {
   cid: string;
   owner: Person;
   createdAt: string;
+  /** SCALVS Clean rules and history for this mailbox. */
+  clean?: CleanState;
 }
 
 export interface OutboundMail {
@@ -271,7 +274,13 @@ export class PostOffice {
   }
 
   private deliver(cid: string, message: MailMessage) {
-    this.box(cid).messages.unshift(message);
+    const box = this.box(cid);
+    // A muted sender's mail skips the inbox. Product mail is never muted.
+    if (!message.system && box.clean?.rules.muted.includes(message.from.email.toLowerCase())) {
+      message.folder = "archive";
+      message.unread = false;
+    }
+    box.messages.unshift(message);
   }
 
   /**
@@ -377,6 +386,103 @@ export class PostOffice {
         note: "Saved from a message.",
       }),
     );
+  }
+
+  /* ---------------- SCALVS Clean ---------------- */
+
+  cleanState(cid: string): CleanState {
+    const box = this.box(cid);
+    box.clean ??= { rules: { ...DEFAULT_CLEAN_RULES, muted: [] }, log: [] };
+    box.clean.rules = normalizeRules(box.clean.rules);
+    return box.clean;
+  }
+
+  setCleanRules(cid: string, patch: Partial<CleanRules>): CleanRules {
+    const state = this.cleanState(cid);
+    state.rules = normalizeRules({ ...state.rules, ...patch });
+    return state.rules;
+  }
+
+  /** What the rules would clean right now, without moving anything. */
+  previewClean(cid: string): CleanAction[] {
+    return planSweep(this.box(cid).messages, this.cleanState(cid).rules, this.clock());
+  }
+
+  /**
+   * Carry out cleaning actions. Only this mailbox's own messages move, protected mail is skipped,
+   * and "delete" only removes mail that is already in Trash.
+   */
+  applyClean(cid: string, actions: CleanAction[], by: CleanLogEntry["by"]): CleanLogEntry[] {
+    const state = this.cleanState(cid);
+    const box = this.box(cid);
+    const entries: CleanLogEntry[] = [];
+    for (const action of actions) {
+      const ids = [...new Set(action.ids)].filter((id) => {
+        const m = box.messages.find((x) => x.id === id);
+        if (!m) return false;
+        if (action.kind === "delete") return m.folder === "trash" && !m.starred;
+        return (m.folder === "inbox" || (action.kind === "trash" && m.folder === "archive")) && !isProtected(m);
+      });
+      if (!ids.length) continue;
+      for (const id of ids) {
+        if (action.kind === "delete") this.remove(cid, id);
+        else this.move(cid, id, action.kind === "archive" ? "archive" : "trash");
+      }
+      const entry: CleanLogEntry = { id: `cl-${randomUUID()}`, at: this.now(), kind: action.kind, ids, reason: action.reason.slice(0, 200), by };
+      entries.push(entry);
+      state.log.unshift(entry);
+    }
+    state.log = state.log.slice(0, 50);
+    return entries;
+  }
+
+  /** Run the rules now ("Clean now"), or on their own when `by` is "rules". */
+  runClean(cid: string, by: "rules" | "you" = "you"): CleanLogEntry[] {
+    const state = this.cleanState(cid);
+    state.lastRun = this.now();
+    return this.applyClean(cid, this.previewClean(cid), by);
+  }
+
+  /** Automatic cleaning: runs when the mailbox is opened, at most once an hour, if the owner left it on. */
+  autoClean(cid: string): CleanLogEntry[] {
+    if (!this.has(cid)) return [];
+    const state = this.cleanState(cid);
+    if (!state.rules.auto) return [];
+    if (state.lastRun && this.clock().getTime() - Date.parse(state.lastRun) < 3_600_000) return [];
+    return this.runClean(cid, "rules");
+  }
+
+  /** Put an archive or trash clean-up back in the inbox. Deleting forever can't be undone. */
+  undoClean(cid: string, logId: string): number {
+    const state = this.cleanState(cid);
+    const entry = state.log.find((e) => e.id === logId);
+    if (!entry || entry.undone || entry.kind === "delete") return 0;
+    let restored = 0;
+    for (const id of entry.ids) {
+      const m = this.message(cid, id);
+      if (m && (m.folder === "archive" || m.folder === "trash")) {
+        this.move(cid, id, "inbox");
+        restored++;
+      }
+    }
+    entry.undone = true;
+    return restored;
+  }
+
+  /** Send a sender's future mail to Archive, and archive what's already in the inbox from them. */
+  muteSender(cid: string, email: string): CleanLogEntry[] {
+    const address = email.trim().toLowerCase();
+    if (!validEmail(address)) throw new MailError("bad_address", "That isn't an email address.");
+    if (Object.values(SYSTEM_SENDERS).some((s) => s.email === address)) throw new MailError("protected_sender", "Cumulus account mail can't be muted.");
+    const rules = this.cleanState(cid).rules;
+    this.setCleanRules(cid, { muted: [...rules.muted, address] });
+    const ids = this.box(cid).messages.filter((m) => m.folder === "inbox" && m.from.email.toLowerCase() === address).map((m) => m.id);
+    return this.applyClean(cid, [{ kind: "archive", ids, reason: `Muted ${address}` }], "you");
+  }
+
+  unmuteSender(cid: string, email: string) {
+    const address = email.trim().toLowerCase();
+    this.setCleanRules(cid, { muted: this.cleanState(cid).rules.muted.filter((m) => m !== address) });
   }
 
   message(cid: string, id: string): MailMessage | undefined {

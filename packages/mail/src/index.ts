@@ -54,3 +54,5 @@ export type {
   PostOfficeSendInput,
   SystemSender,
 } from "./postoffice.ts";
+export { classify, isProtected, planSweep, normalizeRules, inboxMix, bulkSenders, DEFAULT_CLEAN_RULES } from "./clean.ts";
+export type { MailKind, CleanRules, CleanAction, CleanLogEntry, CleanState } from "./clean.ts";
