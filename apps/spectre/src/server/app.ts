@@ -15,6 +15,7 @@ import {
 } from "../core/cleaning.ts";
 import { OPEN_STAGES, STAGES } from "../core/model.ts";
 import { askClaude, AiNotConnected, type AiConfig } from "./ai.ts";
+import { registerGrowthRoutes, type GrowthEvent } from "./growth-routes.ts";
 import { runLlmAgent, LlmError } from "@infinitum/scalus";
 import { AGENTS, AGENT_IDS, agentDefinition, applyProposal, newProposalId, newRunId, type AgentId, type AgentRunRecord } from "../core/agent-team.ts";
 
@@ -42,6 +43,8 @@ export interface AppDeps {
    * atomically afterwards, and re-run the request if someone else saved in between.
    */
   transaction?: <T>(fn: () => Promise<T>) => Promise<T>;
+  /** Automations: receives events such as form submissions and new tags. */
+  emit?: (ws: string, event: GrowthEvent) => Promise<void>;
 }
 
 class HttpError extends Error {
@@ -71,6 +74,9 @@ interface Ctx {
 
 type Handler = (ctx: Ctx) => Promise<unknown> | unknown;
 interface Route { method: string; pattern: RegExp; keys: string[]; auth: boolean; handler: Handler; csrf: boolean; optionalAuth: boolean; }
+
+/** Static pages that may be shown inside other sites (iframe embeds). */
+export const EMBEDDABLE = new Set(["/form.html", "/book.html"]);
 
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -980,6 +986,15 @@ export function createApp(deps: AppDeps) {
     return { results, logged: results?.length || 0 };
   });
 
+  /* ---------------- Growth: contacts+, forms, calendars, automations, conversations ---------------- */
+
+  registerGrowthRoutes({
+    route,
+    crm,
+    httpError: (status, message) => new HttpError(status, message),
+    emit: (ws, event) => deps.emit?.(ws, event) ?? Promise.resolve(),
+  });
+
   /* ---------------- Request handling ---------------- */
 
   const MUTATING = new Set(["POST", "PATCH", "PUT", "DELETE"]);
@@ -1003,9 +1018,11 @@ export function createApp(deps: AppDeps) {
   async function handle(req: IncomingMessage, res: ServerResponse) {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    res.setHeader("X-Frame-Options", "DENY");
-    res.setHeader("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'");
     const url = new URL(req.url ?? "/", "http://localhost");
+    // Public form and booking pages can be embedded on other sites; everything else can't be framed.
+    const embeddable = EMBEDDABLE.has(url.pathname);
+    if (!embeddable) res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Content-Security-Policy", `default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors ${embeddable ? "*" : "'none'"}`);
     try {
       if (!url.pathname.startsWith("/api/")) {
         if (req.method !== "GET" && req.method !== "HEAD") throw new HttpError(405, "Method not allowed");
@@ -1046,7 +1063,7 @@ export function createApp(deps: AppDeps) {
     } catch (err) {
       const status = err instanceof HttpError ? err.status
         : err instanceof CidError ? (["not_found"].includes(err.code) ? 404 : err.code === "forbidden" ? 403 : 400)
-        : err instanceof SpectreError ? (err.code === "not_found" ? 404 : 400)
+        : err instanceof SpectreError ? (err.code === "not_found" ? 404 : err.code === "inactive" ? 410 : 400)
         : 500;
       if (status === 500) console.error(err);
       const code = err instanceof CidError || err instanceof SpectreError ? err.code : undefined;
