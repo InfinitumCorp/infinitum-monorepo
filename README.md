@@ -9,6 +9,11 @@ Shared foundation for every Infinitum product.
 
 | `apps/spectre` | +SPCTR™ (Spectre) intelligent CRM. Core so far: companies, contacts, deals, activities and relationships with a Firmament audit trail and source provenance; opt-out handling; predictive pipeline with explained win probability, risk alerts, next best action and monthly forecast; warmest-path relationship map and buying-committee gaps; duplicate detection, merging and stale-data flags (17 passing tests). |
 
+| `packages/mail` | Cumulus://Mail mailbox: folders, threads, end-to-end marking, aliases, quota shared with Cumulus Drive, and Conductor tasks. |
+| `apps/cumulus-mail` | Cumulus://Mail web client for a Cumulus://ID such as alex@cumulusmail.cloud. |
+
+Run Cumulus://Mail: `node --experimental-strip-types apps/cumulus-mail/src/server.ts`, then open http://localhost:3010. Set `XAI_API_KEY` to turn on SCALVS briefs.
+
 Run +SPCTR locally: `node apps/spectre/src/server/main.ts`, then open http://localhost:3000 and create a CID with a passkey. Set `ANTHROPIC_API_KEY` to turn on Ask Spectre.
 
 ### Social sign-in

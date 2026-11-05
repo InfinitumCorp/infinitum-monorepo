@@ -1,0 +1,97 @@
+:root {
+  --ink: #111820;
+  --paper: #fff;
+  --muted: #52606b;
+  --line: #d6dce1;
+  --accent: #2454dd;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  color: var(--ink);
+  background: var(--paper);
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  letter-spacing: -0.011em;
+}
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; }
+#app { height: 100dvh; display: flex; flex-direction: column; }
+header {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.mark { font-size: 20px; }
+.mark span { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--accent); }
+.sub { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: var(--muted); }
+header label { flex: 1; display: flex; align-items: center; height: 44px; border: 1px solid var(--line); padding: 0 12px; max-width: 560px; }
+header input { flex: 1; border: 0; outline: none; min-width: 0; }
+.compose {
+  height: 44px;
+  padding: 0 16px;
+  background: var(--ink);
+  color: var(--paper);
+}
+.compose:hover { background: var(--accent); }
+.layout { flex: 1; min-height: 0; display: flex; }
+nav {
+  width: 232px;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+}
+nav button {
+  height: 44px;
+  width: 100%;
+  text-align: left;
+  padding: 0 16px;
+  border-left: 2px solid transparent;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+nav button[aria-current="true"] { color: var(--ink); border-left-color: var(--accent); }
+.account {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  padding: 16px;
+  text-align: left;
+  width: 100%;
+}
+.bar { height: 4px; background: var(--line); margin-top: 12px; }
+.bar span { display: block; height: 4px; background: var(--accent); }
+.list { width: 360px; border-right: 1px solid var(--line); display: flex; flex-direction: column; min-width: 0; }
+.list h2, .pane h2 { font-weight: 400; letter-spacing: -0.04em; }
+.rows { overflow: auto; min-height: 0; }
+.row { display: flex; width: 100%; border-bottom: 1px solid var(--line); border-left: 2px solid transparent; text-align: left; }
+.row[aria-current="true"] { border-left-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, white); }
+.row .body { flex: 1; min-width: 0; padding: 12px; }
+.row strong, .row em { display: block; font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row em, .muted { color: var(--muted); }
+.reader, .pane { flex: 1; min-width: 0; overflow: auto; }
+.sheet { max-width: 760px; padding: 28px 32px 48px; }
+.sheet h2 { font-size: 36px; margin: 8px 0; font-weight: 400; letter-spacing: -0.04em; }
+.letter { white-space: pre-wrap; line-height: 1.5; }
+.tools { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); padding: 4px; position: sticky; top: 0; background: var(--paper); }
+.tools button, .ghost { height: 40px; padding: 0 10px; }
+.e2e { color: var(--accent); }
+form.composer { border: 1px solid var(--line); margin-top: 24px; }
+form.composer label, .modal label { display: flex; gap: 12px; align-items: center; border-bottom: 1px solid var(--line); padding: 0 12px; }
+form.composer input, .modal input, form.composer textarea, .modal textarea { flex: 1; border: 0; outline: none; min-width: 0; }
+form.composer textarea, .modal textarea { min-height: 140px; padding: 12px 0; resize: vertical; }
+.actions { display: flex; gap: 8px; padding: 12px; }
+.line { height: 40px; padding: 0 12px; border: 1px solid var(--line); }
+.modal-scrim { position: fixed; inset: 0; background: color-mix(in srgb, var(--ink) 42%, transparent); display: flex; align-items: flex-end; justify-content: center; }
+.modal { background: var(--paper); width: min(680px, 100%); }
+.event, .person, .task { border-top: 1px solid var(--line); padding: 18px 0; display: flex; justify-content: space-between; gap: 16px; }
+@media (max-width: 860px) {
+  nav { display: none; }
+  .list { width: 100%; }
+  .reader { display: none; }
+  body.reading .list { display: none; }
+  body.reading .reader { display: block; }
+}

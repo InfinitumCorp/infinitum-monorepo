@@ -21,6 +21,19 @@ importers:
         specifier: ^5.9.0
         version: 5.9.3
 
+  apps/cumulus-mail:
+    dependencies:
+      '@infinitum/mail':
+        specifier: workspace:*
+        version: link:../../packages/mail
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.5
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
   apps/hrvst:
     dependencies:
       '@infinitum/firmament':
@@ -136,6 +149,15 @@ importers:
         version: 5.9.3
 
   packages/hrvst:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.5
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
+  packages/mail:
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
