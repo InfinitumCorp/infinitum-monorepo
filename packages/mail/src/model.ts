@@ -16,7 +16,7 @@ export type Attachment = { name: string; size: number };
 
 export type DeliveryHop = {
   email: string;
-  status: "inside" | "outbound";
+  status: "inside" | "outbound" | "bounced";
   detail: string;
 };
 
@@ -34,7 +34,19 @@ export type MailMessage = {
   starred: boolean;
   labels: string[];
   attachments?: Attachment[];
+  /** Where each recipient's copy went: inside Cumulus, out to the relay, or bounced. */
   delivery?: DeliveryHop[];
+  /** FIRM Wallet payment sent with this message (pay by mail). */
+  payment?: MailPayment;
+  /** Sent by a Cumulus product (security notice, Cloud share, wallet receipt). */
+  system?: string;
+};
+
+export type MailPayment = {
+  asset: string;
+  amount: string;
+  txId: string;
+  ledgerHash?: string;
 };
 
 export type ConductorTask = {

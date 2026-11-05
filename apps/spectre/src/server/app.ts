@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { readFile } from "node:fs/promises";
 import { join, normalize, extname } from "node:path";
 import { CidService, CidError, type Account } from "@infinitum/cid";
+import type { CumulusSuite } from "@infinitum/cumulus";
 import { SpectreCRM, SpectreError } from "../core/crm.ts";
 import { scoreDealMetatron as scoreDeal } from "../core/intelligence-metatron.ts";
 import { nextBestAction, forecast, riskAlerts, type Score } from "../core/intelligence.ts";
@@ -35,6 +36,8 @@ const MAX_BODY = 1_000_000;
 
 export interface AppDeps {
   cid: CidService;
+  /** The Cumulus account suite (Mail, Cloud, FIRM Wallet) behind `cid`, when wired in. */
+  suite?: CumulusSuite;
   crm: SpectreCRM;
   ai: AiConfig;
   publicDir: string;
@@ -272,7 +275,9 @@ export function createApp(deps: AppDeps) {
 
   route("GET", "/api/me", (ctx) => {
     const a = ctx.user!.account;
-    return { cid: a.cid, username: a.username, mailAddress: a.mailAddress, handle: a.handle, workspace: ctx.user!.workspace };
+    // The Cumulus account that comes with every CID: Mail (unread), Cloud storage, FIRM Wallet.
+    const cumulus = deps.suite?.summary(a.cid);
+    return { cid: a.cid, username: a.username, mailAddress: a.mailAddress, handle: a.handle, workspace: ctx.user!.workspace, cumulus };
   });
 
   /* ---------------- Today / dashboard ---------------- */

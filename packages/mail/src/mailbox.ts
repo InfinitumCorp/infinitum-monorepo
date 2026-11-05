@@ -9,7 +9,15 @@ export interface MailSnapshot {
   contacts: Contact[];
 }
 
+/** Whose mailbox this is. Defaults to the demo account. */
+export interface MailOwner {
+  name: string;
+  email: string;
+}
+
 export interface SendInput {
+  /** Message id to use; the post office passes a globally unique one. */
+  id?: string;
   to: string;
   cc?: string;
   subject: string;
@@ -25,17 +33,23 @@ export class Mailbox {
   aliases: string[];
   tasks: ConductorTask[];
   contacts: Contact[];
+  readonly owner: MailOwner;
 
-  constructor(seed: Partial<MailSnapshot> = {}) {
+  constructor(seed: Partial<MailSnapshot> = {}, owner: MailOwner = ME) {
+    this.owner = { name: owner.name, email: owner.email };
     this.messages = structuredClone(seed.messages ?? SEED_MESSAGES);
     this.aliases = structuredClone(seed.aliases ?? ["press@cumulusmail.cloud"]);
     this.tasks = structuredClone(seed.tasks ?? SEED_TASKS);
     this.contacts = structuredClone(seed.contacts ?? SEED_CONTACTS);
   }
 
+  snapshot(): MailSnapshot {
+    return { messages: this.messages, aliases: this.aliases, tasks: this.tasks, contacts: this.contacts };
+  }
+
   view() {
     return {
-      me: ME,
+      me: { ...ME, ...this.owner },
       messages: this.messages,
       aliases: this.aliases,
       tasks: this.tasks,
@@ -79,13 +93,13 @@ export class Mailbox {
     if (!input.subject.trim() && !input.body.trim()) {
       return { ok: false, error: "Write a subject or a message." };
     }
-    const id = `m-${(input.now ?? Date.now().toString(36)).replace(/[^\w-]/g, "").slice(-12)}`;
+    const id = input.id ?? `m-${(input.now ?? Date.now().toString(36)).replace(/[^\w-]/g, "").slice(-12)}`;
     if (input.draftId) this.remove(input.draftId);
     const sent: MailMessage = {
       id,
       threadId: input.threadId ?? id,
       folder: "sent",
-      from: { name: ME.name, email: ME.email },
+      from: { ...this.owner },
       to,
       cc,
       subject: input.subject.trim() || "(no subject)",
@@ -98,7 +112,7 @@ export class Mailbox {
       delivery: planDelivery([...to, ...cc]),
     };
     this.messages.unshift(sent);
-    if ([...to, ...cc].some((person) => person.email.toLowerCase() === ME.email)) {
+    if ([...to, ...cc].some((person) => person.email.toLowerCase() === this.owner.email.toLowerCase())) {
       this.messages.unshift({ ...sent, id: `${id}-in`, folder: "inbox", unread: true });
     }
     return { ok: true, id };
@@ -110,7 +124,7 @@ export class Mailbox {
       id,
       threadId: input.threadId ?? id,
       folder: "drafts",
-      from: { name: ME.name, email: ME.email },
+      from: { ...this.owner },
       to: parsePeople(input.to),
       cc: parsePeople(input.cc ?? ""),
       subject: input.subject.trim() || "(no subject)",
@@ -129,7 +143,7 @@ export class Mailbox {
 
   addAlias(alias: string) {
     const cleaned = alias.trim().toLowerCase();
-    if (!validEmail(cleaned) || !isCumulus(cleaned) || cleaned === ME.email) return false;
+    if (!validEmail(cleaned) || !isCumulus(cleaned) || cleaned === this.owner.email) return false;
     if (this.aliases.includes(cleaned)) return false;
     this.aliases.push(cleaned);
     return true;

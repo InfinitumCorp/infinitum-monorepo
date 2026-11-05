@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { Ledger, signerFromPrivateKey } from "@infinitum/firmament";
-import { CidService, CidStore, socialFromEnv } from "@infinitum/cid";
+import { socialFromEnv } from "@infinitum/cid";
+import { createCumulus, emptyCumulusStores } from "@infinitum/cumulus";
 import { SpectreCRM, emptyStore } from "../core/crm.ts";
 import { createApp } from "./app.ts";
 import { aiConfigFromEnv } from "./ai.ts";
@@ -30,11 +31,24 @@ function required(name: string): string {
 function build() {
   const origin = required("SPECTRE_ORIGIN").replace(/\/$/, "");
   const signer = signerFromPrivateKey(required("FIRMAMENT_SIGNER_KEY"));
-  const cidStore = new CidStore();
+  const cumulusStores = emptyCumulusStores();
   const spectreStore = emptyStore();
-  const state = new RemoteState(new HttpGateway(required("NEXUS_STORE_URL"), required("NEXUS_STORE_KEY")), { cid: cidStore, spectre: spectreStore });
+  // The CID, Mail, Wallet and quota docs are shared by every hosted Infinitum product,
+  // so an account made here has the same mailbox and wallet in Cumulus://Mail.
+  const state = new RemoteState(new HttpGateway(required("NEXUS_STORE_URL"), required("NEXUS_STORE_KEY")), {
+    cid: cumulusStores.cid,
+    spectre: spectreStore,
+    "cumulus-mail": cumulusStores.mail,
+    "firm-wallet": cumulusStores.wallet,
+    "cumulus-quota": cumulusStores.quota,
+    "cumulus-suite": cumulusStores.suite,
+  });
   const ledger = new Ledger(state.ledgerStore, { authorizedSigners: [signer.publicKey] });
-  const cid = new CidService({ ledger, signer, rpId: new URL(origin).hostname, origins: [origin], store: cidStore, social: { providers: socialFromEnv() } });
+  const suite = createCumulus({
+    ledger, signer, rpId: new URL(origin).hostname, origins: [origin], stores: cumulusStores,
+    social: { providers: socialFromEnv() }, mailOrigin: process.env.CUMULUS_MAIL_ORIGIN,
+  });
+  const cid = suite.cid;
   const crm = new SpectreCRM({ ledger, signer, store: spectreStore });
 
   // Refuse to serve if the stored ledger fails verification (tampering or a wrong signing key).
@@ -51,6 +65,7 @@ function build() {
 
   const app = createApp({
     cid,
+    suite,
     crm,
     ai: aiConfigFromEnv(),
     publicDir: new URL("./public/", import.meta.url).pathname, // static files are served by Vercel's CDN

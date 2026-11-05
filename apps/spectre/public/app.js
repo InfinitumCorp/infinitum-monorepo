@@ -219,7 +219,9 @@ function renderShell(page) {
           <nav class="nav"><a href="#/settings" data-p="settings">${icon.settings}Settings</a></nav>
           <div class="me">
             <div class="avatar">${esc(initials(state.me.username))}</div>
-            <div class="who"><div>${esc(state.me.username)}</div><div class="faint small">${esc(state.me.mailAddress)}</div></div>
+            <div class="who"><div>${esc(state.me.username)}</div>${state.me.cumulus
+              ? `<a class="faint small" href="${esc(state.me.cumulus.mail.url)}" target="_blank" rel="noopener noreferrer">${esc(state.me.mailAddress)}${state.me.cumulus.mail.unread ? ` · ${state.me.cumulus.mail.unread} unread` : ""}</a>`
+              : `<div class="faint small">${esc(state.me.mailAddress)}</div>`}</div>
           </div>
           <button class="btn ghost small" id="signout">Sign out</button>
         </aside>
@@ -798,6 +800,16 @@ async function renderSettings() {
         <div class="list"><div class="item"><div class="avatar">${esc(initials(state.me.username))}</div>
           <div class="main"><div class="title">${esc(state.me.username)}</div><div class="sub">${esc(state.me.mailAddress)} · ${esc(state.me.handle)}</div></div></div></div>
       </div>
+      ${state.me.cumulus ? `<div class="section">
+        <h2>Included with your Cumulus://ID<sup class="tm">™</sup></h2>
+        <div class="list">
+          <div class="item"><div class="main"><div class="title">Cumulus://Mail</div><div class="sub">${esc(state.me.mailAddress)}${state.me.cumulus.mail.unread ? ` · ${state.me.cumulus.mail.unread} unread` : ""}</div></div>
+            <a class="btn small" href="${esc(state.me.cumulus.mail.url)}" target="_blank" rel="noopener noreferrer">Open</a></div>
+          <div class="item"><div class="main"><div class="title">Cumulus://Cloud<sup class="tm">™</sup> storage</div><div class="sub">${esc(state.me.cumulus.storage.label)} · shared by Mail and Cloud</div></div></div>
+          <div class="item"><div class="main"><div class="title">FIRM Wallet<sup class="tm">™</sup></div><div class="sub">${esc(state.me.cumulus.wallet.balances.USDC)} USDC · ${esc(state.me.cumulus.wallet.balances.FIRM)} FIRM · ${esc(state.me.cumulus.wallet.address)}</div></div></div>
+        </div>
+        <p class="faint small mt10">${esc(state.me.cumulus.plan)} plan. Sign-in alerts and wallet receipts go to your Cumulus://Mail inbox.</p>
+      </div>` : ""}
       <div class="section">
         <h2>Ways to sign in</h2>
         <div class="list">
