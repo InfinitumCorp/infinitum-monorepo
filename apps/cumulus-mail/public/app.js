@@ -64,6 +64,7 @@ const DONE = {
   unread: (n) => (n === 1 ? "Marked as unread." : `${n} conversations marked as unread.`),
   star: () => "Starred.",
   unstar: () => "Star removed.",
+  snooze: () => "Snoozed until 08:00 UTC tomorrow.",
 };
 
 async function threadAct(threadIds, action) {
@@ -305,14 +306,7 @@ function reader(message) {
     el("div", { class: "tools" }, [
       el("button", { class: "icon", "aria-label": `Back to ${state.box}`, title: `Back to ${state.box}`, onClick: () => { close(); render(); } }, ["←"]),
       message.system ? none() : el("button", { class: "quiet", onClick: () => reply(message) }, ["Reply"]),
-      el("button", { class: "quiet", title: "Hide until 08:00 UTC tomorrow", onClick: () => act(async () => {
-        const until = new Date();
-        until.setUTCDate(until.getUTCDate() + 1);
-        until.setUTCHours(8, 0, 0, 0);
-        await api("/api/snooze", { id: message.id, until: until.toISOString() });
-        state.selected = null;
-        state.box = "snoozed";
-      }) }, ["Snooze"]),
+      el("button", { class: "quiet", title: "Hide until 08:00 UTC tomorrow", onClick: () => { state.selected = null; state.box = "snoozed"; threadAct([message.threadId], "snooze"); } }, ["Snooze"]),
       message.folder === "archive" || inTrash ? el("button", { class: "quiet", onClick: () => thread_("inbox") }, ["Move to inbox"]) : el("button", { class: "quiet", title: "Archive (e)", onClick: () => thread_("archive") }, ["Archive"]),
       inTrash
         ? el("button", { class: "quiet danger", onClick: () => { if (confirm("Delete this message forever?")) act(async () => { await api("/api/remove", { id: message.id }); close(); }); } }, ["Delete forever"])

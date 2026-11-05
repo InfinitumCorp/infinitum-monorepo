@@ -11,7 +11,7 @@
 import { randomUUID } from "node:crypto";
 import { Mailbox, type MailSnapshot, type SendInput } from "./mailbox.ts";
 import type { FolderId, MailMessage, MailPayment, Person } from "./model.ts";
-import { isCumulus, parsePeople, validEmail } from "./logic.ts";
+import { isCumulus, parsePeople, tomorrowMorning, validEmail } from "./logic.ts";
 import type { CumulusTunnel } from "./tunnel.ts";
 import { DEFAULT_CLEAN_RULES, isProtected, normalizeRules, planSweep, type CleanAction, type CleanLogEntry, type CleanRules, type CleanState } from "./clean.ts";
 
@@ -44,9 +44,9 @@ export interface StoredMailbox extends MailSnapshot {
   clean?: CleanState;
 }
 
-export type ThreadAction = "archive" | "trash" | "inbox" | "read" | "unread" | "star" | "unstar";
-export const THREAD_ACTIONS: ThreadAction[] = ["archive", "trash", "inbox", "read", "unread", "star", "unstar"];
-export interface ThreadSnapshot { id: string; folder: FolderId; unread: boolean; starred: boolean }
+export type ThreadAction = "archive" | "trash" | "inbox" | "read" | "unread" | "star" | "unstar" | "snooze";
+export const THREAD_ACTIONS: ThreadAction[] = ["archive", "trash", "inbox", "read", "unread", "star", "unstar", "snooze"];
+export interface ThreadSnapshot { id: string; folder: FolderId; unread: boolean; starred: boolean; snoozeUntil?: string }
 
 export interface OutboundMail {
   id: string;
@@ -430,7 +430,7 @@ export class PostOffice {
     const before: ThreadSnapshot[] = [];
     const touched = new Set<string>();
     const remember = (m: MailMessage) => {
-      before.push({ id: m.id, folder: m.folder, unread: m.unread, starred: m.starred });
+      before.push({ id: m.id, folder: m.folder, unread: m.unread, starred: m.starred, snoozeUntil: m.snoozeUntil });
       touched.add(m.threadId);
     };
     const inView = (m: MailMessage) => (box === "starred" ? m.starred && m.folder !== "trash" : m.folder === box);
@@ -454,6 +454,10 @@ export class PostOffice {
         const latest = [...(shown.length ? shown : all)].sort((a, b) => (a.at < b.at ? 1 : -1))[0]!;
         if (action === "star" && !all.some((x) => x.starred)) { remember(latest); latest.starred = true; }
         if (action === "unstar") for (const m of all.filter((x) => x.starred)) { remember(m); m.starred = false; }
+      }
+      else if (action === "snooze") {
+        const until = tomorrowMorning(this.clock());
+        for (const m of all.filter((x) => x.folder !== "trash")) { remember(m); m.snoozeUntil = until; m.unread = false; }
       }
     }
     return { count: touched.size, before };
@@ -481,7 +485,7 @@ export class PostOffice {
     for (const s of before) {
       const m = box.messages.find((x) => x.id === s.id);
       if (!m) continue;
-      Object.assign(m, { folder: s.folder, unread: s.unread, starred: s.starred });
+      Object.assign(m, { folder: s.folder, unread: s.unread, starred: s.starred, snoozeUntil: s.snoozeUntil });
       n++;
     }
     return n;
