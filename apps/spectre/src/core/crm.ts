@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { AgentProposal, AgentRunRecord } from "./agent-team.ts";
+import type { Simulation } from "@infinitum/scalus";
 import type { SmartList, Form, FormSubmission, Calendar, Appointment, Workflow, WorkflowJob, Message } from "./growth-model.ts";
 import type { Ledger, Signer, Entry } from "@infinitum/firmament";
 import {
@@ -47,6 +48,8 @@ export interface SpectreStore {
   workflows: Map<string, Workflow>;
   jobs: Map<string, WorkflowJob>;
   messages: Map<string, Message>;
+  /** AVGVR swarm simulations (SCALVS.ai), tagged with their workspace. */
+  simulations: Map<string, Simulation & { workspace: string; dealId?: string; createdBy: string }>;
 }
 
 export const emptyStore = (): SpectreStore => ({
@@ -65,6 +68,7 @@ export const emptyStore = (): SpectreStore => ({
   workflows: new Map(),
   jobs: new Map(),
   messages: new Map(),
+  simulations: new Map(),
 });
 
 type Kind = "company" | "contact" | "deal" | "activity" | "relationship";

@@ -16,6 +16,8 @@ import {
 import { OPEN_STAGES, STAGES } from "../core/model.ts";
 import { askClaude, AiNotConnected, type AiConfig } from "./ai.ts";
 import { registerGrowthRoutes, type GrowthEvent } from "./growth-routes.ts";
+import { registerAvgvrRoutes } from "./avgvr-routes.ts";
+import type { Complete } from "@infinitum/scalus";
 import { runLlmAgent, LlmError } from "@infinitum/scalus";
 import { AGENTS, AGENT_IDS, agentDefinition, applyProposal, newProposalId, newRunId, type AgentId, type AgentRunRecord } from "../core/agent-team.ts";
 
@@ -45,6 +47,8 @@ export interface AppDeps {
   transaction?: <T>(fn: () => Promise<T>) => Promise<T>;
   /** Automations: receives events such as form submissions and new tags. */
   emit?: (ws: string, event: GrowthEvent) => Promise<void>;
+  /** Tests: scripted model for AVGVR simulations. */
+  avgvrComplete?: Complete;
 }
 
 class HttpError extends Error {
@@ -994,6 +998,8 @@ export function createApp(deps: AppDeps) {
     httpError: (status, message) => new HttpError(status, message),
     emit: (ws, event) => deps.emit?.(ws, event) ?? Promise.resolve(),
   });
+
+  registerAvgvrRoutes({ route, crm, ai: deps.ai, httpError: (status, message) => new HttpError(status, message), complete: deps.avgvrComplete });
 
   /* ---------------- Request handling ---------------- */
 

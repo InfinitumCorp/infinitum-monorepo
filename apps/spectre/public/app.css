@@ -54,7 +54,7 @@ sup.tm { font-size: .38em; vertical-align: super; line-height: 0; margin-left: .
 }
 textarea.input { height: auto; min-height: 88px; padding: 12px 14px; resize: vertical; }
 .input:focus { border-color: #cfcfcf; box-shadow: 0 0 0 3px rgba(0,0,0,.04); }
-label.field { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+label.field { display: grid; gap: 6px; font-size: 13px; color: var(--muted); margin-bottom: 14px; }
 .row { display: flex; gap: 12px; align-items: center; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
@@ -207,3 +207,25 @@ dialog::backdrop { background: rgba(0,0,0,.25); }
 .run-item .run-output { margin-top: 10px; font-size: 14px; }
 .notice { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 18px; color: var(--muted); }
 .hidden { display: none !important; }
+
+/* AVGVR */
+.chart { width: 100%; height: auto; margin: 12px 0 4px; }
+.chart .axis { stroke: var(--line); stroke-width: 1; }
+.chart .line { fill: none; stroke: var(--text); stroke-width: 2; }
+.chart .dot { fill: var(--text); }
+.chart .lbl { font-size: 10px; fill: var(--faint); }
+.split { display: flex; height: 6px; width: 120px; border-radius: 3px; overflow: hidden; background: var(--line); flex: none; }
+.split .for { background: var(--good); } .split .und { background: #c9c9c9; } .split .ag { background: var(--bad); }
+.split-row { display: flex; align-items: center; gap: 12px; margin: 6px 0 18px; }
+.split-row .split { width: 220px; }
+.sim-q { font-size: 26px; line-height: 1.2; }
+.sim-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.inject { display: flex; gap: 8px; margin: 10px 0 4px; }
+.inject .input { flex: 1; }
+.feed { display: grid; gap: 10px; }
+.post { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+.post.news { background: var(--chip); }
+.post .sub { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+.report .outcome { font-size: 17px; }
+.report ul { margin: 4px 0 12px; padding-left: 20px; }
+.iv-log { max-height: 300px; overflow: auto; margin-bottom: 8px; }
