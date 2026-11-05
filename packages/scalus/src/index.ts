@@ -7,3 +7,5 @@ export { Team } from "./team.ts";
 export { runAndRecord } from "./conductor.ts";
 export type { ConductorEvidence } from "./conductor.ts";
 export { FirmamentVault } from "./memory-firmament.ts";
+export { runLlmAgent, LlmError } from "./llm.ts";
+export type { LlmTool, LlmConfig, LlmAgentResult, Proposal, Step, JsonSchema } from "./llm.ts";

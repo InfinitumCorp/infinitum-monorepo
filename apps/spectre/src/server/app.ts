@@ -15,6 +15,8 @@ import {
 } from "../core/cleaning.ts";
 import { OPEN_STAGES, STAGES } from "../core/model.ts";
 import { askClaude, AiNotConnected, type AiConfig } from "./ai.ts";
+import { runLlmAgent, LlmError } from "@infinitum/scalus";
+import { AGENTS, AGENT_IDS, agentDefinition, applyProposal, newProposalId, newRunId, type AgentId, type AgentRunRecord } from "../core/agent-team.ts";
 
 /**
  * +SPCTR HTTP app. Sign-in is Cumulus://ID; access requires the "spectre" grant on the
@@ -870,23 +872,89 @@ export function createApp(deps: AppDeps) {
   });
 
 
+  /* ---------------- SCALVS.ai agents ---------------- */
+
+  const agentCtx = (ctx: Ctx) => ({ crm, workspace: ctx.user!.workspace });
+
+  /** Run one SCALVS.ai agent on the workspace; store its proposals for approval. */
+  async function runTeamAgent(ctx: Ctx, agentId: string, prompt: string) {
+    if (!deps.ai.apiKey) throw new HttpError(503, new AiNotConnected().message);
+    const ws = ctx.user!.workspace;
+    const def = agentDefinition(agentId, agentCtx(ctx), crm.now().toISOString().slice(0, 10));
+    if (!def) throw new HttpError(404, "No such agent");
+    let result;
+    try {
+      result = await runLlmAgent({ apiKey: deps.ai.apiKey, model: deps.ai.model, fetchImpl: deps.ai.fetchImpl, newId: newProposalId }, def, prompt);
+    } catch (err) {
+      if (err instanceof LlmError) throw new HttpError(502, err.status === 429 ? "The AI is busy right now. Please try again in a minute." : "The AI service couldn't complete this run. Please try again.");
+      throw err;
+    }
+    const at = crm.now().toISOString();
+    const by = ctx.user!.account.cid;
+    for (const p of result.proposals) {
+      crm.store.proposals.set(p.id, { ...p, workspace: ws, agentId: agentId as AgentId, status: "pending", requestedBy: by, createdAt: at });
+    }
+    const run: AgentRunRecord = { id: newRunId(), workspace: ws, agentId: agentId as AgentId, prompt: prompt.slice(0, 2000), output: result.output, steps: result.steps, proposalIds: result.proposals.map((p) => p.id), requestedBy: by, at, usage: result.usage };
+    crm.store.agentRuns.set(run.id, run);
+    // Keep the 50 most recent runs per workspace.
+    const runs = crm.list("agentRuns", ws).sort((a, b) => b.at.localeCompare(a.at));
+    for (const old of runs.slice(50)) crm.store.agentRuns.delete(old.id);
+    await crm.auditAgent(by, agentId, { event: "agent.run", run: run.id, proposals: run.proposalIds.length, tools: [...new Set(result.steps.map((s) => s.tool))] });
+    return { run, proposals: run.proposalIds.map((id) => crm.store.proposals.get(id)) };
+  }
+
+  route("GET", "/api/agents", (ctx) => ({
+    aiConnected: Boolean(deps.ai.apiKey),
+    agents: AGENT_IDS.map((id) => ({ id, name: AGENTS[id].name, role: AGENTS[id].role, starters: AGENTS[id].starters, canPropose: AGENTS[id].propose })),
+    pending: crm.list("proposals", ctx.user!.workspace).filter((p) => p.status === "pending").length,
+  }));
+
+  route("POST", "/api/agents/:id/run", async (ctx) => {
+    const prompt = String(ctx.body.prompt ?? "").trim();
+    if (!prompt) throw new HttpError(400, "Tell the agent what to do");
+    return runTeamAgent(ctx, ctx.params.id, prompt);
+  });
+
+  route("GET", "/api/agents/runs", (ctx) =>
+    crm.list("agentRuns", ctx.user!.workspace).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 20));
+
+  route("GET", "/api/agents/proposals", (ctx) => {
+    const status = ctx.query.get("status") ?? "pending";
+    return crm.list("proposals", ctx.user!.workspace).filter((p) => status === "all" || p.status === status).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 100);
+  });
+
+  route("POST", "/api/agents/proposals/:id/:decision", async (ctx) => {
+    const ws = ctx.user!.workspace;
+    const p = crm.store.proposals.get(ctx.params.id);
+    if (!p || p.workspace !== ws) throw new HttpError(404, "Proposal not found");
+    if (p.status !== "pending") throw new HttpError(409, `Already ${p.status}`);
+    const decision = ctx.params.decision;
+    if (decision !== "approve" && decision !== "dismiss") throw new HttpError(404, "Not found");
+    const by = ctx.user!.account.cid;
+    let resultId: string | undefined;
+    if (decision === "approve") {
+      try {
+        resultId = await applyProposal(crm, ws, by, p);
+      } catch (err) {
+        throw new HttpError(400, `Couldn't apply this: ${(err as Error).message}`);
+      }
+    }
+    const updated = { ...p, status: decision === "approve" ? "approved" as const : "dismissed" as const, decidedBy: by, decidedAt: crm.now().toISOString(), resultId };
+    crm.store.proposals.set(p.id, updated);
+    await crm.auditAgent(by, p.agentId, { event: `proposal.${updated.status}`, proposal: p.id, tool: p.tool, result: resultId ?? null });
+    return updated;
+  });
+
+  /** Deal Rehearsal: the Deal coach plays out the next meeting from the deal's records. */
   route("POST", "/api/rehearse", async (ctx) => {
     need(ctx, "dealId");
     const deal = crm.deal(ctx.user!.workspace, String(ctx.body.dealId));
-    const { runSpectreAgent } = await import("../core/agents.ts");
-    const summary = `${deal.name} at ${deal.stage} for ${deal.amount}`;
-    const result = await runSpectreAgent("deal-coach", `rehearse ${summary}`, { crm, workspace: ctx.user!.workspace });
-    return result;
+    return runTeamAgent(ctx, "deal-coach",
+      `Rehearse my next meeting on the deal "${deal.name}" (dealId ${deal.id}). Build the buying committee from the records, play out how the conversation is likely to go, list the likely objections with a response to each, and say who still needs convincing. Mark clearly what is an assumption. Propose a task for the most important preparation step.`);
   });
 
-  route("POST", "/api/agents/:id/run", async (ctx) => {
-    need(ctx, "prompt");
-    const { runSpectreAgent } = await import("../core/agents.ts");
-    const result = await runSpectreAgent(ctx.params.id, String(ctx.body.prompt), { crm, workspace: ctx.user!.workspace });
-
-  route("POST", "/api/prospect", async (ctx) => {
-    const { runSpectreAgent } = await import("../core/agents.ts");
-    const result = await runSpectreAgent("prospector", "suggest new accounts matching ideal customer profile", { crm, workspace: ctx.user!.workspace });
+  route("POST", "/api/prospect", async (ctx) =>
+    runTeamAgent(ctx, "prospector", "Find up to 5 new prospects that match our best customers. Propose adding each with the reason it fits."));
 
   route("GET", "/api/execution/pending", async (ctx) => {
     const { listPendingActions } = await import("./execution.ts");
@@ -910,14 +978,6 @@ export function createApp(deps: AppDeps) {
       }
     }
     return { results, logged: results?.length || 0 };
-  });
-
-
-    return result;
-  });
-
-
-    return result;
   });
 
   /* ---------------- Request handling ---------------- */

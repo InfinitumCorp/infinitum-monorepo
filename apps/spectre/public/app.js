@@ -45,6 +45,7 @@ const icon = {
   pipeline: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>',
   accounts: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V7l8-4 8 4v14"/><path d="M9 21v-6h6v6"/></svg>',
   people: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.7 3 2.4 3.5 5.2"/></svg>',
+  agents: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 12h.01M15 12h.01M9 16h6"/></svg>',
   health: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>',
   send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
   settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
@@ -112,7 +113,7 @@ function render() {
     return renderAuth(page === "signin-error" && id ? decodeURIComponent(id) : "");
   }
   renderShell(page);
-  const views = { today: renderToday, pipeline: renderPipeline, accounts: id ? () => renderAccount(id) : renderAccounts, people: renderPeople, health: renderHealth, settings: renderSettings };
+  const views = { today: renderToday, pipeline: renderPipeline, accounts: id ? () => renderAccount(id) : renderAccounts, people: renderPeople, health: renderHealth, agents: renderAgents, settings: renderSettings };
   (views[page] || renderToday)().catch((e) => { $("main").innerHTML = `<div class="page"><div class="empty">${esc(e.message)}</div></div>`; });
 }
 
@@ -210,6 +211,7 @@ function renderShell(page) {
             <a href="#/accounts" data-p="accounts">${icon.accounts}Accounts</a>
             <a href="#/people" data-p="people">${icon.people}People</a>
             <a href="#/health" data-p="health">${icon.health}Data health</a>
+            <a href="#/agents" data-p="agents">${icon.agents}Agents<span class="badge hidden" id="agents-badge"></span></a>
           </nav>
           <div class="spacer"></div>
           <nav class="nav"><a href="#/settings" data-p="settings">${icon.settings}Settings</a></nav>
@@ -447,8 +449,7 @@ async function openDeal(id) {
     toast("Rehearsing…");
     try {
       const r = await api("POST", "/api/rehearse", { dealId: id });
-      const text = r.output || r.summary || JSON.stringify(r).slice(0, 400);
-      modal(`<h2>Deal Rehearsal</h2><p>${esc(text)}</p>`, () => {});
+      showRunModal("Deal Rehearsal", r);
     } catch (e) { toast(e.message); }
   });
   const close = () => closeDrawer();
@@ -570,9 +571,7 @@ async function renderAccounts() {
     toast("Prospecting…");
     try {
       const result = await api("POST", "/api/prospect", {});
-      toast("Suggestions ready");
-      console.log(result);
-      alert(JSON.stringify(result, null, 2).slice(0, 500));
+      showRunModal("Prospects", result);
     } catch (e) { toast(e.message); }
   };
 }
@@ -834,4 +833,123 @@ async function renderSettings() {
       catch (e) { toast(e.message); }
     };
   });
+}
+
+/* ---------------- Agents (SCALVS.ai) ---------------- */
+
+const TOOL_LABEL = {
+  list_accounts: "Looked at accounts",
+  get_account: "Read an account",
+  list_open_deals: "Looked at open deals",
+  get_deal: "Read a deal",
+  pipeline_forecast: "Checked the forecast",
+  data_health: "Checked data health",
+  web_search: "Searched the web",
+  add_fact: "Proposed saving a fact",
+  add_account: "Proposed a new account",
+  create_task: "Proposed a task",
+  log_note: "Proposed a note",
+  draft_email: "Proposed an email draft",
+  move_deal: "Proposed a stage change",
+};
+const agentState = { selected: "deal-coach", last: null };
+
+function stepsHtml(steps) {
+  if (!steps?.length) return "";
+  return `<details class="steps"><summary>${steps.length} step${steps.length > 1 ? "s" : ""}</summary><ol>${steps.map((st) =>
+    `<li>${esc(TOOL_LABEL[st.tool] || st.tool)}${st.input?.query ? `: “${esc(st.input.query)}”` : ""}${st.error ? ` <span class="faint">(${esc(st.error)})</span>` : ""}</li>`).join("")}</ol></details>`;
+}
+
+function proposalHtml(p) {
+  return `<div class="item proposal" data-prop="${esc(p.id)}"><div class="main"><div class="title">${esc(p.summary)}</div>
+    <div class="sub">${esc(agentName(p.agentId))} · ${date(p.createdAt)}${p.status !== "pending" ? ` · ${esc(p.status)}` : ""}</div></div>
+    ${p.status === "pending" ? `<button class="btn small" data-decide="dismiss">Dismiss</button><button class="btn small primary" data-decide="approve">Approve</button>` : ""}</div>`;
+}
+
+let agentNames = {};
+const agentName = (id) => agentNames[id] || id;
+
+function wireProposals(root, after) {
+  root.querySelectorAll("[data-prop] [data-decide]").forEach((b) => {
+    b.onclick = async () => {
+      const id = b.closest("[data-prop]").dataset.prop;
+      b.disabled = true;
+      try {
+        await api("POST", `/api/agents/proposals/${encodeURIComponent(id)}/${b.dataset.decide}`, {});
+        toast(b.dataset.decide === "approve" ? "Approved and saved" : "Dismissed");
+        after?.();
+      } catch (e) { toast(e.message); b.disabled = false; }
+    };
+  });
+}
+
+function runHtml(r) {
+  const props = (r.proposals || []).filter(Boolean);
+  return `<div class="run">
+    <div class="run-output">${esc(r.run.output || "(no answer)")}</div>
+    ${stepsHtml(r.run.steps)}
+    ${props.length ? `<h3 class="mt10">Waiting for your approval</h3><div class="list">${props.map(proposalHtml).join("")}</div>` : ""}
+  </div>`;
+}
+
+function showRunModal(title, r) {
+  modal(`<h2>${esc(title)}</h2>${runHtml(r)}`, () => {});
+  const form = $("#modal-form");
+  $("#m-ok", form).classList.add("hidden");
+  $("#m-cancel", form).textContent = "Close";
+  wireProposals(form, () => refreshAgentsBadge());
+}
+
+async function refreshAgentsBadge() {
+  try {
+    const n = (await api("GET", "/api/agents/proposals")).length;
+    const b = $("#agents-badge");
+    if (b) { b.textContent = n; b.classList.toggle("hidden", !n); }
+  } catch {}
+}
+
+async function renderAgents() {
+  const [info, pending, runs] = await Promise.all([api("GET", "/api/agents"), api("GET", "/api/agents/proposals"), api("GET", "/api/agents/runs")]);
+  agentNames = Object.fromEntries(info.agents.map((a) => [a.id, a.name]));
+  const sel = info.agents.find((a) => a.id === agentState.selected) || info.agents[0];
+  main().innerHTML = `
+    <div class="page">
+      <div class="page-head"><h1>Agents</h1><span class="faint small">Powered by SCALVS.ai<sup class="tm">™</sup></span></div>
+      ${info.aiConnected ? "" : `<div class="notice">AI isn't connected yet, so agents can't run. Add ANTHROPIC_API_KEY to the server environment.</div>`}
+      ${pending.length ? `<div class="section"><h2>Waiting for your approval</h2><div class="list" id="pending">${pending.map(proposalHtml).join("")}</div></div>` : ""}
+      <div class="agent-grid">${info.agents.map((a) => `<button class="agent-card${a.id === sel.id ? " active" : ""}" data-agent="${esc(a.id)}">
+        <div class="title">${esc(a.name)}</div><div class="sub">${esc(a.role)}</div></button>`).join("")}</div>
+      <div class="section">
+        <div class="composer">
+          <textarea id="agent-q" rows="1" placeholder="Ask the ${esc(sel.name)}" aria-label="Task for the ${esc(sel.name)}"></textarea>
+          <button class="send" id="agent-run" aria-label="Run" ${info.aiConnected ? "" : "disabled"}>${icon.send || "↑"}</button>
+        </div>
+        <div class="suggestions">${sel.starters.map((t) => `<button data-starter>${esc(t)}</button>`).join("")}</div>
+        <p class="faint small mt10">${sel.canPropose.length ? "Changes this agent suggests wait for your approval. Nothing is sent to customers." : "This agent only reads your data."}</p>
+        <div id="agent-out">${agentState.last && agentState.last.run.agentId === sel.id ? runHtml(agentState.last) : ""}</div>
+      </div>
+      ${runs.length ? `<div class="section"><h2>Recent runs</h2><div class="list">${runs.slice(0, 10).map((r) => `<details class="item run-item"><summary><div class="main"><div class="title">${esc(agentName(r.agentId))}: ${esc(r.prompt.slice(0, 90))}</div><div class="sub">${date(r.at)} · ${r.proposalIds.length} proposal${r.proposalIds.length === 1 ? "" : "s"}</div></div></summary><div class="run-output">${esc(r.output)}</div>${stepsHtml(r.steps)}</details>`).join("")}</div></div>` : ""}
+    </div>`;
+  refreshAgentsBadge();
+  wireProposals(main(), () => renderAgents());
+  main().querySelectorAll("[data-agent]").forEach((b) => b.onclick = () => { agentState.selected = b.dataset.agent; renderAgents(); });
+  const q = $("#agent-q");
+  q.oninput = () => { q.style.height = "auto"; q.style.height = Math.min(q.scrollHeight, 200) + "px"; };
+  const run = async () => {
+    const prompt = q.value.trim();
+    if (!prompt || !info.aiConnected) return;
+    const out = $("#agent-out");
+    out.innerHTML = `<div class="faint">${esc(sel.name)} is working…</div>`;
+    $("#agent-run").disabled = true;
+    try {
+      agentState.last = await api("POST", `/api/agents/${encodeURIComponent(sel.id)}/run`, { prompt });
+      renderAgents();
+    } catch (e) {
+      out.innerHTML = `<div class="error">${esc(e.message)}</div>`;
+      $("#agent-run").disabled = false;
+    }
+  };
+  $("#agent-run").onclick = run;
+  q.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); run(); } };
+  main().querySelectorAll("[data-starter]").forEach((b) => b.onclick = () => { q.value = b.textContent; run(); });
 }

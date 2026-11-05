@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { AgentProposal, AgentRunRecord } from "./agent-team.ts";
 import type { Ledger, Signer, Entry } from "@infinitum/firmament";
 import {
   STAGES,
@@ -33,6 +34,10 @@ export interface SpectreStore {
   deals: Map<string, Deal>;
   activities: Map<string, Activity>;
   relationships: Map<string, Relationship>;
+  /** SCALVS.ai agent proposals awaiting (or past) human approval. */
+  proposals: Map<string, AgentProposal>;
+  /** Recent agent runs, for the Agents page history. */
+  agentRuns: Map<string, AgentRunRecord>;
 }
 
 export const emptyStore = (): SpectreStore => ({
@@ -41,6 +46,8 @@ export const emptyStore = (): SpectreStore => ({
   deals: new Map(),
   activities: new Map(),
   relationships: new Map(),
+  proposals: new Map(),
+  agentRuns: new Map(),
 });
 
 type Kind = "company" | "contact" | "deal" | "activity" | "relationship";
@@ -282,6 +289,11 @@ export class SpectreCRM {
   /** Every recorded change to a record, from Firmament: who changed what, and when. */
   history(kind: Kind, id: string) {
     return this.ledger.query({ product: "spectre", subject: `${kind}:${id}` });
+  }
+
+  /** Firmament record of SCALVS.ai agent activity (runs, approvals, dismissals). */
+  async auditAgent(actor: string, agentId: string, payload: Record<string, unknown>) {
+    await this.ledger.append({ type: "audit", product: "spectre", actor, subject: `agent:${agentId}`, payload }, this.signer);
   }
 
   /** Used by data cleaning when merging duplicates. */
