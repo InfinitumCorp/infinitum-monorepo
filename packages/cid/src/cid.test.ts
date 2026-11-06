@@ -232,6 +232,16 @@ describe("CID sessions", () => {
 });
 
 describe("CID permissions dashboard", () => {
+  it("accepts the earlier :\\ARCHITECT\\ app ids for one release", async () => {
+    const { cid } = setup();
+    const a = await cid.createAccount({ username: "alex" });
+    const g = await cid.grant(a.cid, "architct", ["drive:read"]);
+    assert.equal(g.app, "architect");
+    await cid.grant(a.cid, "cndctr", ["contacts:read"]);
+    assert.ok(cid.can(a.cid, "architect", "drive:read"));
+    assert.ok(cid.can(a.cid, "architect", "contacts:read"));
+  });
+
   it("grants app by app, records every change on Firmament, and revokes", async () => {
     const { cid, ledger } = setup();
     const a = await cid.createAccount({ username: "alex" });
