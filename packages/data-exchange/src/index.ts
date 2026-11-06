@@ -105,21 +105,28 @@ export class DataExchange {
 
     const wallet = licenseeAddress ?? (/^0x[0-9a-fA-F]{40}$/.test(buyerId) ? buyerId : undefined);
     this.revshare.recordPayout(sale, ds.ownerCid);
-    const token = await this.cdat.issue({
-      datasetId,
-      saleId: sale.id,
-      licensee: buyerId,
-      ownerCid: ds.ownerCid,
-      terms: ds.licenseTerms,
-      amountUsd,
-      userShareUsd: sale.userShareUsd,
-      platformShareUsd: sale.platformShareUsd,
-      licenseeAddress: wallet,
-    });
-    sale.cdatTokenId = token.tokenId;
-    this.persist();
-    await this.flush();
-    return sale;
+    try {
+      const token = await this.cdat.issue({
+        datasetId,
+        saleId: sale.id,
+        licensee: buyerId,
+        ownerCid: ds.ownerCid,
+        terms: ds.licenseTerms,
+        amountUsd,
+        userShareUsd: sale.userShareUsd,
+        platformShareUsd: sale.platformShareUsd,
+        licenseeAddress: wallet,
+      });
+      sale.cdatTokenId = token.tokenId;
+      this.persist();
+      await this.flush();
+      return sale;
+    } catch (err) {
+      this.marketplace.voidSale(sale.id);
+      this.catalog.updateStatus(datasetId, "listed");
+      this.revshare.drop(sale.id);
+      throw err;
+    }
   }
 
   /** Mark the owner's 85% share paid and record the settlement on Firmament. */

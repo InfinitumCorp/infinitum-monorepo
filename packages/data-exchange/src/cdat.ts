@@ -71,7 +71,7 @@ export class CdatIssuer {
     platformShareUsd: number;
     licenseeAddress?: string;
   }): Promise<CdatToken> {
-    const onchainId = this.nextOnchainId++;
+    const onchainId = this.nextOnchainId;
     const tokenId = `cdat_${onchainId}`;
     const issuedAt = new Date();
     const expiresAt = new Date(issuedAt.getTime() + termDurationMs(params.terms));
@@ -134,6 +134,7 @@ export class CdatIssuer {
       token.paymentTx = payment.hash;
     }
 
+    this.nextOnchainId = onchainId + 1;
     this.tokens.set(tokenId, token);
     this.changed?.();
     return token;

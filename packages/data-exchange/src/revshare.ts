@@ -27,6 +27,13 @@ export class RevShareEngine {
     this.changed?.();
   }
 
+  drop(saleId: string): void {
+    const next = this.payouts.filter((p) => p.saleId !== saleId);
+    if (next.length === this.payouts.length) return;
+    this.payouts = next;
+    this.changed?.();
+  }
+
   markPaid(saleId: string): boolean {
     const p = this.payouts.find((x) => x.saleId === saleId);
     if (!p || p.paid) return false;

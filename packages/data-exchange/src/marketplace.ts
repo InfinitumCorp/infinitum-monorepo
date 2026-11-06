@@ -58,6 +58,14 @@ export class DataMarketplace {
     return sale;
   }
 
+  /** Undo a purchase that never finished (the license was not issued). */
+  voidSale(saleId: string): void {
+    const sale = this.sales.get(saleId);
+    if (!sale) return;
+    this.sales.delete(saleId);
+    this.changed?.();
+  }
+
   listSales(ownerCid?: string): LicenseSale[] {
     const all = [...this.sales.values()];
     if (!ownerCid) return all;

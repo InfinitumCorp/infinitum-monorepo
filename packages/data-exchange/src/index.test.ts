@@ -96,3 +96,37 @@ test("Firmament records consent, license, and payment", async () => {
   assert.equal(entries[1].subject, dataset.id);
   assert.equal((await ledger.verify()).ok, true);
 });
+
+test("a ledger failure during the sale leaves the dataset listed", async () => {
+  const ledger = new Ledger();
+  const signer = generateSigner();
+  ledger.authorize(signer.publicKey);
+  let signs = 0;
+  const flaky = {
+    publicKey: signer.publicKey,
+    sign(message: string) {
+      signs += 1;
+      if (signs > 1) throw new Error("ledger down");
+      return signer.sign(message);
+    },
+  };
+  const dx = new DataExchange(ledger, flaky);
+  const { dataset } = await dx.packageDataset({
+    cid: "cid_user123",
+    product: "scalus",
+    title: "Small set",
+    description: "Aggregated",
+    schema: "x",
+    sizeEstimate: 1,
+    privacyLevel: "aggregated",
+    licenseTerms: "CDAT-research-1y",
+    priceUsd: 10,
+    scopes: ["usage_metrics"],
+  });
+  dx.catalog.updateStatus(dataset.id, "listed");
+  await assert.rejects(dx.sell(dataset.id, "broker_acme", 10), /ledger down/);
+  assert.equal(dx.catalog.get(dataset.id)?.status, "listed");
+  assert.equal(dx.marketplace.listSales().length, 0);
+  assert.equal(dx.revshare.pendingForCid("cid_user123"), 0);
+  assert.equal(dx.cdat.list().length, 0);
+});
