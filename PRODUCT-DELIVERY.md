@@ -40,14 +40,23 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 | Cumulus://Cloud | Storage, licensing, agent runtime, data exchange | Partial for exchange (API + collectors) |
 | VEIL</> | Tor-first browser + sidebar | Partial — v0.4.0 anonymous/signed-in workspaces, Tor + WebRTC hardening, New Identity, $VEIL rewards at the published policy with claim receipts, CID sign-in, Architect Ask | See apps/veil/NEXT.md + PACKAGING.md. VeilCollector ready. |
 | FABRIC | Encrypted calls/messaging | Scaffolded — AES-256-GCM AEAD + session. FabricCollector ready. |
+| >_ARGUS | AI sensor fusion & ISR | Core logic — `packages/argus`: multi-sensor fusion with chi-square gating, global-nearest-neighbour association, 2D constant-velocity Kalman filter, tentative/confirmed/coasting/dropped lifecycle and per-track sensor provenance (6 tests). Next: 3D + bearing-only sensors, sign each picture on Firmament, feed ODIN°. Excluded from public Data Exchange. |
 | ÆTHER | Distributed communications | Scaffolded — mesh + BFS routing. AetherCollector ready. |
 | Firmament Network | Ledger stats | FirmamentCollector ready. |
-| E(O)N | Wearable usage aggregates | EonCollector ready (limited). |
+| E(O)N | AI wearable for secure communications | Core logic — `packages/eon`: X25519 pairing with HKDF directional keys and a 6-digit SAS, AES-256-GCM voice/text frames with counter nonces and replay rejection, on-device intent parsing (call, message, mute, wipe with confirmation), aggregate-only usage meter that feeds EonCollector (9 tests). Next: bind to the ÆTHER Rust core / device firmware, audio codec framing, key rotation. |
 
 ## Hardware / physical concepts (software stubs only)
 
-ORBIS, POLLEN, Flower, NEMESIS, ARGUS (sensor fusion), ODIN° (military suite).  
-**Interfaces stubbed** in `packages/hardware`.  
+DAEMON, SLUG, ORBIS, POLLEN, Flower, NEMESIS, ODIN° (military suite).  
+**Interfaces stubbed** in `packages/hardware`. `catalog.ts` gives every platform a profile (commands, approval-gated commands, declared telemetry, MIL edition); DAEMON (autonomous aircraft) and SLUG (autonomous land drone) were added there. `checkedTask()` rejects commands a product does not accept and flags ones that need a person's approval.
+
+`packages/autonomy` adds mission safety for the mobile platforms (planning envelopes, to be replaced with flight-test data):
+- **Pre-launch check:** every leg must stay inside the operating fence (concave fences included), no leg may enter a no-go zone, altitudes must suit the platform (DAEMON 120 m, ORBIS 30 m, POLLEN 60 m; SLUG ground only), and the battery must cover route, holds and return with the platform's reserve. Every mission still needs a person's approval.
+- **Runtime interlock:** on each telemetry tick it escalates continue → hold → return to base → land now for low battery, fence or ceiling breach, and operator-link loss; the most severe rule wins.
+- **POLLEN coverage:** lanes one swath wide, shared in contiguous blocks, each unit's route put through the pre-launch check.
+- **Flower docking:** lowest battery charges first on the soonest-free pad.
+
+7 tests. Next: real envelopes per airframe, wind in the energy model, Flower firmware tasking through `checkedTask()`.  
 These cannot be fully built as software. Data from these is excluded from public Data Exchange.
 
 **Ignored:** #THRONE — not part of this delivery plan.
