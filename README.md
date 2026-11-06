@@ -15,6 +15,7 @@ Shared foundation for every Infinitum product.
 | `packages/eon` | E(O)N™ AI wearable core: X25519 pairing with a 6-digit safety code, AES-256-GCM voice and text frames with replay protection, on-device intents, and an aggregate-only usage meter (9 tests). |
 | `packages/argus` | >_ARGUS™ sensor fusion: gated multi-sensor association, constant-velocity Kalman tracks, track lifecycle and per-track sensor provenance (6 tests). Military edition stays out of the public Data Exchange. |
 | `packages/hardware` | Tasking, telemetry and evidence interface for physical products, with a profile per platform including DAEMON™ (autonomous aircraft) and SLUG™ (autonomous land drone). |
+| `packages/autonomy` | Mission safety for DAEMON™, SLUG™, ORBIS™ and POLLEN™ with Flower™ docking: fence and no-go checks, altitude limits, energy reserve, a runtime interlock (hold, return, land), swarm coverage planning and pad scheduling (7 tests). Every mission still needs a person's approval. |
 
 Run Cumulus://Mail: `node --experimental-strip-types apps/cumulus-mail/src/server.ts`, then open http://localhost:3010. Set `XAI_API_KEY` to turn on SCALVS briefs. Mail is intentionally not listed on the public site.
 
