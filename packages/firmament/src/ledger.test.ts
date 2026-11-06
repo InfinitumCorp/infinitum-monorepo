@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync } from "node:fs";
+import { readFile, appendFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -114,6 +115,23 @@ describe("Firmament ledger", () => {
     const restored = signerFromPrivateKey(signer.exportPrivateKey());
     const second = new Ledger(new FileStore(path), { authorizedSigners: [restored.publicKey] });
     await second.append(grant("cid:lee"), restored);
+    assert.deepEqual(await second.verify(), { ok: true, length: 3 });
+  });
+
+  it("drops a torn last line so the chain still opens", async () => {
+    const path = join(mkdtempSync(join(tmpdir(), "firmament-")), "ledger.jsonl");
+    const signer = generateSigner();
+    const first = new Ledger(new FileStore(path));
+    await first.append(grant("cid:alex"), signer);
+    await first.append(grant("cid:sam"), signer);
+    await appendFile(path, "{\"seq\":2,\"torn\":");
+
+    const second = new Ledger(new FileStore(path));
+    assert.deepEqual(await second.verify(), { ok: true, length: 2 });
+    const onDisk = await readFile(path, "utf8");
+    assert.equal(onDisk.endsWith("\n"), true);
+    assert.equal(onDisk.includes("torn"), false);
+    await second.append(grant("cid:lee"), signer);
     assert.deepEqual(await second.verify(), { ok: true, length: 3 });
   });
 
