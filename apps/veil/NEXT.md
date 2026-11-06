@@ -9,12 +9,21 @@
 - Removed the placeholder wallet address and fake balance
 - PNG icons, package.json and a test suite (`node --test test/`)
 
+## Done in v0.5.0 (2026-11-06)
+- Cumulus account summary (plan, unread mail, storage) from the CID origin
+- FIRM Wallet panel shows the real CID wallet account and balances
+- Unread-mail toolbar badge, refreshed every 5 minutes while signed in
+- VEIL Nexus app launcher for the seven free-tier products
+- Account, badge and refresh are dropped on leaving the workspace, New Identity or an expired session
+
 ## Remaining
 - FIRM Wallet key management (passkey / hardware-backed) in the extension
 - Deploy the $VEIL claim contract, then wire `buildClaim` to FIRM Wallet signing
 - Server-side rewards validation (duplicate accounts, emulator farms) before settlement
 - New Tor circuit control (needs the Tor control port; extension cannot reach it)
 - Chain decision: the product page says $VEIL is on Solana; packages/firm targets Base
-- Phase II+: Cumulus://Mail, Cloud and Nexus panels in the signed-in workspace
+- Per-app permissions dashboard (needs grant/revoke HTTP routes on the CID server; `packages/cid` has `grant`/`revoke`)
+- Clients for Cumulus://Cloud, SCALVS.ai and METATRON¹⁰⁰, then add their origins to `lib/nexus.js`
+- A shared CID session across products (today Mail and +SPCTR each keep their own cookie)
 
 See root PRODUCT-DELIVERY.md.

@@ -19,7 +19,7 @@ before(async () => {
 test("installs into the anonymous workspace and drops v0.3 fake data", async () => {
   const s = await fromSidebar({ type: "getState" });
   assert.equal(s.workspace, "anonymous");
-  assert.equal(s.firmAddress, null);
+  assert.equal(s.account, null);
   assert.equal(env.store.totalVeil, undefined);
   assert.equal(env.store.firmBalance, undefined);
 });
@@ -115,4 +115,69 @@ test("the sidebar opened in a tab still counts as VEIL, and cannot fake activity
 test("messages from another extension are refused", async () => {
   const r = await env.send({ type: "getState" }, { id: "other", url: "chrome-extension://other/x.html" });
   assert.match(r.error, /not allowed/);
+});
+
+// ---------- v0.5: Cumulus account and Nexus ----------
+
+const signedInMe = {
+  cid: "cid_9", username: "sam", mailAddress: "sam@cumulusmail.cloud",
+  cumulus: { plan: "Free", mail: { unread: 4, url: "http://localhost:3010" },
+    storage: { label: "0 B of 15 GB", pct: 0 }, wallet: { address: "0xfeed", balances: { FIRM: "1.0", USDC: "0" } } },
+};
+function mockFetch(status, body) {
+  const seen = [];
+  globalThis.fetch = async (url, opts) => { seen.push({ url, opts }); return { ok: status < 400, status, json: async () => body }; };
+  return seen;
+}
+
+test("account refresh is refused in the anonymous workspace", async () => {
+  await fromSidebar({ type: "switchWorkspace", to: "anonymous", confirmed: true });
+  const seen = mockFetch(200, signedInMe);
+  const r = await fromSidebar({ type: "refreshAccount" });
+  assert.match(r.error, /anonymous/);
+  assert.equal(seen.length, 0);
+  const s = await fromSidebar({ type: "getState" });
+  assert.deepEqual(s.apps, []);
+});
+
+test("signed in: account summary, unread badge and a refresh alarm", async () => {
+  await fromSidebar({ type: "switchWorkspace", to: "authenticated", confirmed: true });
+  const seen = mockFetch(200, signedInMe);
+  const r = await fromSidebar({ type: "refreshAccount" });
+  assert.equal(seen[0].url, "http://localhost:3000/api/me");
+  assert.equal(seen[0].opts.credentials, "include");
+  assert.equal(r.cidUser.cid, "cid_9");
+  assert.equal(env.calls.badge.at(-1), "4");
+  assert.equal(env.calls.alarms["veil-account"].periodInMinutes, 5);
+  const s = await fromSidebar({ type: "getState" });
+  assert.equal(s.account.wallet.address, "0xfeed");
+  assert.equal(s.apps.find((a) => a.id === "mail").badge, 4);
+});
+
+test("openApp opens registered apps only", async () => {
+  const ok = await fromSidebar({ type: "openApp", id: "mail" });
+  assert.equal(ok.opened, "http://localhost:3010");
+  assert.equal(env.calls.tabsCreated.at(-1), "http://localhost:3010");
+  assert.match((await fromSidebar({ type: "openApp", id: "cloud" })).error, /no client yet/);
+  assert.match((await fromSidebar({ type: "openApp", id: "javascript:alert(1)" })).error, /Unknown app/);
+});
+
+test("an expired CID session signs VEIL out", async () => {
+  mockFetch(401, {});
+  const r = await fromSidebar({ type: "refreshAccount" });
+  assert.equal(r.cidUser, null);
+  assert.equal(env.store.account, null);
+  assert.equal(env.calls.badge.at(-1), "");
+  assert.equal(env.calls.alarms["veil-account"], undefined);
+});
+
+test("leaving the signed-in workspace drops the account, badge and alarm", async () => {
+  mockFetch(200, signedInMe);
+  await fromSidebar({ type: "refreshAccount" });
+  await fromSidebar({ type: "switchWorkspace", to: "anonymous", confirmed: true });
+  assert.equal(env.store.account, null);
+  assert.equal(env.store.cidUser, null);
+  assert.equal(env.calls.badge.at(-1), "");
+  assert.equal(env.calls.alarms["veil-account"], undefined);
+  assert.match((await fromSidebar({ type: "openApp", id: "mail" })).error, /anonymous/);
 });

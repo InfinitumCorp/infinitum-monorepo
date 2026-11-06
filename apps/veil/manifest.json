@@ -1,11 +1,22 @@
 {
   "manifest_version": 3,
   "name": "VEIL</>",
-  "version": "0.4.0",
-  "description": "Tor-first secure browser sidebar: anonymous and signed-in workspaces, tracker stripping, AI, and $VEIL rewards.",
+  "version": "0.5.0",
+  "description": "Tor-first secure browser sidebar: anonymous and signed-in workspaces, Cumulus://ID, Mail and the Infinitum app launcher, and $VEIL rewards.",
   "minimum_chrome_version": "116",
-  "permissions": ["sidePanel", "storage", "tabs", "proxy", "privacy", "browsingData"],
-  "host_permissions": ["https://*/*", "http://*/*"],
+  "permissions": [
+    "sidePanel",
+    "storage",
+    "tabs",
+    "proxy",
+    "privacy",
+    "browsingData",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
   "action": {
     "default_title": "Open VEIL sidebar",
     "default_icon": {
@@ -29,8 +40,13 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://*/*", "http://*/*"],
-      "js": ["content.js"],
+      "matches": [
+        "https://*/*",
+        "http://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ]

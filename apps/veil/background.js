@@ -7,6 +7,7 @@ import { emptyLedger, recordActivity, summarize, issueReceipt } from "./lib/rewa
 import {
   ANONYMOUS, DEFAULT_WORKSPACE, can, normalize, planSwitch, SITE_DATA_TYPES,
 } from "./lib/workspace.js";
+import { APPS, badgeText, launcher, parseSummary, resolveOrigins } from "./lib/nexus.js";
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
 
@@ -75,6 +76,7 @@ async function clearSiteData() {
  */
 async function newIdentity() {
   await clearSiteData();
+  await signOutLocally(); // the CID session cookie is gone too
   const tabs = await chrome.tabs.query({});
   const fresh = await chrome.tabs.create({ url: "about:blank" });
   await chrome.tabs.remove(tabs.map((t) => t.id).filter((id) => id !== fresh.id));
@@ -89,35 +91,71 @@ async function switchWorkspace(to, confirmed) {
   if (!plan) return { workspace: from, changed: false };
   if (!confirmed) return { workspace: from, changed: false, plan };
   if (plan.clearSiteData) await clearSiteData();
-  const changes = { workspace: plan.to };
-  if (plan.to === ANONYMOUS) changes.cidUser = null; // sign out locally
-  await set(changes);
+  await set({ workspace: plan.to });
+  if (plan.to === ANONYMOUS) await signOutLocally(); // nothing from the account stays behind
   return { workspace: plan.to, changed: true };
 }
 
-// ---------- Cumulus://ID ----------
+// ---------- Cumulus://ID and the Nexus ----------
 
-const DEFAULT_CID_ORIGIN = "http://localhost:3000";
+const ACCOUNT_ALARM = "veil-account";
+const ACCOUNT_REFRESH_MINUTES = 5;
 
-async function cidOrigin() {
-  const { cidOrigin } = await get(["cidOrigin"]);
-  return cidOrigin || DEFAULT_CID_ORIGIN;
+async function origins() {
+  const { origins } = await get(["origins"]);
+  return resolveOrigins(origins);
 }
 
-/** Read the signed-in CID from the CID origin's session (signed-in workspace only). */
-async function refreshCid() {
+async function setBadge(unread) {
+  await chrome.action.setBadgeText({ text: badgeText(unread) }).catch(() => {});
+  await chrome.action.setBadgeBackgroundColor({ color: "#4ade80" }).catch(() => {});
+}
+
+async function signOutLocally() {
+  await set({ cidUser: null, account: null });
+  await chrome.alarms.clear(ACCOUNT_ALARM).catch(() => {});
+  await setBadge(0);
+}
+
+/**
+ * Read the signed-in CID and its Cumulus summary (mail, storage, wallet)
+ * from the CID origin's session. Signed-in workspace only.
+ */
+async function refreshAccount() {
   if (!can(await getWorkspace(), "signin")) throw new Error("Sign-in is off in the anonymous workspace");
-  const origin = await cidOrigin();
-  const r = await fetch(`${origin}/api/me`, { credentials: "include", cache: "no-store" });
+  const { cid } = await origins();
+  const r = await fetch(`${cid}/api/me`, { credentials: "include", cache: "no-store" });
   if (r.status === 401 || r.status === 403) {
-    await set({ cidUser: null });
-    return { cidUser: null };
+    await signOutLocally();
+    return { cidUser: null, account: null };
   }
   if (!r.ok) throw new Error(`CID origin answered ${r.status}`);
-  const me = await r.json();
-  const cidUser = { cid: me.cid, username: me.username ?? null, mailAddress: me.mailAddress ?? null };
-  await set({ cidUser });
-  return { cidUser };
+  const account = parseSummary(await r.json());
+  if (!account) throw new Error("CID origin sent an account without a CID");
+  const cidUser = { cid: account.cid, username: account.username, mailAddress: account.mailAddress };
+  await set({ cidUser, account });
+  await setBadge(account.mail?.unread ?? 0);
+  await chrome.alarms.create(ACCOUNT_ALARM, { periodInMinutes: ACCOUNT_REFRESH_MINUTES });
+  return { cidUser, account };
+}
+
+chrome.alarms?.onAlarm.addListener((alarm) => {
+  if (alarm.name !== ACCOUNT_ALARM) return;
+  serial(async () => {
+    if (!can(await getWorkspace(), "signin")) return signOutLocally();
+    await refreshAccount().catch(() => {}); // offline: keep the last summary
+  });
+});
+
+/** Open a Nexus product in a new tab. Only registered apps and http(s) origins. */
+async function openApp(id) {
+  if (!can(await getWorkspace(), "signin")) throw new Error("Apps are off in the anonymous workspace");
+  if (!APPS.some((a) => a.id === id)) throw new Error(`Unknown app: ${id}`);
+  const { account } = await get(["account"]);
+  const entry = launcher(await origins(), account).find((a) => a.id === id);
+  if (!entry?.url) throw new Error(`${entry?.name ?? id} has no client yet`);
+  await chrome.tabs.create({ url: entry.url });
+  return { opened: entry.url };
 }
 
 // ---------- Rewards ----------
@@ -177,18 +215,22 @@ chrome.runtime.onInstalled.addListener(async () => {
 
 const handlers = {
   getState: async () => {
-    const s = await get(["torEnabled", "autoClean", "cidUser", "firmAddress", "architectUrl"]);
+    const s = await get(["torEnabled", "autoClean", "cidUser", "account"]);
+    const workspace = await getWorkspace();
+    const signedIn = can(workspace, "signin");
+    const o = await origins();
     return {
-      workspace: await getWorkspace(),
+      workspace,
       torEnabled: !!s.torEnabled,
       autoClean: !!s.autoClean,
-      cidUser: s.cidUser ?? null,
-      firmAddress: s.firmAddress ?? null,
-      cidOrigin: await cidOrigin(),
-      architectUrl: s.architectUrl || "http://localhost:3001",
+      cidUser: signedIn ? s.cidUser ?? null : null,
+      account: signedIn ? s.account ?? null : null,
+      apps: signedIn ? launcher(o, s.account) : [],
+      origins: o,
     };
   },
-  refreshCid: () => refreshCid(),
+  refreshAccount: () => refreshAccount(),
+  openApp: (m) => openApp(m.id),
   toggleTor: (m) => setTor(m.enabled).then((enabled) => ({ enabled })),
   checkTor: () => checkTor(),
   setAutoClean: (m) => set({ autoClean: !!m.enabled }).then(() => ({ ok: true })),

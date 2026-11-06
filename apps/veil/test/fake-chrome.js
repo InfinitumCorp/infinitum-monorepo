@@ -2,7 +2,7 @@
 export function fakeChrome({ windowFocused = true } = {}) {
   const store = {};
   const listeners = { message: [], installed: [], changed: [] };
-  const calls = { proxySet: [], proxyClear: 0, webrtc: [], browsingData: [], tabsRemoved: [] };
+  const calls = { proxySet: [], proxyClear: 0, webrtc: [], browsingData: [], tabsRemoved: [], tabsCreated: [], badge: [], alarms: {} };
   let tabs = [{ id: 1, windowId: 1, active: true }, { id: 2, windowId: 1, active: false }];
   const chrome = {
     sidePanel: { setPanelBehavior: async () => {} },
@@ -25,8 +25,17 @@ export function fakeChrome({ windowFocused = true } = {}) {
     browsingData: { remove: async (opts, types) => { calls.browsingData.push(types); } },
     tabs: {
       query: async () => tabs,
-      create: async () => { const t = { id: 99, windowId: 1, active: true }; tabs.push(t); return t; },
+      create: async (opts) => { calls.tabsCreated.push(opts?.url); const t = { id: 99, windowId: 1, active: true }; tabs.push(t); return t; },
       remove: async (ids) => { calls.tabsRemoved.push(...ids); tabs = tabs.filter((t) => !ids.includes(t.id)); },
+    },
+    alarms: {
+      create: async (name, info) => { calls.alarms[name] = info; },
+      clear: async (name) => { delete calls.alarms[name]; return true; },
+      onAlarm: { addListener: (fn) => listeners.alarm = fn },
+    },
+    action: {
+      setBadgeText: async ({ text }) => { calls.badge.push(text); },
+      setBadgeBackgroundColor: async () => {},
     },
     windows: { get: async () => ({ focused: windowFocused }) },
     runtime: {
