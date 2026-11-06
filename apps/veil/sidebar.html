@@ -43,6 +43,12 @@
     #confirm[hidden] { display: none; }
     a.provider { display: block; margin: 0.3rem 0; padding: 0.45rem; background: var(--fg); color: #000; text-align: center; border-radius: 6px; text-decoration: none; }
     footer { padding: 0 1rem 1rem; }
+    .app { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; width: 100%; text-align: left; background: var(--card); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 0.6rem 0.75rem; margin-bottom: 0.5rem; font: inherit; cursor: pointer; }
+    .app:hover:not(:disabled) { border-color: #444; }
+    .app .name { font-weight: 500; }
+    .app .badge { background: var(--good); color: #000; border-radius: 999px; font-size: 0.75rem; padding: 0 0.45rem; font-variant-numeric: tabular-nums; }
+    .app .soon { color: var(--muted); font-size: 0.75rem; white-space: nowrap; }
+    [hidden] { display: none !important; }
   </style>
 </head>
 <body>
@@ -56,6 +62,7 @@
       <button data-panel="ask" data-cap="ai">Ask</button>
       <button data-panel="rewards" data-cap="rewards">Rewards</button>
       <button data-panel="wallet" data-cap="wallet">Wallet</button>
+      <button data-panel="apps" data-cap="signin">Apps</button>
       <button data-panel="account">Account</button>
     </nav>
   </header>
@@ -124,12 +131,17 @@
       <div class="muted">0.1 $VEIL per minute with real keyboard, mouse or touch activity on the tab you're looking at, up to 240 minutes a day (UTC). VEIL never records which sites you visit. $VEIL rewards are not income or an investment return.</div>
     </section>
 
+    <section id="apps" class="panel">
+      <div class="muted" style="margin-bottom:0.5rem">Every free Infinitum product, connected to your Cumulus://ID. Each opens in its own tab.</div>
+      <div id="app-list"></div>
+    </section>
+
     <section id="wallet" class="panel">
       <div class="card">
         <div class="label">FIRM Wallet</div>
         <div id="w-addr" class="mono">Not set up</div>
-        <div id="w-bal" class="muted"></div>
-        <div class="muted" style="margin-top:0.5rem">Self-custody keys arrive with FIRM Wallet key management (roadmap Phase IV). VEIL does not create placeholder addresses or balances.</div>
+        <div id="w-bal" class="grid" style="margin-top:0.5rem"></div>
+        <div class="muted" id="w-note" style="margin-top:0.5rem">Sign in with Cumulus://ID to see the FIRM Wallet account that comes with it. VEIL never creates placeholder addresses or balances.</div>
       </div>
     </section>
 
@@ -144,6 +156,16 @@
         <div id="cid-who" class="muted">Not signed in</div>
         <div id="social-buttons"></div>
         <div class="row"><button class="btn ghost" id="cid-refresh">I've signed in: refresh</button></div>
+      </div>
+      <div class="card" id="summary-card" hidden>
+        <div class="label">Your Cumulus account</div>
+        <div class="grid">
+          <div><div class="label">Plan</div><div id="s-plan">Free</div></div>
+          <div><div class="label">Unread mail</div><div id="s-unread">0</div></div>
+        </div>
+        <div class="label" style="margin-top:0.6rem">Storage (Mail + Cloud)</div>
+        <div id="s-storage" class="muted"></div>
+        <div class="bar"><div id="s-storage-bar"></div></div>
       </div>
     </section>
   </main>

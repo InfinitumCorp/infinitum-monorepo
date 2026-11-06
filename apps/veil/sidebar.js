@@ -41,7 +41,7 @@ function applyWorkspace() {
 
   $("ws-desc").textContent = ws === ANONYMOUS
     ? `${LABELS[ANONYMOUS]}: no account, AI, wallet, sync or rewards. Nothing links your browsing to you.`
-    : `${LABELS[AUTHENTICATED]}: Cumulus://ID, AI, FIRM Wallet and $VEIL rewards. Signed-in browsing is never anonymous.`;
+    : `${LABELS[AUTHENTICATED]}: Cumulus://ID, Mail, the Infinitum apps, AI, FIRM Wallet and $VEIL rewards. Signed-in browsing is never anonymous.`;
   $("ws-switch").textContent = ws === ANONYMOUS ? "Switch to signed-in workspace" : "Switch to anonymous workspace";
   $("signin-card").hidden = !can(ws, "signin");
   $("cid-who").textContent = state.cidUser
@@ -131,7 +131,7 @@ $("ask-btn").onclick = async () => {
   }
   say("Thinking…");
   try {
-    const r = await fetch(`${state.architectUrl}/api/perform`, {
+    const r = await fetch(`${state.origins.architect}/api/perform`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ intent, autonomy: "rehearsal" }),
@@ -140,7 +140,7 @@ $("ask-btn").onclick = async () => {
     $("out").textContent = JSON.stringify(await r.json(), null, 2);
     say("Ready");
   } catch (err) {
-    $("out").textContent = `Architect unreachable at ${state.architectUrl}.\n${err.message}`;
+    $("out").textContent = `Architect unreachable at ${state.origins.architect}.\n${err.message}`;
     say("Architect offline");
   }
 };
@@ -173,19 +173,88 @@ $("claim").onclick = async () => {
 // ---------- Wallet ----------
 
 function renderWallet() {
-  $("w-addr").textContent = state.firmAddress ?? "Not set up";
-  $("w-bal").textContent = "";
+  const w = state.account?.wallet;
+  $("w-addr").textContent = w?.address ?? "Not set up";
+  const bal = $("w-bal");
+  bal.replaceChildren();
+  for (const [asset, amount] of Object.entries(w?.balances ?? {})) {
+    const cell = document.createElement("div");
+    const label = document.createElement("div");
+    label.className = "label";
+    label.textContent = asset;
+    const value = document.createElement("div");
+    value.textContent = amount;
+    cell.append(label, value);
+    bal.append(cell);
+  }
+  $("w-note").textContent = w
+    ? "The FIRM Wallet account that came with your Cumulus://ID. Self-custody keys on this device arrive with roadmap Phase IV."
+    : "Sign in with Cumulus://ID to see the FIRM Wallet account that comes with it. VEIL never creates placeholder addresses or balances.";
+}
+
+// ---------- Apps (Nexus launcher) ----------
+
+function renderApps() {
+  const list = $("app-list");
+  list.replaceChildren();
+  for (const app of state.apps) {
+    const btn = document.createElement("button");
+    btn.className = "app";
+    const text = document.createElement("div");
+    const name = document.createElement("div");
+    name.className = "name";
+    name.textContent = app.name;
+    const blurb = document.createElement("div");
+    blurb.className = "muted";
+    blurb.textContent = app.blurb;
+    text.append(name, blurb);
+    btn.append(text);
+    if (app.badge > 0) {
+      const b = document.createElement("span");
+      b.className = "badge";
+      b.textContent = app.badge > 99 ? "99+" : String(app.badge);
+      b.title = `${app.badge} unread`;
+      btn.append(b);
+    }
+    if (app.panel) {
+      btn.onclick = () => showPanel(app.panel);
+    } else if (app.url) {
+      btn.onclick = async () => {
+        try { await send("openApp", { id: app.id }); } catch (err) { say(err.message); }
+      };
+    } else {
+      btn.disabled = true;
+      const soon = document.createElement("span");
+      soon.className = "soon";
+      soon.textContent = "Coming soon";
+      btn.append(soon);
+    }
+    list.append(btn);
+  }
+}
+
+function renderSummary() {
+  const a = state.account;
+  $("summary-card").hidden = !a;
+  if (!a) return;
+  $("s-plan").textContent = a.plan ?? "Free";
+  $("s-unread").textContent = String(a.mail?.unread ?? 0);
+  $("s-storage").textContent = a.storage?.label ?? "—";
+  $("s-storage-bar").style.width = `${a.storage?.pct ?? 0}%`;
 }
 
 // ---------- Cumulus://ID ----------
 
+let providersRun = 0;
 async function loadProviders() {
+  const run = ++providersRun; // a later call wins; earlier ones stop after their fetch
   const el = $("social-buttons");
   el.replaceChildren();
   if (state.cidUser) return;
   try {
-    const r = await fetch(`${state.cidOrigin}/api/auth/providers`, { credentials: "omit" });
+    const r = await fetch(`${state.origins.cid}/api/auth/providers`, { credentials: "omit" });
     const providers = await r.json();
+    if (run !== providersRun) return;
     if (!Array.isArray(providers) || !providers.length) {
       el.textContent = "No sign-in providers are configured on the CID origin.";
       return;
@@ -193,19 +262,19 @@ async function loadProviders() {
     for (const p of providers) {
       const a = document.createElement("a");
       a.className = "provider";
-      a.href = `${state.cidOrigin}/api/auth/oauth/${encodeURIComponent(p.id)}/start`;
+      a.href = `${state.origins.cid}/api/auth/oauth/${encodeURIComponent(p.id)}/start`;
       a.target = "_blank";
       a.rel = "noopener";
       a.textContent = `Continue with ${p.label}`;
       el.append(a);
     }
   } catch {
-    el.textContent = `CID origin unreachable (${state.cidOrigin}).`;
+    if (run === providersRun) el.textContent = `CID origin unreachable (${state.origins.cid}).`;
   }
 }
 $("cid-refresh").onclick = async () => {
   try {
-    const { cidUser } = await send("refreshCid");
+    const { cidUser } = await send("refreshAccount");
     say(cidUser ? "Signed in" : "No CID session found. Finish signing in, then refresh.");
   } catch (err) { say(err.message); }
   await refresh();
@@ -218,6 +287,8 @@ async function refresh() {
   $("auto-clean").checked = state.autoClean;
   renderTor();
   renderWallet();
+  renderApps();
+  renderSummary();
   applyWorkspace();
   if ($("rewards").classList.contains("active")) loadRewards();
 }
@@ -225,7 +296,7 @@ async function refresh() {
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
   if (changes.rewardsLedger && $("rewards").classList.contains("active")) loadRewards();
-  if (changes.workspace || changes.torEnabled || changes.cidUser) refresh();
+  if (changes.workspace || changes.torEnabled || changes.cidUser || changes.account) refresh();
 });
 
 refresh().catch((err) => say(`VEIL background unavailable: ${err.message}`));

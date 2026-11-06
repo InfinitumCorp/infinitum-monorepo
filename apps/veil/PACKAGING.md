@@ -16,4 +16,4 @@ zip -r ../../veil-extension.zip manifest.json background.js content.js sidebar.h
 ## CRX (optional)
 Use the Chrome Web Store developer dashboard or `crx3` tooling after signing.
 
-Current version: 0.4.0
+Current version: 0.5.0
