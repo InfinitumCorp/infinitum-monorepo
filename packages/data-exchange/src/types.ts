@@ -6,7 +6,7 @@ export type ProductId =
   | "cumulus" 
   | "scalus" 
   | "spectre" 
-  | "conductor" 
+  | "architect" 
   | "veil" 
   | "fabric" 
   | "aether" 

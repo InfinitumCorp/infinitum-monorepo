@@ -131,17 +131,17 @@ $("ask-btn").onclick = async () => {
   }
   say("Thinking…");
   try {
-    const r = await fetch(`${state.conductorUrl}/api/perform`, {
+    const r = await fetch(`${state.architectUrl}/api/perform`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ intent, autonomy: "rehearsal" }),
     });
-    if (!r.ok) throw new Error(`Conductor answered ${r.status}`);
+    if (!r.ok) throw new Error(`Architect answered ${r.status}`);
     $("out").textContent = JSON.stringify(await r.json(), null, 2);
     say("Ready");
   } catch (err) {
-    $("out").textContent = `Conductor unreachable at ${state.conductorUrl}.\n${err.message}`;
-    say("Conductor offline");
+    $("out").textContent = `Architect unreachable at ${state.architectUrl}.\n${err.message}`;
+    say("Architect offline");
   }
 };
 

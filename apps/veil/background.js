@@ -177,7 +177,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 
 const handlers = {
   getState: async () => {
-    const s = await get(["torEnabled", "autoClean", "cidUser", "firmAddress", "conductorUrl"]);
+    const s = await get(["torEnabled", "autoClean", "cidUser", "firmAddress", "architectUrl"]);
     return {
       workspace: await getWorkspace(),
       torEnabled: !!s.torEnabled,
@@ -185,7 +185,7 @@ const handlers = {
       cidUser: s.cidUser ?? null,
       firmAddress: s.firmAddress ?? null,
       cidOrigin: await cidOrigin(),
-      conductorUrl: s.conductorUrl || "http://localhost:3001",
+      architectUrl: s.architectUrl || "http://localhost:3001",
     };
   },
   refreshCid: () => refreshCid(),

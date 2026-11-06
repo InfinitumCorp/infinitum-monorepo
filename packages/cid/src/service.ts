@@ -23,7 +23,7 @@ import {
  * ------------------------------------------------------------------ */
 
 export const INFINITUM_APPS = [
-  "veil", "fabric", "throne", "eon", "scalvs", "cndctr", "spectre", "metatron",
+  "veil", "fabric", "throne", "eon", "scalvs", "architct", "spectre", "metatron",
   "cumulus", "cumulus-mail", "firm-wallet", "aether", "argus", "hrvst", "eidetic",
   "orbis", "pollen", "flower", "nemesis",
 ] as const;
@@ -39,7 +39,7 @@ export const FREE_ENTITLEMENTS = {
   cloud: true,
   firmWallet: true,
   scalvs: "free",
-  cndctr: "free",
+  architct: "free",
   metatronDashboard: true,
 } as const;
 

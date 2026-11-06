@@ -8,7 +8,7 @@ Tor Browser-derived desktop engine described on the product page.
 v0.4.0, roadmap Phase I (browser foundation) with the rewards ledger from Phase IV.
 
 - **Two workspaces.** Anonymous (default): Tor, tracker stripping and New Identity only.
-  Signed-in: Cumulus://ID, Ask (:\CNDCTR\), FIRM Wallet and $VEIL rewards.
+  Signed-in: Cumulus://ID, Ask (:\ARCHITCT\), FIRM Wallet and $VEIL rewards.
   Every switch is confirmed in the panel and clears cookies and site data first.
 - **Tor.** SOCKS5 proxy to a local Tor service on 127.0.0.1:9050 (DNS goes over Tor),
   WebRTC limited to the proxy, connectivity check against check.torproject.org.
@@ -36,4 +36,4 @@ node scripts/make-icons.js   # regenerate icons/ from the icon.svg design
 | Key | Default | Purpose |
 | --- | --- | --- |
 | `cidOrigin` | `http://localhost:3000` | Cumulus://ID origin (Spectre server) for sign-in and `/api/me` |
-| `conductorUrl` | `http://localhost:3001` | :\CNDCTR\ endpoint for Ask |
+| `architectUrl` | `http://localhost:3001` | :\ARCHITCT\ endpoint for Ask |
