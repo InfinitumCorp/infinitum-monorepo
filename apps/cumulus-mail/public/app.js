@@ -52,8 +52,8 @@ async function act(fn) {
 /* ---------------- Conversation actions and Undo ---------------- */
 
 let toastTimer;
-function showToast(text, undo) {
-  state.toast = { text, undo };
+function showToast(text, undo, action) {
+  state.toast = { text, undo, action };
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { state.toast = null; render(); }, 7000);
 }
@@ -97,6 +97,8 @@ function inBox(message, box) {
   if (snoozed) return false;
   if (box === "outbox") return message.folder === "sent" && (message.delivery || []).some((hop) => hop.status === "outbound");
   if (box === "starred") return message.starred && message.folder !== "trash";
+  if (box === "scheduled") return message.folder === "drafts" && Boolean(message.sendAt);
+  if (box === "drafts") return message.folder === "drafts" && !message.sendAt;
   return message.folder === box;
 }
 
@@ -127,6 +129,12 @@ function shortDate(iso) {
 const blankComposer = (over = {}) => ({ to: "", cc: "", subject: "", body: "", attachments: [], ...over });
 
 async function openMessage(message) {
+  if (message.folder === "drafts" && message.sendAt) {
+    state.selected = message.id;
+    state.composer = null;
+    render();
+    return;
+  }
   if (message.folder === "drafts") {
     state.composer = blankComposer({ draftId: message.id, threadId: message.threadId, to: message.to.map((p) => p.email).join(", "), subject: message.subject, body: message.body, attachments: message.attachments || [] });
     render();
@@ -165,7 +173,7 @@ function render() {
     ]),
     el("div", { class: "layout" }, [
       sidebar(data),
-      el("main", { class: "panel" }, [state.view === "mail" ? (selected ? reader(selected) : list()) : aux(data)]),
+      el("main", { class: "panel" }, [state.view === "mail" ? (selected ? (selected.sendAt && selected.folder === "drafts" ? scheduledView(selected) : reader(selected)) : list()) : aux(data)]),
     ]),
   );
   const rowsNode = root.querySelector(".rows");
@@ -175,6 +183,7 @@ function render() {
   if (state.toast) root.append(el("div", { class: "toast", role: "status" }, [
     el("span", {}, [state.toast.text]),
     state.toast.undo ? el("button", { onClick: () => undo(state.toast.undo) }, ["Undo"]) : none(),
+    state.toast.action ? el("button", { onClick: () => { const run = state.toast.action.run; state.toast = null; run(); } }, [state.toast.action.label]) : none(),
     el("button", { class: "x", "aria-label": "Dismiss", onClick: () => { state.toast = null; render(); } }, ["×"]),
   ]));
   if (state.help) root.append(helpDialog());
@@ -197,7 +206,7 @@ function helpDialog() {
 }
 
 function sidebar(data) {
-  const boxes = [["inbox", "Inbox"], ["snoozed", "Snoozed"], ["outbox", "Outbox"], ["starred", "Starred"], ["sent", "Sent"], ["drafts", "Drafts"], ["archive", "Archive"], ["trash", "Trash"]];
+  const boxes = [["inbox", "Inbox"], ["snoozed", "Snoozed"], ["outbox", "Outbox"], ["starred", "Starred"], ["sent", "Sent"], ["drafts", "Drafts"], ["scheduled", "Scheduled"], ["archive", "Archive"], ["trash", "Trash"]];
   const views = [["clean", "Clean"], ["wallet", "Wallet"], ["contacts", "People"], ["tasks", "Conductor"]];
   const navButton = (current, label, onClick, extra) => el("button", { "aria-current": current, onClick }, [label, extra ?? none()]);
   return el("nav", { "aria-label": "Mail" }, [
@@ -293,6 +302,112 @@ function paymentCard(item) {
   ]);
 }
 
+/* ---------------- Schedule send ---------------- */
+
+const longDate = (iso) => new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(iso));
+
+/** Gmail's quick choices: tomorrow morning, tomorrow afternoon, next Monday morning. */
+function laterChoices(now = new Date()) {
+  const at = (days, hour) => { const d = new Date(now); d.setDate(d.getDate() + days); d.setHours(hour, 0, 0, 0); return d; };
+  const monday = (8 - now.getDay()) % 7 || 7;
+  return [["Tomorrow morning", at(1, 8)], ["Tomorrow afternoon", at(1, 13)], ["Monday morning", at(monday, 8)]];
+}
+
+async function scheduleSend(when) {
+  const at = when instanceof Date ? when : new Date(when);
+  if (!Number.isFinite(at.getTime()) || at.getTime() <= Date.now()) { state.error = "Pick a time in the future."; render(); return; }
+  clearTimeout(draftTimer);
+  if (draftSaving) await draftSaving;
+  const form = state.composer;
+  if (form.payment?.amount) { state.error = "Payments go out right away. Send this one now."; render(); return; }
+  try {
+    form.sent = true;
+    const r = await api("/api/schedule", { ...form, payment: undefined, sendAt: at.toISOString() });
+    state.composer = null;
+    state.error = "";
+    showToast(`Scheduled for ${longDate(r.sendAt)}.`, undefined, { label: "Cancel", run: () => cancelSchedule(r.id) });
+  } catch (error) {
+    form.sent = false;
+    state.error = error.message;
+  }
+  render();
+}
+
+/** Cancel a scheduled send and reopen it as a draft to edit, like Gmail. */
+async function cancelSchedule(id) {
+  await act(async () => {
+    await api("/api/schedule/cancel", { id });
+    const draft = state.data.messages.find((m) => m.id === id);
+    state.selected = null;
+    if (draft) {
+      state.composer = blankComposer({ draftId: draft.id, threadId: draft.threadId, to: draft.to.map((p) => p.email).join(", "), cc: draft.cc.map((p) => p.email).join(", "), subject: draft.subject === "(no subject)" ? "" : draft.subject, body: draft.body, attachments: draft.attachments || [] });
+    }
+    showToast("Send canceled. It's back in Drafts.");
+  });
+}
+
+function scheduledView(message) {
+  const close = () => { state.selected = null; render(); };
+  return el("section", { class: "reader" }, [
+    el("div", { class: "tools" }, [
+      el("button", { class: "icon", "aria-label": "Back to Scheduled", title: "Back to Scheduled", onClick: close }, ["←"]),
+      el("button", { class: "quiet", onClick: () => cancelSchedule(message.id) }, ["Cancel send"]),
+    ]),
+    el("div", { class: "sheet" }, [
+      el("h1", {}, [message.subject || "(no subject)"]),
+      el("p", { class: "scheduled-note" }, [`🕒 Sends ${longDate(message.sendAt)}`]),
+      el("p", { class: "sub" }, [`To ${message.to.map((p) => p.name || p.email).join(", ")}${message.cc.length ? ` · Cc ${message.cc.map((p) => p.name || p.email).join(", ")}` : ""}`]),
+      el("div", { class: "scheduled-body" }, [message.body]),
+    ]),
+  ]);
+}
+
+/* ---------------- Recipient suggestions ---------------- */
+
+function people() {
+  const data = state.data;
+  const seen = new Map();
+  const add = (p) => {
+    const email = p?.email?.toLowerCase();
+    if (!email || email === data.me.email || seen.has(email)) return;
+    seen.set(email, { name: p.name || "", email });
+  };
+  (data.contacts || []).forEach(add);
+  [...data.messages].sort((a, b) => (a.at < b.at ? 1 : -1)).forEach((m) => {
+    if (m.system) return;
+    if (mine(m)) [...m.to, ...m.cc].forEach(add); else add(m.from);
+  });
+  return [...seen.values()];
+}
+
+/** Suggest people for the last address being typed in a To or Cc box. */
+function suggestFor(input) {
+  const parts = input.value.split(",");
+  const typed = parts[parts.length - 1].trim().toLowerCase();
+  const chosen = new Set(parts.slice(0, -1).map((x) => x.trim().toLowerCase()));
+  const list = typed ? people().filter((p) => !chosen.has(p.email) && `${p.name} ${p.email}`.toLowerCase().includes(typed)).slice(0, 5) : [];
+  const field = input.closest(".field");
+  field.querySelector(".suggestions")?.remove();
+  input.onkeydown = null;
+  if (!list.length || (list.length === 1 && list[0].email === typed)) return;
+  const pick = (p) => {
+    parts[parts.length - 1] = ` ${p.email}`;
+    input.value = `${parts.join(",").trim()}, `;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.focus();
+  };
+  field.append(el("div", { class: "suggestions", role: "listbox" }, list.map((p, i) => el("button", {
+    type: "button", role: "option", class: i === 0 ? "first" : "",
+    onMousedown: (e) => { e.preventDefault(); pick(p); },
+  }, [el("b", {}, [p.name || p.email]), p.name ? el("span", { class: "sub" }, [p.email]) : none()]))));
+  input.onkeydown = (e) => {
+    const box = field.querySelector(".suggestions");
+    if (!box) return;
+    if (e.key === "Tab" || e.key === "Enter") { e.preventDefault(); pick(list[0]); }
+    if (e.key === "Escape") box.remove();
+  };
+}
+
 function reader(message) {
   const thread = state.data.messages.filter((item) => item.threadId === message.threadId && item.folder !== "drafts" && (item.folder !== "trash" || message.folder === "trash")).sort((a, b) => (a.at < b.at ? -1 : 1));
   const e2e = [message.from, ...message.to, ...message.cc].every((person) => person.email.endsWith("@cumulusmail.cloud"));
@@ -368,7 +483,7 @@ function composerForm() {
   form.payment ??= { asset: "USDC", amount: "" };
   const field = (label, key, attrs = {}) => el("label", { class: `field${key === "body" ? " body" : ""}` }, [
     key === "body" ? none() : el("span", {}, [label]),
-    el(key === "body" ? "textarea" : "input", { "aria-label": label, value: form[key], ...attrs, onInput: (event) => { form[key] = event.target.value; queueDraftSave(); } }),
+    el(key === "body" ? "textarea" : "input", { "aria-label": label, value: form[key], ...attrs, onInput: (event) => { form[key] = event.target.value; queueDraftSave(); if (key === "to" || key === "cc") suggestFor(event.target); }, onBlur: (event) => { if (key === "to" || key === "cc") event.target.closest(".field")?.querySelector(".suggestions")?.remove(); } }),
   ]);
   const asset = el("select", { "aria-label": "Asset", onChange: (event) => { form.payment.asset = event.target.value; } }, ["USDC", "FIRM"].map((a) => el("option", { value: a }, [a])));
   asset.value = form.payment.asset;
@@ -387,13 +502,24 @@ function composerForm() {
       el("button", { type: "button", "aria-label": `Remove ${file.name}`, onClick: () => { form.attachments.splice(index, 1); render(); } }, ["×"]),
     ])),
     el("div", { class: "actions" }, [
-      el("button", { class: "primary", type: "submit" }, ["Send"]),
+      el("span", { class: "send-group" }, [
+        el("button", { class: "primary", type: "submit" }, ["Send"]),
+        el("button", { class: "primary later", type: "button", "aria-label": "Schedule send", title: "Schedule send", "aria-expanded": Boolean(form.later), onClick: () => { form.later = !form.later; render(); } }, ["▾"]),
+      ]),
       el("button", { class: "quiet", type: "button", onClick: () => filePicker.click() }, ["Attach"]),
       el("span", { class: "spacer" }),
       el("span", { class: "sub save-status", "aria-live": "polite" }, [form.draftId ? "Draft saved" : ""]),
       el("button", { class: "quiet", type: "button", title: "Delete this draft", onClick: () => discardComposer() }, ["Discard"]),
       state.error ? el("span", { class: "error", role: "alert" }, [state.error]) : none(),
     ]),
+    form.later ? el("div", { class: "later-menu", role: "menu", "aria-label": "Schedule send" }, [
+      el("p", { class: "sub" }, ["Schedule send"]),
+      ...laterChoices().map(([label, at]) => el("button", { type: "button", role: "menuitem", onClick: () => scheduleSend(at) }, [el("span", {}, [label]), el("span", { class: "sub" }, [longDate(at.toISOString())])])),
+      el("div", { class: "pick-time" }, [
+        el("input", { type: "datetime-local", "aria-label": "Pick date and time", onChange: (e) => { form.laterAt = e.target.value; } }),
+        el("button", { type: "button", class: "outline", onClick: () => scheduleSend(form.laterAt) }, ["Schedule"]),
+      ]),
+    ]) : none(),
     filePicker,
   ]);
 }

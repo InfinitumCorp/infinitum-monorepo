@@ -10,7 +10,7 @@ export type Person = { name: string; email: string };
 
 export type FolderId = "inbox" | "sent" | "drafts" | "archive" | "trash";
 
-export type BoxId = FolderId | "starred" | "outbox" | "snoozed";
+export type BoxId = FolderId | "starred" | "outbox" | "snoozed" | "scheduled";
 
 export type RuleAction = "star" | "archive" | "label";
 
@@ -46,6 +46,8 @@ export type MailMessage = {
   /** Where each recipient's copy went: inside Cumulus, out to the relay, or bounced. */
   delivery?: DeliveryHop[];
   snoozeUntil?: string;
+  /** Drafts only: send this on its own at this time (Schedule send). */
+  sendAt?: string;
   /** FIRM Wallet payment sent with this message (pay by mail). */
   payment?: MailPayment;
   /** Sent by a Cumulus product (security notice, Cloud share, wallet receipt). */
@@ -377,6 +379,7 @@ export const EVENTS: CalEvent[] = [
 export const BOXES: { id: BoxId; label: string }[] = [
   { id: "inbox", label: "Inbox" },
   { id: "snoozed", label: "Snoozed" },
+  { id: "scheduled", label: "Scheduled" },
   { id: "outbox", label: "Outbox" },
   { id: "starred", label: "Starred" },
   { id: "sent", label: "Sent" },
