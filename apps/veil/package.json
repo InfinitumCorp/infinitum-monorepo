@@ -1,0 +1,14 @@
+{
+  "name": "@infinitum/veil",
+  "version": "0.4.0",
+  "description": "VEIL</>: Tor-first secure browser sidebar (Chrome MV3 extension).",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "test": "node --test test/",
+    "icons": "node scripts/make-icons.js"
+  }
+}

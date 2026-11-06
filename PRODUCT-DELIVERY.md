@@ -38,7 +38,7 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 | Product | Notes | Software path |
 |---------|-------|---------------|
 | Cumulus://Cloud | Storage, licensing, agent runtime, data exchange | Partial for exchange (API + collectors) |
-| VEIL</> | Tor-first browser + sidebar | Partial — v0.3.1 multi-panel, Conductor Ask, Tor proxy + check, claimable rewards, Base RPC wallet balance | See apps/veil/NEXT.md + PACKAGING.md. VeilCollector ready. |
+| VEIL</> | Tor-first browser + sidebar | Partial — v0.4.0 anonymous/signed-in workspaces, Tor + WebRTC hardening, New Identity, $VEIL rewards at the published policy with claim receipts, CID sign-in | See apps/veil/NEXT.md + PACKAGING.md. VeilCollector ready. |
 | FABRIC | Encrypted calls/messaging | Scaffolded — AES-256-GCM AEAD + session. FabricCollector ready. |
 | ÆTHER | Distributed communications | Scaffolded — mesh + BFS routing. AetherCollector ready. |
 | Firmament Network | Ledger stats | FirmamentCollector ready. |
