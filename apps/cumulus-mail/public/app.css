@@ -208,3 +208,22 @@ kbd { min-width: 28px; padding: 2px 8px; border: 1px solid var(--line); border-r
 .chip { height: 30px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--text); font-size: 13px; }
 .chip:hover { background: var(--hover); }
 .chip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+/* Schedule send */
+.send-group { display: inline-flex; }
+.send-group .primary:first-child { border-radius: 999px 0 0 999px; padding-right: 14px; }
+.send-group .later { border-radius: 0 999px 999px 0; padding: 0 10px; margin-left: 1px; }
+.later-menu { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; padding: 8px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); box-shadow: var(--shadow); }
+.later-menu > .sub { margin: 4px 8px 6px; }
+.later-menu > button { display: flex; justify-content: space-between; gap: 16px; height: 36px; padding: 0 10px; border-radius: 8px; text-align: left; }
+.later-menu > button:hover { background: var(--hover); }
+.pick-time { display: flex; gap: 8px; align-items: center; padding: 8px 8px 2px; border-top: 1px solid var(--line); margin-top: 4px; }
+.pick-time input { flex: 1; min-width: 0; height: 34px; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; font: inherit; }
+.scheduled-note { display: inline-block; padding: 6px 12px; border-radius: 999px; background: var(--chip); font-weight: 700; }
+.scheduled-body { margin-top: 16px; white-space: pre-wrap; line-height: 1.6; }
+
+/* Recipient suggestions */
+.field { position: relative; }
+.suggestions { position: absolute; left: 52px; right: 0; top: 100%; z-index: 20; display: flex; flex-direction: column; padding: 6px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); box-shadow: 0 8px 24px rgba(0, 0, 0, .14); }
+.suggestions button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 10px; border-radius: 8px; text-align: left; }
+.suggestions button:hover, .suggestions button.first { background: var(--hover); }

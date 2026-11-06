@@ -35,6 +35,8 @@ export function inBox(message: MailMessage, box: BoxId, now = Date.now()): boole
     return message.folder === "sent" && (message.delivery ?? []).some((hop) => hop.status === "outbound");
   }
   if (box === "starred") return message.starred && message.folder !== "trash";
+  if (box === "scheduled") return message.folder === "drafts" && Boolean(message.sendAt);
+  if (box === "drafts") return message.folder === "drafts" && !message.sendAt;
   return message.folder === box;
 }
 

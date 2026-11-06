@@ -358,6 +358,61 @@ export class PostOffice {
     return this.edit(cid, (mail) => mail.saveDraft({ ...input, now: this.now() }));
   }
 
+  /* ---------------- Schedule send ---------------- */
+
+  /** Save a message to go out on its own later. It waits in Scheduled (a draft with a send time). */
+  schedule(cid: string, input: PostOfficeSendInput, sendAt: string): { id: string; sendAt: string } {
+    if (input.payment) throw new MailError("scheduled_payment", "Payments go out right away. Send this one now.");
+    const at = Date.parse(sendAt);
+    const now = this.clock().getTime();
+    if (!Number.isFinite(at) || at <= now) throw new MailError("bad_time", "Pick a time in the future.");
+    if (at > now + 366 * 86_400_000) throw new MailError("bad_time", "Schedule up to a year ahead.");
+    const to = parsePeople(input.to);
+    const cc = parsePeople(input.cc ?? "");
+    if (to.length === 0 || [...to, ...cc].some((p) => !validEmail(p.email))) throw new MailError("bad_address", "Add a real address in To.");
+    if (!input.subject.trim() && !input.body.trim()) throw new MailError("empty", "Write a subject or a message.");
+    const { id } = this.saveDraft(cid, input);
+    const draft = this.box(cid).messages.find((m) => m.id === id)!;
+    draft.sendAt = new Date(at).toISOString();
+    return { id, sendAt: draft.sendAt };
+  }
+
+  /** Cancel a scheduled send. The message stays in Drafts. */
+  unschedule(cid: string, id: string): boolean {
+    const draft = this.box(cid).messages.find((m) => m.id === id && m.folder === "drafts" && m.sendAt);
+    if (!draft) return false;
+    delete draft.sendAt;
+    return true;
+  }
+
+  /** Send this mailbox's scheduled messages that are due. A failure goes back to Drafts with a notice. */
+  async sendDue(cid: string): Promise<number> {
+    const now = this.clock().getTime();
+    const due = this.box(cid).messages.filter((m) => m.folder === "drafts" && m.sendAt && Date.parse(m.sendAt) <= now);
+    let sent = 0;
+    for (const draft of due) {
+      delete draft.sendAt;
+      try {
+        await this.send(cid, {
+          to: draft.to.map((p) => p.email).join(", "), cc: draft.cc.map((p) => p.email).join(", "),
+          subject: draft.subject === "(no subject)" ? "" : draft.subject, body: draft.body,
+          threadId: draft.threadId !== draft.id ? draft.threadId : undefined, draftId: draft.id, attachments: draft.attachments,
+        });
+        sent++;
+      } catch (error) {
+        this.notify(cid, "postmaster", { subject: "A scheduled message wasn't sent", body: `"${draft.subject}" couldn't go out: ${(error as Error).message} It's waiting in Drafts.` });
+      }
+    }
+    return sent;
+  }
+
+  /** Every mailbox's due scheduled mail. The app runs this on a timer. */
+  async sendAllDue(): Promise<number> {
+    let sent = 0;
+    for (const cid of this.store.mailboxes.keys()) sent += await this.sendDue(cid);
+    return sent;
+  }
+
   markThreadRead(cid: string, threadId: string) {
     this.edit(cid, (mail) => mail.markThreadRead(threadId));
   }

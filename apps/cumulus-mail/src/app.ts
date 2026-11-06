@@ -256,6 +256,21 @@ export function createMailApp(deps: MailAppDeps) {
     return { ...result, ok: true, state: state(me(ctx)) };
   });
 
+  route("POST", "/api/schedule", (ctx) => {
+    const b = ctx.body;
+    const payment = b.payment && str(b.payment.amount) ? { asset: str(b.payment.asset, 10), amount: str(b.payment.amount, 30) } : undefined;
+    const result = mail.schedule(me(ctx), {
+      to: str(b.to, 4000), cc: str(b.cc ?? "", 4000), subject: str(b.subject, 300), body: str(b.body),
+      threadId: b.threadId ? str(b.threadId, 80) : undefined, draftId: b.draftId ? str(b.draftId, 80) : undefined, payment,
+      attachments: files(b.attachments),
+    }, str(b.sendAt, 40));
+    return { ...result, state: state(me(ctx)) };
+  });
+  route("POST", "/api/schedule/cancel", (ctx) => {
+    if (!mail.unschedule(me(ctx), str(ctx.body.id, 80))) throw new HttpError(404, "That message isn't scheduled.");
+    return state(me(ctx));
+  });
+
   route("POST", "/api/draft", (ctx) => {
     const b = ctx.body;
     const saved = mail.saveDraft(me(ctx), { to: str(b.to, 4000), cc: str(b.cc ?? "", 4000), subject: str(b.subject, 300), body: str(b.body), threadId: b.threadId ? str(b.threadId, 80) : undefined, draftId: b.draftId ? str(b.draftId, 80) : undefined, attachments: files(b.attachments) });
@@ -483,5 +498,13 @@ export function createMailApp(deps: MailAppDeps) {
     }
   }
 
-  return { handle, server: () => createServer((req, res) => void handle(req, res)) };
+  // Schedule send: anything due goes out on its own, then the stores are saved.
+  const sendDue = async () => {
+    const sent = await mail.sendAllDue().catch(() => 0);
+    if (sent) deps.onChange?.();
+    return sent;
+  };
+  setInterval(() => void sendDue(), 20_000).unref();
+
+  return { handle, sendDue, server: () => createServer((req, res) => void handle(req, res)) };
 }

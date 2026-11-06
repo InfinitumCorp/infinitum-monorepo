@@ -205,4 +205,19 @@ describe("SCALVS Clean agent", () => {
     assert.ok(back.data.state.messages.filter((m: any) => ids.includes(m.threadId)).every((m: any) => m.folder === "inbox"));
     assert.equal((await ivy.call("POST", "/api/undo", { id: done.data.undo })).status, 404, "undo works once");
   });
+  it("schedules a send, lists it in Scheduled and cancels it over HTTP", async () => {
+    const kim = new Browser();
+    await kim.signUp("kimsched");
+    const when = new Date(Date.now() + 3_600_000).toISOString();
+    const r = await kim.call("POST", "/api/schedule", { to: "nora@cumulusmail.cloud", subject: "Later on", body: "Hi", sendAt: when });
+    assert.equal(r.status, 200, JSON.stringify(r.data));
+    const draft = r.data.state.messages.find((m: any) => m.id === r.data.id);
+    assert.equal(draft.folder, "drafts");
+    assert.equal(draft.sendAt, when);
+    assert.equal((await kim.call("POST", "/api/schedule", { to: "nora@cumulusmail.cloud", subject: "x", body: "x", sendAt: "2001-01-01T00:00:00Z" })).status, 400);
+    const c = await kim.call("POST", "/api/schedule/cancel", { id: r.data.id });
+    assert.equal(c.status, 200);
+    assert.equal(c.data.messages.find((m: any) => m.id === r.data.id).sendAt, undefined);
+    assert.equal((await kim.call("POST", "/api/schedule/cancel", { id: r.data.id })).status, 404);
+  });
 });
