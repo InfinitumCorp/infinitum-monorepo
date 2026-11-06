@@ -8,25 +8,41 @@ import {
 } from "./webauthn.ts";
 import { generateTotpSecret, verifyTotp, otpauthUri } from "./totp.ts";
 import { verifyIdToken, type SsoConfig } from "./oidc.ts";
+import {
+  PROVIDERS,
+  SocialClient,
+  pkcePair,
+  type PendingAuth,
+  type SocialCredentials,
+  type SocialProfile,
+  type SocialProviderId,
+} from "./social.ts";
 
 /* ------------------------------------------------------------------ *
  * Product registry: every app a CID can sign in to and grant access to.
  * ------------------------------------------------------------------ */
 
 export const INFINITUM_APPS = [
-  "veil", "fabric", "throne", "eon", "scalvs", "cndctr", "spectre", "metatron",
+  "veil", "fabric", "throne", "eon", "scalvs", "architect", "spectre", "metatron",
   "cumulus", "cumulus-mail", "firm-wallet", "aether", "argus", "hrvst", "eidetic",
   "orbis", "pollen", "flower", "nemesis",
 ] as const;
 export type AppId = (typeof INFINITUM_APPS)[number];
 
-/** What every new CID comes with, per the Cumulus://ID page. */
+/** Earlier ids for the same app, still accepted for one release. */
+const LEGACY_APP_IDS: Record<string, AppId> = { architct: "architect", cndctr: "architect" };
+
+/**
+ * What every new CID comes with, per the Cumulus://ID page. Like a Google account and Gmail,
+ * every CID gets a Cumulus://Mail address, a Cumulus://Cloud drive and a FIRM Wallet on the free tier.
+ */
 export const FREE_ENTITLEMENTS = {
-  storageGb: 15, // shared by Cumulus Drive and Cumulus://Mail
+  storageGb: 15, // shared by Cumulus://Cloud (Drive) and Cumulus://Mail
   mail: true,
+  cloud: true,
   firmWallet: true,
   scalvs: "free",
-  cndctr: "free",
+  architect: "free",
   metatronDashboard: true,
 } as const;
 
@@ -46,10 +62,24 @@ export interface Account {
   orgId?: string;
   /** Link to the organization identity provider, for SSO members. */
   federated?: { issuer: string; subject: string };
+  /** Google, GitHub, Microsoft, Apple or ChatGPT accounts linked for sign-in. */
+  identities?: LinkedIdentity[];
   createdAt: string;
   entitlements: typeof FREE_ENTITLEMENTS;
   totp?: { secret: string; confirmed: boolean; lastStep: number };
 }
+
+export interface LinkedIdentity {
+  provider: SocialProviderId;
+  subject: string;
+  /** Shown in the account's settings so people can tell linked accounts apart. */
+  email?: string;
+  linkedAt: string;
+}
+
+export type SessionMethod =
+  | "passkey" | "security-key" | "sso" | "passkey+totp"
+  | `social:${SocialProviderId}` | `social:${SocialProviderId}+totp`;
 
 export interface Authenticator {
   id: string;
@@ -69,7 +99,7 @@ export interface Session {
   cid: string;
   tokenHash: string;
   device: string;
-  method: "passkey" | "security-key" | "sso" | "passkey+totp";
+  method: SessionMethod;
   createdAt: string;
   expiresAt: string;
   revokedAt?: string;
@@ -100,7 +130,7 @@ interface Challenge {
 
 interface PendingMfa {
   cid: string;
-  authenticatorId: string;
+  method: SessionMethod;
   device: string;
   expiresAt: number;
 }
@@ -118,6 +148,8 @@ export class CidStore {
   orgs = new Map<string, Organization>();
   challenges = new Map<string, Challenge>();
   pendingMfa = new Map<string, PendingMfa>();
+  byIdentity = new Map<string, string>(); // `${provider}|${subject}` -> cid
+  oauthPending = new Map<string, PendingAuth>();
 }
 
 /* ------------------------------------------------------------------ */
@@ -132,6 +164,33 @@ export interface CidConfig {
   store?: CidStore;
   clock?: () => Date;
   sessionDays?: number;
+  /** Social sign-in providers with their client credentials. Only configured ones are offered. */
+  social?: { providers: Partial<Record<SocialProviderId, SocialCredentials>>; fetchImpl?: typeof fetch };
+  /**
+   * Account events for the rest of the suite: Cumulus://Mail provisions a mailbox on
+   * "account.created" and sends security notices for sign-ins, keys and MFA changes.
+   * A failing listener never blocks sign-in.
+   */
+  onEvent?: (event: CidEvent) => void | Promise<void>;
+}
+
+export type CidEventName =
+  | "account.created"
+  | "authenticator.added"
+  | "authenticator.removed"
+  | "session.created"
+  | "session.revoked_all"
+  | "mfa.enabled"
+  | "mfa.disabled"
+  | "identity.linked"
+  | "identity.unlinked";
+
+export interface CidEvent {
+  event: CidEventName;
+  cid: string;
+  at: string;
+  /** Event details safe to show the account owner (device, method, key kind, provider). */
+  detail: Record<string, string | number>;
 }
 
 export class CidError extends Error {
@@ -143,15 +202,24 @@ export class CidError extends Error {
 }
 
 const USERNAME = /^[a-z0-9][a-z0-9._-]{2,29}$/;
-const RESERVED = new Set(["admin", "root", "support", "security", "odin", "infinitum", "postmaster", "abuse"]);
+// Includes the Cumulus://Mail product senders, so no person can register an address that
+// looks like a security notice or a wallet receipt.
+const RESERVED = new Set([
+  "admin", "root", "support", "security", "odin", "infinitum", "postmaster", "abuse",
+  "welcome", "cloud", "wallet", "ledger", "noreply", "no-reply", "mail", "cumulus", "firm",
+]);
 const CHALLENGE_TTL_MS = 5 * 60_000;
 const hashToken = (t: string) => createHash("sha256").update(t).digest("hex");
 
 export class CidService {
   readonly store: CidStore;
-  private readonly cfg: Required<Omit<CidConfig, "store">>;
+  private readonly cfg: Required<Omit<CidConfig, "store" | "social" | "onEvent">>;
+  private readonly socialProviders: Partial<Record<SocialProviderId, SocialCredentials>>;
+  private readonly socialClient: SocialClient;
+  private readonly onEvent?: CidConfig["onEvent"];
 
   constructor(config: CidConfig) {
+    this.onEvent = config.onEvent;
     this.store = config.store ?? new CidStore();
     this.cfg = {
       ledger: config.ledger,
@@ -161,6 +229,8 @@ export class CidService {
       clock: config.clock ?? (() => new Date()),
       sessionDays: config.sessionDays ?? 30,
     };
+    this.socialProviders = config.social?.providers ?? {};
+    this.socialClient = new SocialClient(config.social?.fetchImpl);
   }
 
   private now() {
@@ -169,6 +239,15 @@ export class CidService {
 
   private record(type: Entry["type"], actor: string, subject: string, payload: Record<string, unknown>) {
     return this.cfg.ledger.append({ type, product: "cid", actor, subject, payload }, this.cfg.signer);
+  }
+
+  private async emit(event: CidEventName, cid: string, detail: CidEvent["detail"] = {}) {
+    if (!this.onEvent) return;
+    try {
+      await this.onEvent({ event, cid, at: this.now().toISOString(), detail });
+    } catch (err) {
+      console.error(`CID event listener failed for ${event}:`, err);
+    }
   }
 
   private account(cid: string): Account {
@@ -203,6 +282,7 @@ export class CidService {
     this.store.byUsername.set(username, account.cid);
     // Only the event is recorded; the CID is never sold and personal details stay off the ledger.
     await this.record("identity", account.cid, account.cid, { event: "account.created", org: input.orgId ?? null });
+    await this.emit("account.created", account.cid);
     return account;
   }
 
@@ -288,6 +368,7 @@ export class CidService {
     this.store.authenticators.set(auth.id, auth);
     this.store.byCredentialId.set(auth.credentialId, auth.id);
     await this.record("audit", cid, cid, { event: "authenticator.added", kind, authenticator: auth.id });
+    await this.emit("authenticator.added", cid, { kind, label: auth.label });
     return auth;
   }
 
@@ -300,12 +381,14 @@ export class CidService {
   async removeAuthenticator(cid: string, authenticatorId: string) {
     const auth = this.store.authenticators.get(authenticatorId);
     if (!auth || auth.cid !== cid) throw new CidError("not_found", "No such key on this account");
-    if (this.listAuthenticators(cid).length === 1 && !this.account(cid).federated) {
+    const acct = this.account(cid);
+    if (this.listAuthenticators(cid).length === 1 && !acct.federated && !acct.identities?.length) {
       throw new CidError("last_key", "Add another passkey or security key before removing your last one");
     }
     this.store.authenticators.delete(authenticatorId);
     this.store.byCredentialId.delete(auth.credentialId);
     await this.record("audit", cid, cid, { event: "authenticator.removed", authenticator: authenticatorId });
+    await this.emit("authenticator.removed", cid, { kind: auth.kind, label: auth.label });
   }
 
   /** Options for navigator.credentials.get(). Omit the username for discoverable passkey sign-in. */
@@ -353,7 +436,7 @@ export class CidService {
     // A security key tap without verification needs the authenticator-app code too.
     if (account.totp?.confirmed && !result.userVerified) {
       const mfaToken = randomBytes(24).toString("base64url");
-      this.store.pendingMfa.set(mfaToken, { cid: account.cid, authenticatorId: auth.id, device, expiresAt: this.now().getTime() + CHALLENGE_TTL_MS });
+      this.store.pendingMfa.set(mfaToken, { cid: account.cid, method: "passkey+totp", device, expiresAt: this.now().getTime() + CHALLENGE_TTL_MS });
       return { status: "mfa_required", mfaToken };
     }
     const issued = await this.issueSession(account.cid, device, auth.kind);
@@ -374,7 +457,7 @@ export class CidService {
     }
     account.totp!.lastStep = step;
     this.store.pendingMfa.delete(mfaToken);
-    return this.issueSession(account.cid, pending.device, "passkey+totp");
+    return this.issueSession(account.cid, pending.device, pending.method);
   }
 
   /* ---------------- Multifactor (authenticator app) ---------------- */
@@ -394,6 +477,7 @@ export class CidService {
     if (step === null) throw new CidError("mfa_failed", "That code didn't match");
     account.totp = { ...account.totp, confirmed: true, lastStep: step };
     await this.record("audit", cid, cid, { event: "mfa.enabled", method: "totp" });
+    await this.emit("mfa.enabled", cid, { method: "authenticator app" });
   }
 
   async disableTotp(cid: string, code: string) {
@@ -404,11 +488,12 @@ export class CidService {
     }
     account.totp = undefined;
     await this.record("audit", cid, cid, { event: "mfa.disabled", method: "totp" });
+    await this.emit("mfa.disabled", cid, { method: "authenticator app" });
   }
 
   /* ---------------- Sessions ---------------- */
 
-  private async issueSession(cid: string, device: string, method: Session["method"]) {
+  private async issueSession(cid: string, device: string, method: SessionMethod) {
     const token = randomBytes(32).toString("base64url");
     const now = this.now();
     const session: Session = {
@@ -423,6 +508,7 @@ export class CidService {
     this.store.sessions.set(session.id, session);
     this.store.byTokenHash.set(session.tokenHash, session.id);
     await this.record("audit", cid, cid, { event: "session.created", session: session.id, method });
+    await this.emit("session.created", cid, { device, method, session: session.id });
     return { token, session };
   }
 
@@ -459,19 +545,153 @@ export class CidService {
       }
     }
     await this.record("audit", actor, cid, { event: "session.revoked_all", count });
+    await this.emit("session.revoked_all", cid, { count, by: actor === cid ? "you" : "your organization admin" });
     return count;
+  }
+
+  /* ---------------- Social sign-in ---------------- */
+
+  /** Providers with credentials configured, in display order. */
+  socialProvidersEnabled(): { id: SocialProviderId; label: string }[] {
+    const order: SocialProviderId[] = ["google", "apple", "microsoft", "github", "chatgpt"];
+    return order.filter((id) => this.socialProviders[id]).map((id) => ({ id, label: PROVIDERS[id].label }));
+  }
+
+  private providerCreds(provider: string): { spec: (typeof PROVIDERS)[SocialProviderId]; creds: SocialCredentials } {
+    const spec = PROVIDERS[provider as SocialProviderId];
+    const creds = spec ? this.socialProviders[spec.id] : undefined;
+    if (!spec || !creds) throw new CidError("provider_unavailable", "That sign-in option isn't available");
+    return { spec, creds };
+  }
+
+  /**
+   * Begin "Continue with Google/GitHub/…". Returns the provider URL to send the browser to and
+   * the state, which the caller must also bind to the browser (a short-lived cookie) and check on return.
+   * Pass `linkToCid` when a signed-in person is adding a provider to their account.
+   */
+  async startSocialSignIn(provider: string, redirectUri: string, linkToCid?: string) {
+    const { spec, creds } = this.providerCreds(provider);
+    if (linkToCid) this.account(linkToCid);
+    const { verifier, challenge } = pkcePair();
+    const pending: PendingAuth = {
+      state: randomBytes(24).toString("base64url"),
+      provider: spec.id,
+      nonce: randomBytes(16).toString("base64url"),
+      codeVerifier: verifier,
+      redirectUri,
+      expiresAt: this.now().getTime() + 10 * 60_000,
+      linkToCid,
+    };
+    this.store.oauthPending.set(pending.state, pending);
+    const url = await this.socialClient.authorizeUrl(spec, creds, pending, challenge);
+    return { url, state: pending.state };
+  }
+
+  async finishSocialSignIn(
+    provider: string,
+    params: { state: string; code: string; browserState?: string },
+    device: string,
+  ): Promise<
+    | { status: "ok"; token: string; session: Session; created: boolean }
+    | { status: "mfa_required"; mfaToken: string }
+    | { status: "linked"; cid: string }
+  > {
+    const { spec, creds } = this.providerCreds(provider);
+    const pending = this.store.oauthPending.get(params.state);
+    this.store.oauthPending.delete(params.state); // single use
+    // The state must be one we issued, for this provider, unexpired, and started in this same browser.
+    if (!pending || pending.provider !== spec.id || pending.expiresAt < this.now().getTime() || params.browserState !== params.state) {
+      throw new CidError("challenge_expired", "Sign-in request expired. Please try again.");
+    }
+    let profile: SocialProfile;
+    try {
+      profile = await this.socialClient.complete(spec, creds, pending, params.code, this.now());
+    } catch (err) {
+      throw new CidError("social_failed", (err as Error).message);
+    }
+    const key = `${profile.provider}|${profile.subject}`;
+    const existing = this.store.byIdentity.get(key);
+
+    if (pending.linkToCid) {
+      if (existing && existing !== pending.linkToCid) {
+        throw new CidError("identity_in_use", `That ${spec.label} account is already linked to a different CID`);
+      }
+      if (!existing) await this.attachIdentity(pending.linkToCid, profile);
+      return { status: "linked", cid: pending.linkToCid };
+    }
+
+    let cid = existing;
+    let created = false;
+    if (!cid) {
+      // A new provider account always gets a new CID. Accounts are never joined by matching email,
+      // which would let anyone who controls an email at one provider take over another person's CID.
+      const account = await this.createAccount({ username: this.freeUsername(profile.usernameHint ?? `${spec.id}-user`) });
+      await this.attachIdentity(account.cid, profile);
+      cid = account.cid;
+      created = true;
+    }
+    const account = this.account(cid);
+    const method = `social:${spec.id}` as const;
+    if (account.totp?.confirmed) {
+      const mfaToken = randomBytes(24).toString("base64url");
+      this.store.pendingMfa.set(mfaToken, { cid, method: `${method}+totp`, device, expiresAt: this.now().getTime() + CHALLENGE_TTL_MS });
+      return { status: "mfa_required", mfaToken };
+    }
+    const issued = await this.issueSession(cid, device, method);
+    return { status: "ok", ...issued, created };
+  }
+
+  private freeUsername(hint: string): string {
+    let base = hint.toLowerCase().replace(/[^a-z0-9._-]/g, "").replace(/^[._-]+/, "").slice(0, 24);
+    if (base.length < 3) base = `${base}user`.slice(0, 24);
+    let name = base;
+    for (let i = 2; this.store.byUsername.has(name) || RESERVED.has(name); i++) name = `${base}${i}`;
+    return name;
+  }
+
+  private async attachIdentity(cid: string, profile: SocialProfile) {
+    const account = this.account(cid);
+    const identity: LinkedIdentity = {
+      provider: profile.provider,
+      subject: profile.subject,
+      email: profile.emailVerified ? profile.email : undefined,
+      linkedAt: this.now().toISOString(),
+    };
+    account.identities = [...(account.identities ?? []).filter((i) => i.provider !== profile.provider), identity];
+    this.store.byIdentity.set(`${profile.provider}|${profile.subject}`, cid);
+    // The provider's account ID and email stay off the ledger; only the event is recorded.
+    await this.record("audit", cid, cid, { event: "identity.linked", provider: profile.provider });
+    await this.emit("identity.linked", cid, { provider: PROVIDERS[profile.provider]?.label ?? profile.provider });
+  }
+
+  linkedIdentities(cid: string): LinkedIdentity[] {
+    return [...(this.account(cid).identities ?? [])];
+  }
+
+  async unlinkIdentity(cid: string, provider: string) {
+    const account = this.account(cid);
+    const identity = account.identities?.find((i) => i.provider === provider);
+    if (!identity) throw new CidError("not_found", "That account isn't linked");
+    const otherWays = this.listAuthenticators(cid).length + (account.identities!.length - 1) + (account.federated ? 1 : 0);
+    if (otherWays === 0) throw new CidError("last_key", "Add a passkey or another sign-in option before removing your last one");
+    account.identities = account.identities!.filter((i) => i.provider !== provider);
+    this.store.byIdentity.delete(`${identity.provider}|${identity.subject}`);
+    await this.record("audit", cid, cid, { event: "identity.unlinked", provider });
+    await this.emit("identity.unlinked", cid, { provider: PROVIDERS[provider as SocialProviderId]?.label ?? provider });
   }
 
   /* ---------------- Permissions dashboard ---------------- */
 
-  private assertApp(app: string): asserts app is AppId {
-    if (!(INFINITUM_APPS as readonly string[]).includes(app)) throw new CidError("unknown_app", `Unknown Infinitum app: ${app}`);
+  private appId(app: string): AppId {
+    const id = LEGACY_APP_IDS[app] ?? app;
+    if (!(INFINITUM_APPS as readonly string[]).includes(id)) throw new CidError("unknown_app", `Unknown Infinitum app: ${app}`);
+    return id as AppId;
   }
 
   /** Grant an app access, app by app. Every grant is recorded on Firmament Network. */
   async grant(cid: string, app: string, scopes: string[]): Promise<Grant> {
     this.account(cid);
-    this.assertApp(app);
+    app = this.appId(app);
     if (scopes.length === 0 || scopes.some((s) => !/^[a-z0-9-]+:[a-z0-9-]+$/.test(s))) {
       throw new CidError("invalid_scope", "Scopes look like 'contacts:read'");
     }
@@ -485,7 +705,7 @@ export class CidService {
 
   /** Revoke some scopes, or all access when scopes are omitted. Recorded on Firmament. */
   async revoke(cid: string, app: string, scopes?: string[]) {
-    this.assertApp(app);
+    app = this.appId(app);
     const key = `${cid}|${app}`;
     const current = this.store.grants.get(key);
     if (!current) return;

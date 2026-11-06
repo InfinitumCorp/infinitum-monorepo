@@ -1,0 +1,24 @@
+{
+  "name": "@infinitum/data-exchange",
+  "version": "0.1.0",
+  "description": "Cumulus Data Exchange: opt-in dataset licensing, data broker marketplace, 85% user rev-share, Firmament-backed consent.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "typecheck": "tsc -p . --noEmit",
+    "test": "node --test --experimental-strip-types $(find src -name \"*.test.ts\" 2>/dev/null || true)"
+  },
+  "dependencies": {
+    "@infinitum/cid": "workspace:*",
+    "@infinitum/firmament": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/node": "^22.0.0"
+  }
+}

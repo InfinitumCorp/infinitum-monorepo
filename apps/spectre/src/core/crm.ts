@@ -1,4 +1,7 @@
 import { randomUUID } from "node:crypto";
+import type { AgentProposal, AgentRunRecord } from "./agent-team.ts";
+import type { Simulation } from "@infinitum/conjure";
+import type { SmartList, Form, FormSubmission, Calendar, Appointment, Workflow, WorkflowJob, Message } from "./growth-model.ts";
 import type { Ledger, Signer, Entry } from "@infinitum/firmament";
 import {
   STAGES,
@@ -25,7 +28,7 @@ export class SpectreError extends Error {
   }
 }
 
-const PERSONAL_FIELDS = new Set(["email", "phone", "name", "title"]);
+const PERSONAL_FIELDS = new Set(["email", "phone", "name", "title", "fields"]);
 
 export interface SpectreStore {
   companies: Map<string, Company>;
@@ -33,6 +36,20 @@ export interface SpectreStore {
   deals: Map<string, Deal>;
   activities: Map<string, Activity>;
   relationships: Map<string, Relationship>;
+  /** SCALVS.ai agent proposals awaiting (or past) human approval. */
+  proposals: Map<string, AgentProposal>;
+  /** Recent agent runs, for the Agents page history. */
+  agentRuns: Map<string, AgentRunRecord>;
+  smartLists: Map<string, SmartList>;
+  forms: Map<string, Form>;
+  submissions: Map<string, FormSubmission>;
+  calendars: Map<string, Calendar>;
+  appointments: Map<string, Appointment>;
+  workflows: Map<string, Workflow>;
+  jobs: Map<string, WorkflowJob>;
+  messages: Map<string, Message>;
+  /** Conjure swarm simulations (SCALVS.ai), tagged with their workspace. */
+  simulations: Map<string, Simulation & { workspace: string; dealId?: string; createdBy: string }>;
 }
 
 export const emptyStore = (): SpectreStore => ({
@@ -41,6 +58,17 @@ export const emptyStore = (): SpectreStore => ({
   deals: new Map(),
   activities: new Map(),
   relationships: new Map(),
+  proposals: new Map(),
+  agentRuns: new Map(),
+  smartLists: new Map(),
+  forms: new Map(),
+  submissions: new Map(),
+  calendars: new Map(),
+  appointments: new Map(),
+  workflows: new Map(),
+  jobs: new Map(),
+  messages: new Map(),
+  simulations: new Map(),
 });
 
 type Kind = "company" | "contact" | "deal" | "activity" | "relationship";
@@ -282,6 +310,16 @@ export class SpectreCRM {
   /** Every recorded change to a record, from Firmament: who changed what, and when. */
   history(kind: Kind, id: string) {
     return this.ledger.query({ product: "spectre", subject: `${kind}:${id}` });
+  }
+
+  /** Firmament record for the growth features (forms, bookings, automations, messages). */
+  async record(actor: string, subject: string, payload: Record<string, unknown>, type: Entry["type"] = "audit") {
+    await this.ledger.append({ type, product: "spectre", actor, subject, payload }, this.signer);
+  }
+
+  /** Firmament record of SCALVS.ai agent activity (runs, approvals, dismissals). */
+  async auditAgent(actor: string, agentId: string, payload: Record<string, unknown>) {
+    await this.ledger.append({ type: "audit", product: "spectre", actor, subject: `agent:${agentId}`, payload }, this.signer);
   }
 
   /** Used by data cleaning when merging duplicates. */

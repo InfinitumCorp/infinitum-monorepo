@@ -3,11 +3,15 @@
   "version": "0.1.0",
   "description": "Cumulus://ID (CID): one Infinitum account for every product. Passkeys, security keys, MFA, session revocation, app-by-app permissions recorded on Firmament, and organization SSO.",
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "engines": { "node": ">=22.18" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
     "typecheck": "tsc -p . --noEmit",
-    "test": "node --test \"src/**/*.test.ts\""
+    "test": "node --test --experimental-strip-types $(find src -name \"*.test.ts\" 2>/dev/null || true)"
   },
   "dependencies": {
     "@infinitum/firmament": "workspace:*"

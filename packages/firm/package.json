@@ -1,0 +1,24 @@
+{
+  "name": "@infinitum/firm",
+  "version": "0.1.0",
+  "description": "FIRM ecosystem token, wallet, and DEX.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "typecheck": "tsc -p . --noEmit",
+    "test": "node --test --experimental-strip-types $(find src -name \"*.test.ts\" 2>/dev/null || true)",
+    "compile": "bash scripts/compile.sh",
+    "deploy": "node scripts/deploy.ts",
+    "anchor": "node scripts/deploy-anchor.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/node": "^22.0.0"
+  }
+}

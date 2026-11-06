@@ -38,7 +38,7 @@ const ALGS: Record<string, { hash: string | null; dsa?: "ieee-p1363" }> = {
 export function verifyIdToken(
   token: string,
   config: SsoConfig,
-  options: { now: Date; nonce?: string; clockSkewSeconds?: number },
+  options: { now: Date; nonce?: string; clockSkewSeconds?: number; /** Caller validates iss itself (multi-tenant issuers). */ skipIssuer?: boolean },
 ): IdTokenClaims {
   const parts = token.split(".");
   if (parts.length !== 3) throw new Error("SSO: malformed ID token");
@@ -59,7 +59,8 @@ export function verifyIdToken(
   const claims = JSON.parse(Buffer.from(p, "base64url").toString("utf8")) as IdTokenClaims;
   const now = Math.floor(options.now.getTime() / 1000);
   const skew = options.clockSkewSeconds ?? 60;
-  if (claims.iss !== config.issuer) throw new Error("SSO: wrong issuer");
+  if (!options.skipIssuer && claims.iss !== config.issuer) throw new Error("SSO: wrong issuer");
+  if (typeof claims.iss !== "string" || !claims.iss) throw new Error("SSO: token has no issuer");
   const aud = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
   if (!aud.includes(config.audience)) throw new Error("SSO: token not issued for Infinitum");
   if (typeof claims.exp !== "number" || claims.exp + skew < now) throw new Error("SSO: token expired");

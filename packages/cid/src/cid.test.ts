@@ -66,7 +66,10 @@ describe("CID passkeys and security keys", () => {
   it("registers a passkey and signs in with it (ES256)", async () => {
     const { cid } = setup();
     const { account, auth, key } = await withPasskey(cid, "alex");
-    const result = await signIn(cid, auth, key.credentialId);
+    const { challenge } = cid.startSignIn();
+    const assertion = auth.get({ credentialId: key.credentialId, challenge, origin: ORIGIN });
+    assert.equal(Buffer.from(assertion.signature, "base64url").length, 64, "ES256 signatures are raw r||s");
+    const result = await cid.finishSignIn(assertion, "MacBook · VEIL");
     assert.equal(result.status, "ok");
     if (result.status !== "ok") return;
     assert.equal(cid.authenticate(result.token)?.account.cid, account.cid);
@@ -229,6 +232,16 @@ describe("CID sessions", () => {
 });
 
 describe("CID permissions dashboard", () => {
+  it("accepts the earlier :\\ARCHITECT\\ app ids for one release", async () => {
+    const { cid } = setup();
+    const a = await cid.createAccount({ username: "alex" });
+    const g = await cid.grant(a.cid, "architct", ["drive:read"]);
+    assert.equal(g.app, "architect");
+    await cid.grant(a.cid, "cndctr", ["contacts:read"]);
+    assert.ok(cid.can(a.cid, "architect", "drive:read"));
+    assert.ok(cid.can(a.cid, "architect", "contacts:read"));
+  });
+
   it("grants app by app, records every change on Firmament, and revokes", async () => {
     const { cid, ledger } = setup();
     const a = await cid.createAccount({ username: "alex" });
