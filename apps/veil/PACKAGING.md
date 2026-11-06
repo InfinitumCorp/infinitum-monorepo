@@ -4,17 +4,16 @@
 Select the `apps/veil` directory in `chrome://extensions` (Developer mode).
 
 ## Zip for distribution
-From the monorepo root:
+From `apps/veil`:
 ```sh
-cd apps/veil
-zip -r ../../veil-extension.zip . -x "*.ts" "*.test.ts" "NEXT.md"
+zip -r ../../veil-extension.zip manifest.json background.js content.js sidebar.html sidebar.js lib icons
 ```
 
-## Icon
-Add `icon.png` (48x48 or larger) and restore the `icons` key in `manifest.json`.
-A simple SVG can be converted with ImageMagick or online tools.
+## Icons
+`icons/icon-{16,32,48,128}.png` are generated from the `icon.svg` design:
+`node scripts/make-icons.js`.
 
 ## CRX (optional)
 Use the Chrome Web Store developer dashboard or `crx3` tooling after signing.
 
-Current version: 0.2.0
+Current version: 0.4.0

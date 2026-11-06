@@ -1,21 +1,20 @@
 # VEIL Next Steps
 
-Progress (2026-11-04) — v0.3.1:
-- Multi-panel sidebar + Architect Ask
-- $VEIL session rewards with claimable receipt structure
-- FIRM wallet panel with Base RPC balance query (packages/firm pattern)
-- Tracker stripping (manual + auto-clean)
-- Tor proxy toggle + connectivity check
-- SVG icon + packaging notes
+## Done in v0.4.0 (2026-11-06)
+- Anonymous and signed-in workspaces with confirmed, data-clearing switches
+- $VEIL ledger at the published launch policy (0.1/min, 240 min/day), human-activity only
+- Claim receipts tied to a Cumulus://ID
+- Cumulus://ID sign-in via the CID origin's `/api/me`
+- Tor hardening: WebRTC limited to the proxy; New Identity
+- Removed the placeholder wallet address and fake balance
+- PNG icons, package.json and a test suite (`node --test test/`)
 
-Remaining:
-- Real passkey / FirmWallet key management in the extension
-- Deploy $VEIL token + claim contract, then wire buildClaim
-- PNG icons
-- Full on-chain settlement via Firmament
+## Remaining
+- FIRM Wallet key management (passkey / hardware-backed) in the extension
+- Deploy the $VEIL claim contract, then wire `buildClaim` to FIRM Wallet signing
+- Server-side rewards validation (duplicate accounts, emulator farms) before settlement
+- New Tor circuit control (needs the Tor control port; extension cannot reach it)
+- Chain decision: the product page says $VEIL is on Solana; packages/firm targets Base
+- Phase II+: Cumulus://Mail, Cloud and Nexus panels in the signed-in workspace
 
 See root PRODUCT-DELIVERY.md.
-VEIL is ready for unpacked testing.
-
-## Sign-in
-Social sign-in (Google, GitHub, ChatGPT, etc.) is available via Cumulus://ID. Call `socialFromEnv()` from `@infinitum/cid` and pass the providers to `CidService`. The same environment variables used by Spectre enable the buttons for any product.
