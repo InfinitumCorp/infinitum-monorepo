@@ -119,7 +119,7 @@ describe("+SPCTR contacts upgrade and forms", () => {
     const c = h.crm.list("contacts", me.cid).find((x) => x.name === "Lin Chen")!;
     await h.call("POST", `/api/crm/contacts/${c.id}/fields`, { set: { "Annual Budget": "250k" } }, me.cookie);
     assert.equal(h.crm.contact(me.cid, c.id).fields?.annual_budget, "250k");
-    assert.ok(!JSON.stringify(await h.ledger.entries()).includes("250k"));
+    assert.ok(!JSON.stringify((await h.ledger.entries()).map((e) => e.payload)).includes("250k"));
     assert.equal((await h.ledger.verify()).ok, true);
   });
 

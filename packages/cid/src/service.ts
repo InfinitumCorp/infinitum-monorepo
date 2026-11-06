@@ -23,11 +23,14 @@ import {
  * ------------------------------------------------------------------ */
 
 export const INFINITUM_APPS = [
-  "veil", "fabric", "throne", "eon", "scalvs", "cndctr", "spectre", "metatron",
+  "veil", "fabric", "throne", "eon", "scalvs", "architect", "spectre", "metatron",
   "cumulus", "cumulus-mail", "firm-wallet", "aether", "argus", "hrvst", "eidetic",
   "orbis", "pollen", "flower", "nemesis",
 ] as const;
 export type AppId = (typeof INFINITUM_APPS)[number];
+
+/** Earlier ids for the same app, still accepted for one release. */
+const LEGACY_APP_IDS: Record<string, AppId> = { architct: "architect", cndctr: "architect" };
 
 /**
  * What every new CID comes with, per the Cumulus://ID page. Like a Google account and Gmail,
@@ -39,7 +42,7 @@ export const FREE_ENTITLEMENTS = {
   cloud: true,
   firmWallet: true,
   scalvs: "free",
-  cndctr: "free",
+  architect: "free",
   metatronDashboard: true,
 } as const;
 
@@ -679,14 +682,16 @@ export class CidService {
 
   /* ---------------- Permissions dashboard ---------------- */
 
-  private assertApp(app: string): asserts app is AppId {
-    if (!(INFINITUM_APPS as readonly string[]).includes(app)) throw new CidError("unknown_app", `Unknown Infinitum app: ${app}`);
+  private appId(app: string): AppId {
+    const id = LEGACY_APP_IDS[app] ?? app;
+    if (!(INFINITUM_APPS as readonly string[]).includes(id)) throw new CidError("unknown_app", `Unknown Infinitum app: ${app}`);
+    return id as AppId;
   }
 
   /** Grant an app access, app by app. Every grant is recorded on Firmament Network. */
   async grant(cid: string, app: string, scopes: string[]): Promise<Grant> {
     this.account(cid);
-    this.assertApp(app);
+    app = this.appId(app);
     if (scopes.length === 0 || scopes.some((s) => !/^[a-z0-9-]+:[a-z0-9-]+$/.test(s))) {
       throw new CidError("invalid_scope", "Scopes look like 'contacts:read'");
     }
@@ -700,7 +705,7 @@ export class CidService {
 
   /** Revoke some scopes, or all access when scopes are omitted. Recorded on Firmament. */
   async revoke(cid: string, app: string, scopes?: string[]) {
-    this.assertApp(app);
+    app = this.appId(app);
     const key = `${cid}|${app}`;
     const current = this.store.grants.get(key);
     if (!current) return;

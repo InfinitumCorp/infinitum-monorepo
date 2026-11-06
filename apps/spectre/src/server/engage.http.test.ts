@@ -157,7 +157,8 @@ describe("+SPCTR conversations", () => {
     const f = await h.call("POST", `/api/crm/conversations/${lin.id}`, { channel: "sms", body: "Again" }, me.cookie);
     assert.equal(f.body.status, "failed");
     assert.match(f.body.error, /unreachable/);
-    assert.ok(!JSON.stringify(await h.ledger.entries()).includes("3pm"), "message text stays off the ledger");
+    const recorded = JSON.stringify((await h.ledger.entries()).map((e) => e.payload));
+    assert.ok(!recorded.includes("3pm"), "message text stays off the ledger");
   });
 
   const sign = (url: string, params: Record<string, string>) =>

@@ -8,7 +8,7 @@ importers:
 
   .: {}
 
-  apps/conductor:
+  apps/architect:
     dependencies:
       '@infinitum/firmament':
         specifier: workspace:*
@@ -83,12 +83,12 @@ importers:
 
   apps/spectre:
     dependencies:
+      '@infinitum/architect':
+        specifier: workspace:*
+        version: link:../architect
       '@infinitum/cid':
         specifier: workspace:*
         version: link:../../packages/cid
-      '@infinitum/conductor':
-        specifier: workspace:*
-        version: link:../conductor
       '@infinitum/conjure':
         specifier: workspace:*
         version: link:../../packages/conjure
@@ -113,6 +113,28 @@ importers:
         version: 5.9.3
 
   packages/aether:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.5
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
+  packages/argus:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.5
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
+  packages/autonomy:
+    dependencies:
+      '@infinitum/hardware':
+        specifier: workspace:*
+        version: link:../hardware
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -198,6 +220,15 @@ importers:
         version: 5.9.3
 
   packages/eidetic:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.5
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
+  packages/eon:
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
