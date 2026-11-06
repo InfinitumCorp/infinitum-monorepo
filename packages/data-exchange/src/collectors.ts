@@ -177,8 +177,8 @@ export class AetherCollector extends ProductCollector {
     return listDataset(this.dx, {
       cid,
       product: this.product,
-      title: "ÆTHER connectivity aggregates",
-      description: "Aggregated mesh hop counts and uptime stats (no location or traffic content)",
+      title: "ÆTHER™ connectivity aggregates",
+      description: "Aggregated mesh hop counts and uptime stats (no location or traffic content; ÆTHER™ MIL nodes excluded)",
       schema: "hopCount,uptimeHours,tier",
       sizeEstimate: 12_000,
       privacyLevel: "aggregated",
