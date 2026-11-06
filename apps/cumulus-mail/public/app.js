@@ -1,3 +1,5 @@
+import { searchThreads, tokenize, SEARCH_TIPS } from "/search.js";
+
 const state = { view: "mail", box: "inbox", filter: "primary", query: "", selected: null, data: null, composer: null, error: "", wallet: null, clean: null, busy: "", picked: new Set(), cursor: -1, toast: null, help: false };
 
 const el = (tag, props = {}, children = []) => {
@@ -100,6 +102,7 @@ function inBox(message, box) {
 
 function rows() {
   const messages = state.data.messages;
+  if (state.query.trim()) return searchThreads(messages, state.query);
   const latest = new Map();
   for (const message of messages.filter((item) => inBox(item, state.box))) {
     if (state.box === "inbox" && state.filter === "primary" && message.kind !== "person") continue;
@@ -107,23 +110,7 @@ function rows() {
     const prev = latest.get(message.threadId);
     if (!prev || prev.at < message.at) latest.set(message.threadId, message);
   }
-  const q = state.query.trim().toLowerCase();
-  return [...latest.values()]
-    .filter((row) => !q || messages.some((item) => item.threadId === row.threadId && matches(item, q)))
-    .sort((a, b) => (a.at < b.at ? 1 : -1));
-}
-
-function matches(item, query) {
-  return query.split(/\s+/).filter(Boolean).every((token) => {
-    if (token.startsWith("from:")) return `${item.from.name} ${item.from.email}`.toLowerCase().includes(token.slice(5));
-    if (token.startsWith("to:")) return [...item.to, ...item.cc].some((person) => `${person.name} ${person.email}`.toLowerCase().includes(token.slice(3)));
-    if (token.startsWith("subject:")) return item.subject.toLowerCase().includes(token.slice(8));
-    if (token === "is:unread") return item.unread;
-    if (token === "is:starred") return item.starred;
-    if (token === "has:file") return Boolean(item.attachments?.length);
-    const files = (item.attachments || []).map((file) => file.name).join(" ");
-    return `${item.subject} ${item.body} ${item.from.name} ${item.from.email} ${files}`.toLowerCase().includes(token);
-  });
+  return [...latest.values()].sort((a, b) => (a.at < b.at ? 1 : -1));
 }
 
 const mine = (message) => message.from.email === state.data.me.email;
@@ -248,7 +235,19 @@ function list() {
     el("span", { class: "when" }, [shortDate(message.at)]),
   ]));
   const unreadIn = (pred) => new Set(state.data.messages.filter((m) => m.folder === "inbox" && m.unread && pred(m)).map((m) => m.threadId)).size;
-  const tabs = state.box === "inbox"
+  const has = (tip) => tokenize(state.query).some((t) => `${t.negate ? "-" : ""}${t.key ? t.key + ":" : ""}${t.value}` === tip);
+  const toggleTip = (tip) => {
+    state.query = has(tip) ? state.query.split(/\s+/).filter((w) => w.toLowerCase() !== tip).join(" ") : `${state.query.trim()} ${tip}`.trim();
+    state.cursor = -1;
+    render();
+  };
+  const tabs = state.query.trim()
+    ? el("div", { class: "chips", role: "toolbar", "aria-label": "Refine search" }, [
+        el("span", { class: "sub" }, ["Search all mail"]),
+        ...SEARCH_TIPS.map(([tip, label]) => el("button", { class: `chip${has(tip) ? " on" : ""}`, "aria-pressed": has(tip), title: tip, onClick: () => toggleTip(tip) }, [label])),
+        el("button", { class: "quiet", onClick: () => { state.query = ""; render(); } }, ["Clear"]),
+      ])
+    : state.box === "inbox"
     ? el("div", { class: "tabs", role: "tablist" }, [
         ["primary", "Primary", unreadIn((m) => m.kind === "person")],
         ["updates", "Updates", unreadIn((m) => UPDATES.has(m.kind))],
@@ -369,7 +368,7 @@ function composerForm() {
   form.payment ??= { asset: "USDC", amount: "" };
   const field = (label, key, attrs = {}) => el("label", { class: `field${key === "body" ? " body" : ""}` }, [
     key === "body" ? none() : el("span", {}, [label]),
-    el(key === "body" ? "textarea" : "input", { "aria-label": label, value: form[key], ...attrs, onInput: (event) => { form[key] = event.target.value; } }),
+    el(key === "body" ? "textarea" : "input", { "aria-label": label, value: form[key], ...attrs, onInput: (event) => { form[key] = event.target.value; queueDraftSave(); } }),
   ]);
   const asset = el("select", { "aria-label": "Asset", onChange: (event) => { form.payment.asset = event.target.value; } }, ["USDC", "FIRM"].map((a) => el("option", { value: a }, [a])));
   asset.value = form.payment.asset;
@@ -390,9 +389,9 @@ function composerForm() {
     el("div", { class: "actions" }, [
       el("button", { class: "primary", type: "submit" }, ["Send"]),
       el("button", { class: "quiet", type: "button", onClick: () => filePicker.click() }, ["Attach"]),
-      el("button", { class: "quiet", type: "button", onClick: () => act(async () => { await api("/api/draft", form); state.composer = null; state.box = "drafts"; state.view = "mail"; }) }, ["Save draft"]),
       el("span", { class: "spacer" }),
-      form.inline ? el("button", { class: "quiet", type: "button", onClick: () => { state.composer = null; render(); } }, ["Discard"]) : none(),
+      el("span", { class: "sub save-status", "aria-live": "polite" }, [form.draftId ? "Draft saved" : ""]),
+      el("button", { class: "quiet", type: "button", title: "Delete this draft", onClick: () => discardComposer() }, ["Discard"]),
       state.error ? el("span", { class: "error", role: "alert" }, [state.error]) : none(),
     ]),
     filePicker,
@@ -409,11 +408,67 @@ const filePicker = el("input", { type: "file", style: "display:none", onChange: 
   render();
 } });
 
+/* Drafts save themselves a moment after you stop typing, like Gmail. */
+let draftTimer;
+let draftSaving = null;
+const hasContent = (form) => Boolean(form && (form.to.trim() || form.subject.trim() || form.body.trim() || form.attachments?.length));
+const saveStatus = (text) => { const node = document.querySelector(".save-status"); if (node) node.textContent = text; };
+
+function queueDraftSave() {
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => saveDraftNow(), 1500);
+}
+
+async function saveDraftNow() {
+  clearTimeout(draftTimer);
+  const form = state.composer;
+  if (!hasContent(form)) return;
+  if (draftSaving) await draftSaving;
+  if (form.sent) return;
+  saveStatus("Saving…");
+  draftSaving = api("/api/draft", { ...form, payment: undefined })
+    .then((r) => { form.draftId = r.id; saveStatus("Draft saved"); })
+    .catch(() => saveStatus("Couldn't save the draft"))
+    .finally(() => { draftSaving = null; });
+  await draftSaving;
+}
+
+async function closeComposer() {
+  const form = state.composer;
+  if (hasContent(form)) await saveDraftNow();
+  state.composer = null;
+  state.error = "";
+  if (form?.draftId) showToast("Draft saved to Drafts.");
+  render();
+}
+
+async function discardComposer() {
+  clearTimeout(draftTimer);
+  if (draftSaving) await draftSaving;
+  const form = state.composer;
+  if (!form) return;
+  form.sent = true;
+  state.composer = null;
+  await act(async () => {
+    if (form.draftId) await api("/api/move", { id: form.draftId, folder: "trash" });
+    showToast("Draft discarded.");
+  });
+}
+
+window.addEventListener("beforeunload", () => {
+  const form = state.composer;
+  if (!hasContent(form) || form.sent) return;
+  fetch("/api/draft", { method: "POST", keepalive: true, credentials: "same-origin", headers: { "content-type": "application/json", "x-cumulus": "1" }, body: JSON.stringify({ ...form, payment: undefined }) });
+});
+
 async function send() {
+  clearTimeout(draftTimer);
+  if (draftSaving) await draftSaving;
   const form = state.composer;
   const paying = Boolean(form.payment?.amount);
   if (paying && !confirm(`Send ${form.payment.amount} ${form.payment.asset} from your FIRM Wallet to ${form.to}?`)) return;
   try {
+    form.sent = true;
     const result = await api("/api/send", { ...form, payment: paying ? form.payment : undefined });
     state.composer = null;
     state.error = result.bounced?.length ? `Not delivered to ${result.bounced.join(", ")}` : "";
@@ -421,15 +476,16 @@ async function send() {
     state.view = "mail";
     state.selected = result.id;
   } catch (error) {
+    form.sent = false;
     state.error = error.message;
   }
   render();
 }
 
 function modal() {
-  return el("div", { class: "scrim", onClick: (event) => { if (event.target === event.currentTarget) { state.composer = null; render(); } } }, [
+  return el("div", { class: "scrim", onClick: (event) => { if (event.target === event.currentTarget) closeComposer(); } }, [
     el("div", { class: "dialog", role: "dialog", "aria-label": "New message" }, [
-      el("div", { class: "dialog-head" }, [el("h2", {}, [state.composer.draftId ? "Draft" : "New message"]), el("button", { class: "quiet", "aria-label": "Close", onClick: () => { state.composer = null; render(); } }, ["×"])]),
+      el("div", { class: "dialog-head" }, [el("h2", {}, [state.composer.draftId ? "Draft" : "New message"]), el("button", { class: "quiet", "aria-label": "Save and close", title: "Save and close", onClick: () => closeComposer() }, ["×"])]),
       composerForm(),
     ]),
   ]);
