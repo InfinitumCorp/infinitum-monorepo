@@ -1,7 +1,7 @@
-# ÆTHER threat model — v0
+# ÆTHER™ threat model — v0
 
 Scope: the mesh protocol in `src/` (packet format, flooding, store-and-forward).
-Apps, relays, tokens and ÆTHER MIL get their own threat models when built.
+Apps, relays, tokens and ÆTHER™ MIL get their own threat models when built.
 
 ## Assets
 

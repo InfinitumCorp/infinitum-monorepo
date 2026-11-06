@@ -1,4 +1,4 @@
-# ÆTHER mesh protocol — v0 (draft)
+# ÆTHER™ mesh protocol — v0 (draft)
 
 Status: M0 draft, implemented in `src/` (M1). Wire format may change until v1.
 
@@ -100,3 +100,10 @@ Default parameters (all configurable):
   distance-vector or gossip overlay comes when meshes grow past a few hundred
   nodes.
 - Fragmentation of payloads larger than 4096 bytes (voice frames, map tiles).
+
+## ÆTHER™ MIL
+
+ÆTHER™ MIL nodes run this protocol on military-owned servers and gateways.
+They never report to the data exchange (`AetherCollector`), never earn or
+carry $AETHR rewards, and are not described in public token, data-sale or
+marketing material unless a person approves it (//RULES// §7).

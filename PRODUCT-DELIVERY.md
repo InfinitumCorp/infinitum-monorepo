@@ -40,7 +40,7 @@ Maps every product advertised on https://infinitum-corporation.vercel.app/#produ
 | Cumulus://Cloud | Storage, licensing, agent runtime, data exchange | Partial for exchange (API + collectors) |
 | VEIL</> | Tor-first browser + sidebar | Partial — v0.3.1 multi-panel, Conductor Ask, Tor proxy + check, claimable rewards, Base RPC wallet balance | See apps/veil/NEXT.md + PACKAGING.md. VeilCollector ready. |
 | FABRIC | Encrypted calls/messaging | Scaffolded — AES-256-GCM AEAD + session. FabricCollector ready. |
-| ÆTHER | Distributed communications | Partial — M1 protocol core: signed packets, flooding + store-and-forward, receipts, simulator (100% delivery, 100 nodes, 20% churn). No encryption or device transports yet. AetherCollector ready. | See packages/aether/README.md |
+| ÆTHER™ | Distributed communications | Partial — M1 protocol core: signed packets, flooding + store-and-forward, receipts, simulator (100% delivery, 100 nodes, 20% churn). No encryption or device transports yet. AetherCollector ready. | See packages/aether/README.md |
 | Firmament Network | Ledger stats | FirmamentCollector ready. |
 | E(O)N | Wearable usage aggregates | EonCollector ready (limited). |
 

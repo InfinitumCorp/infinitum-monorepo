@@ -1,6 +1,8 @@
 # @infinitum/aether
 
-ÆTHER mesh protocol core (milestones M0–M1 of the ÆTHER Build Plan).
+ÆTHER™ mesh protocol core (milestones M0–M1 of the ÆTHER™ Build Plan).
+
+**Deployed:** not deployed. This is a library; device apps and relays that use it will deploy on their own (relays on Cloudflare Workers, per //RULES//).
 
 - `docs/SPEC.md` — wire format v1 and node behaviour
 - `docs/THREAT-MODEL.md` — what v0 protects, and the gaps to close before beta
