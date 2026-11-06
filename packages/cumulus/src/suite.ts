@@ -14,7 +14,7 @@
 import { CidService, CidStore, FREE_ENTITLEMENTS, type CidConfig, type CidEvent, type Account } from "@infinitum/cid";
 import { CloudStore, QuotaStore, StorageQuota, formatBytes } from "@infinitum/cloud";
 import { WalletAccounts, WalletStore, WalletError, type WalletTransfer } from "@infinitum/firm";
-import { PostOffice, PostOfficeStore } from "@infinitum/mail";
+import { CumulusTunnel, PostOffice, PostOfficeStore, TunnelStore, openMailStore } from "@infinitum/mail";
 import type { Ledger, Signer } from "@infinitum/firmament";
 
 export interface CumulusStores {
@@ -23,6 +23,8 @@ export interface CumulusStores {
   wallet: WalletStore;
   quota: QuotaStore;
   suite: SuiteStore;
+  /** Cumulus Tunnel keys (private keys wrapped with the master key). */
+  tunnel: TunnelStore;
 }
 
 /** Suite-level state: devices already seen per CID, so only new devices trigger a sign-in alert. */
@@ -31,7 +33,7 @@ export class SuiteStore {
 }
 
 export function emptyCumulusStores(): CumulusStores {
-  return { cid: new CidStore(), mail: new PostOfficeStore(), wallet: new WalletStore(), quota: new QuotaStore(), suite: new SuiteStore() };
+  return { cid: new CidStore(), mail: new PostOfficeStore(), wallet: new WalletStore(), quota: new QuotaStore(), suite: new SuiteStore(), tunnel: new TunnelStore() };
 }
 
 export interface CumulusConfig extends Omit<CidConfig, "store" | "onEvent" | "ledger" | "signer"> {
@@ -40,6 +42,11 @@ export interface CumulusConfig extends Omit<CidConfig, "store" | "onEvent" | "le
   stores?: Partial<CumulusStores>;
   /** Where people open their mail, used in notices. Default https://mail.cumulusmail.cloud */
   mailOrigin?: string;
+  /**
+   * 32-byte Cumulus Tunnel master key. With it, account keys and sealed mailboxes survive restarts.
+   * Without it, mail between Cumulus accounts is still sealed in transit, with keys kept in memory.
+   */
+  masterKey?: Buffer;
 }
 
 const METHOD_LABEL: Record<string, string> = {
@@ -55,6 +62,7 @@ export class CumulusSuite {
   readonly stores: CumulusStores;
   readonly cid: CidService;
   readonly mail: PostOffice;
+  readonly tunnel: CumulusTunnel;
   readonly wallets: WalletAccounts;
   readonly quota: StorageQuota;
   readonly cloud: CloudStore;
@@ -76,12 +84,14 @@ export class CumulusSuite {
       clock,
       record: async (t) => (await this.recordPayment(t)).hash,
     });
-    this.mail = new PostOffice({ store: this.stores.mail, quota: this.quota, payments: this.wallets, clock });
+    this.tunnel = new CumulusTunnel({ store: this.stores.tunnel, masterKey: config.masterKey, clock });
+    if (this.tunnel.persistent) openMailStore(this.stores.mail, this.tunnel); // mailboxes are sealed on disk
+    this.mail = new PostOffice({ store: this.stores.mail, quota: this.quota, payments: this.wallets, clock, tunnel: this.tunnel });
     this.cloud = new CloudStore({
       quota: this.quota,
       notifier: { shared: ({ owner, recipient, key }) => this.cloudShared(owner, recipient, key) },
     });
-    const { stores: _s, mailOrigin: _m, ...cidConfig } = config;
+    const { stores: _s, mailOrigin: _m, masterKey: _k, ...cidConfig } = config;
     this.cid = new CidService({ ...cidConfig, store: this.stores.cid, onEvent: (e) => this.onCidEvent(e) });
   }
 
@@ -111,7 +121,7 @@ export class CumulusSuite {
           `• Cumulus://Mail at ${account.mailAddress}`,
           `• Cumulus://Cloud storage: ${FREE_ENTITLEMENTS.storageGb} GB, shared between Mail and Cloud`,
           `• A FIRM Wallet: ${wallet.address}`,
-          "• SCALVS.ai and /CNDCTR/ on the free plan, and the METATRON dashboard",
+          "• SCALVS.ai and :\\ARCHITECT\\ on the free plan, and the METATRON dashboard",
           "",
           "One account signs you in to every Infinitum product. Security notices, Cloud shares and wallet receipts will arrive here.",
           "",

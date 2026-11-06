@@ -213,3 +213,33 @@ describe("FIRM Wallet with Mail", () => {
     assert.ok(inbox(suite, a.cid).some((m) => m.subject.startsWith("You sent 3 FIRM")));
   });
 });
+
+describe("Cumulus Tunnel across the suite", () => {
+  it("seals mail on disk with no key for anyone to manage, and reads it after a restart", async () => {
+    const { mkdtempSync, readFileSync, readdirSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { emptyCumulusStores, loadCumulusStores, saveCumulusStores, loadOrCreateMasterKey } = await import("./index.ts");
+    const dir = mkdtempSync(join(tmpdir(), "cumulus-tunnel-"));
+    const masterKey = loadOrCreateMasterKey(dir, {});
+    const signer = generateSigner();
+    const ledger = new Ledger(undefined, { authorizedSigners: [signer.publicKey] });
+    const stores = emptyCumulusStores();
+    const suite = createCumulus({ ledger, signer, rpId: RP_ID, origins: [ORIGIN], stores, masterKey });
+    const a = (await signUp(suite, "alex")).account;
+    const b = (await signUp(suite, "leah")).account;
+    await suite.mail.send(a.cid, { to: "leah@cumulusmail.cloud", subject: "Board deck", body: "Draft attached in Cloud." });
+    assert.equal(inbox(suite, b.cid).find((m) => m.subject === "Board deck")?.tunnel?.verified, true);
+    saveCumulusStores(dir, stores, { tunnel: suite.tunnel });
+
+    const mailJson = readFileSync(join(dir, "mail.json"), "utf8");
+    assert.ok(!mailJson.includes("Board deck") && !mailJson.includes("Draft attached"), "subjects and bodies are sealed");
+    assert.ok(!readFileSync(join(dir, "tunnel.json"), "utf8").includes("PRIVATE KEY"));
+    assert.ok(readdirSync(dir).includes("tunnel-master.key"));
+
+    const restored = loadCumulusStores(dir, emptyCumulusStores());
+    const again = createCumulus({ ledger, signer, rpId: RP_ID, origins: [ORIGIN], stores: restored, masterKey: loadOrCreateMasterKey(dir, {}) });
+    assert.equal(again.mail.view(b.cid).messages.find((m) => m.subject === "Board deck")?.body, "Draft attached in Cloud.\n\nalex\nalex@cumulusmail.cloud");
+    assert.equal(again.tunnel.fingerprint(a.cid), suite.tunnel.fingerprint(a.cid));
+  });
+});

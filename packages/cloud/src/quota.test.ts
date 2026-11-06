@@ -28,3 +28,14 @@ test("cloud files count against the quota and are released on delete", async () 
   assert.equal(cloud.remove("a.bin", "cid:a"), true);
   assert.equal(quota.usage("cid:a").usedBytes, 0);
 });
+
+test("a negative size cannot shrink the quota", () => {
+  const quota = new StorageQuota({ freeGb: 1 });
+  const cloud = new CloudStore({ quota });
+  cloud.put("real.bin", "cid:a", 0.4 * GB);
+  assert.throws(() => cloud.put("fake.bin", "cid:a", -GB), RangeError);
+  assert.throws(() => cloud.put("real.bin", "cid:a", -1), RangeError);
+  assert.equal(cloud.get("fake.bin"), undefined);
+  assert.equal(cloud.get("real.bin")?.size, 0.4 * GB);
+  assert.equal(quota.usage("cid:a").usedBytes, 0.4 * GB);
+});

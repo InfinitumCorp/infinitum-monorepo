@@ -10,6 +10,7 @@ import { warmestPath, buyingCommittee, committeeGaps } from "../core/relationshi
 import {
   findDuplicateCompanies,
   findDuplicateContacts,
+  mergeCompanies,
   mergeContactFields,
   repointReferences,
   dataIssues,
@@ -591,15 +592,11 @@ export function createApp(deps: AppDeps) {
       const dups = mergeIds.map((id) => crm.contact(ws, id));
       crm.store.contacts.set(keepId, { ...mergeContactFields(keep, dups), updatedAt: crm.now().toISOString() });
       dups.forEach((d) => crm.store.contacts.delete(d.id));
+      repointReferences(keepId, mergeIds, crm.list("deals", ws), crm.list("activities", ws));
+      await crm.recordMerge(ctx.user!.account.cid, kind, keepId, mergeIds);
     } else if (kind === "company") {
-      crm.company(ws, keepId);
-      mergeIds.forEach((id) => crm.company(ws, id));
-      for (const c of crm.list("contacts", ws)) if (c.companyId && mergeIds.includes(c.companyId)) c.companyId = keepId;
-      const keep = crm.company(ws, keepId);
-      for (const id of mergeIds) { keep.facts.push(...crm.company(ws, id).facts); crm.store.companies.delete(id); }
+      await mergeCompanies(crm, ws, ctx.user!.account.cid, keepId, mergeIds);
     } else throw new HttpError(400, "kind is company or contact");
-    repointReferences(keepId, mergeIds, crm.list("deals", ws), crm.list("activities", ws));
-    await crm.recordMerge(ctx.user!.account.cid, kind, keepId, mergeIds);
     return { ok: true };
   });
 
@@ -1001,7 +998,7 @@ export function createApp(deps: AppDeps) {
   });
 
   route("POST", "/api/execution/run", async (ctx) => {
-    const { executeAll } = await import("../core/conductor-bridge.ts");
+    const { executeAll } = await import("../core/architect-bridge.ts");
     const { listPendingActions } = await import("./execution.ts");
     const pending = await listPendingActions(crm, ctx.user!.workspace);
     const results = await executeAll(pending, { crm, workspace: ctx.user!.workspace, actor: ctx.user!.account.cid } as any);

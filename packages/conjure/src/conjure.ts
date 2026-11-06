@@ -309,13 +309,17 @@ export async function step(complete: Complete, sim: Simulation): Promise<Simulat
       `Question being simulated: ${sim.question}\n+1 means: ${sim.poles.for}\n-1 means: ${sim.poles.against}\nKey facts: ${sim.facts.slice(0, 10).join("; ")}\nRound ${round} of ${sim.rounds}.\n\n${blocks}\n\nFor EACH agent return one action. JSON: {"actions": [{"agentId": "a1", "action": "post|reply|like|repost|idle", "text": "for post/reply", "targetPostId": "for reply/like/repost", "stanceShift": -0.3..0.3, "thought": "one line on why"}]}`,
       { maxTokens: 2500 },
     ));
+    const acted = new Set<string>();
     for (const act of Array.isArray(reply.actions) ? reply.actions : []) {
       const p = byId.get(act.agentId);
-      if (!p || !batch.includes(p)) continue;
+      if (!p || !batch.includes(p) || acted.has(p.id)) continue;
+      acted.add(p.id);
       const target = postIds.has(act.targetPostId) ? sim.feed.find((x) => x.id === act.targetPostId) : undefined;
       const text = str(act.text, 400);
+      const before = p.stance;
       const shift = clamp(num(act.stanceShift, 0), -0.3, 0.3);
-      p.stance = Math.round(clamp(p.stance + shift, -1, 1) * 100) / 100;
+      p.stance = Math.round(clamp(before + shift, -1, 1) * 100) / 100;
+      const applied = Math.round((p.stance - before) * 100) / 100;
       let did = "stayed quiet";
       if ((act.action === "post" || (act.action === "reply" && target)) && text) {
         const post: Post = { id: `p${sim.feed.length + 1}`, round, authorId: p.id, text, replyTo: act.action === "reply" ? target!.id : undefined, likes: 0, reposts: 0 };
@@ -331,9 +335,10 @@ export async function step(complete: Complete, sim: Simulation): Promise<Simulat
         counts.idle++;
       }
       const thought = str(act.thought, 160);
-      p.memory.push(`R${round}: ${did}${thought ? ` (${thought})` : ""}${shift ? `; stance ${shift > 0 ? "+" : ""}${shift.toFixed(2)}` : ""}`);
+      p.memory.push(`R${round}: ${did}${thought ? ` (${thought})` : ""}${applied ? `; stance ${applied > 0 ? "+" : ""}${applied.toFixed(2)}` : ""}`);
       if (p.memory.length > 20) p.memory.splice(0, p.memory.length - 20);
     }
+    for (const p of batch) if (!acted.has(p.id)) counts.idle++;
   }
   sim.round = round;
   sim.stats.push(statsFor(sim, round, counts));

@@ -15,7 +15,7 @@ test("perform runs a step when permissions are granted", async () => {
     id: "s1",
     title: "Echo test",
     intent: "echo something",
-    autonomy: "rehearsal",
+    autonomy: "autopilot",
     steps: [{
       id: "step1",
       description: "echo",

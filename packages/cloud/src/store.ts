@@ -35,6 +35,7 @@ export class CloudStore {
   }
 
   put(key: string, owner: string, size: number, license = "personal"): CloudObject {
+    if (!Number.isFinite(size) || size < 0) throw new RangeError("size must be a finite number of bytes");
     const previous = this.objects.get(key);
     if (previous && previous.owner !== owner) throw new Error("That file belongs to someone else");
     if (this.quota) {

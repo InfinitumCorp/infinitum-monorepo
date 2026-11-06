@@ -3,6 +3,7 @@ import {
   type BoxId,
   type DeliveryHop,
   type MailMessage,
+  type MailRule,
   type Person,
 } from "./model.ts";
 
@@ -17,9 +18,59 @@ export function isE2E(message: MailMessage): boolean {
   return people.length > 0 && people.every((p) => isCumulus(p.email));
 }
 
-export function inBox(message: MailMessage, box: BoxId): boolean {
+export function audienceLabel(people: Person[]): "Personal" | "External" {
+  return people.length > 0 && people.every((person) => isCumulus(person.email)) ? "Personal" : "External";
+}
+
+export function isSnoozed(message: MailMessage, now = Date.now()): boolean {
+  if (!message.snoozeUntil || message.folder === "trash" || message.folder === "drafts") return false;
+  const at = Date.parse(message.snoozeUntil);
+  return Number.isFinite(at) && at > now;
+}
+
+export function inBox(message: MailMessage, box: BoxId, now = Date.now()): boolean {
+  if (box === "snoozed") return isSnoozed(message, now);
+  if (isSnoozed(message, now)) return false;
+  if (box === "outbox") {
+    return message.folder === "sent" && (message.delivery ?? []).some((hop) => hop.status === "outbound");
+  }
   if (box === "starred") return message.starred && message.folder !== "trash";
+  if (box === "scheduled") return message.folder === "drafts" && Boolean(message.sendAt);
+  if (box === "drafts") return message.folder === "drafts" && !message.sendAt;
   return message.folder === box;
+}
+
+export function applyRules(message: MailMessage, rules: MailRule[]): MailMessage {
+  if (message.folder !== "inbox") return message;
+  let next = message;
+  for (const rule of rules) {
+    const needle = rule.from.trim().toLowerCase();
+    if (!needle) continue;
+    if (!`${next.from.name} ${next.from.email}`.toLowerCase().includes(needle)) continue;
+    if (rule.action === "star") next = { ...next, starred: true };
+    if (rule.action === "archive") next = { ...next, folder: "archive", unread: false };
+    if (rule.action === "label") {
+      const label = rule.label?.trim();
+      if (label && !next.labels.includes(label)) next = { ...next, labels: [...next.labels, label] };
+    }
+  }
+  return next;
+}
+
+export function withSignature(body: string, signature: string): string {
+  const sig = signature.trim();
+  if (!sig || body.includes(sig)) return body;
+  const marker = "\n\n—\n";
+  const cut = body.indexOf(marker);
+  if (cut >= 0) return `${body.slice(0, cut).trimEnd()}\n\n${sig}${body.slice(cut)}`;
+  return `${body.trimEnd()}\n\n${sig}`;
+}
+
+export function tomorrowMorning(now = new Date()): string {
+  const until = new Date(now);
+  until.setUTCDate(until.getUTCDate() + 1);
+  until.setUTCHours(8, 0, 0, 0);
+  return until.toISOString();
 }
 
 export function formatWhen(iso: string): string {
@@ -86,35 +137,31 @@ function haystack(message: MailMessage): string {
     .toLowerCase();
 }
 
+function tokenMatches(message: MailMessage, token: string): boolean {
+  if (token.startsWith("from:")) {
+    const needle = token.slice(5);
+    return !needle || `${message.from.name} ${message.from.email}`.toLowerCase().includes(needle);
+  }
+  if (token.startsWith("to:")) {
+    const needle = token.slice(3);
+    const people = [...message.to, ...message.cc];
+    return !needle || people.some((person) => `${person.name} ${person.email}`.toLowerCase().includes(needle));
+  }
+  if (token.startsWith("subject:")) {
+    const needle = token.slice(8);
+    return !needle || message.subject.toLowerCase().includes(needle);
+  }
+  if (token === "is:unread") return message.unread;
+  if (token === "is:starred") return message.starred;
+  if (token === "has:file") return Boolean(message.attachments?.length);
+  return haystack(message).includes(token);
+}
+
 function threadMatches(messages: MailMessage[], row: MailMessage, query: string): boolean {
   const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return true;
   const thread = messages.filter((message) => message.threadId === row.threadId);
-  return thread.some((message) => {
-    const free: string[] = [];
-    for (const token of tokens) {
-      if (token.startsWith("from:")) {
-        const needle = token.slice(5);
-        if (needle && !`${message.from.name} ${message.from.email}`.toLowerCase().includes(needle)) return false;
-      } else if (token.startsWith("to:")) {
-        const needle = token.slice(3);
-        const people = [...message.to, ...message.cc];
-        if (needle && !people.some((person) => `${person.name} ${person.email}`.toLowerCase().includes(needle))) return false;
-      } else if (token.startsWith("subject:")) {
-        const needle = token.slice(8);
-        if (needle && !message.subject.toLowerCase().includes(needle)) return false;
-      } else if (token === "is:unread") {
-        if (!message.unread) return false;
-      } else if (token === "is:starred") {
-        if (!message.starred) return false;
-      } else if (token === "has:file") {
-        if (!message.attachments?.length) return false;
-      } else {
-        free.push(token);
-      }
-    }
-    return free.every((bit) => haystack(message).includes(bit));
-  });
+  return tokens.every((token) => thread.some((message) => tokenMatches(message, token)));
 }
 
 export function listThreads(

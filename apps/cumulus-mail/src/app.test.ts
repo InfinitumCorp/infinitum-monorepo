@@ -7,6 +7,7 @@ import { Ledger, generateSigner } from "@infinitum/firmament";
 import { createCumulus } from "@infinitum/cumulus";
 import { VirtualAuthenticator } from "../../../packages/cid/src/testing/virtual-authenticator.ts";
 import { createMailApp } from "./app.ts";
+import { scalvsCleanAgent } from "./clean-agent.ts";
 
 const signer = generateSigner();
 const ledger = new Ledger(undefined, { authorizedSigners: [signer.publicKey] });
@@ -53,7 +54,7 @@ before(async () => {
   await new Promise<void>((r) => probe.close(() => r()));
   base = `http://localhost:${port}`;
   suite = createCumulus({ ledger, signer, rpId: "localhost", origins: [base], mailOrigin: base });
-  server = createMailApp({ suite, publicDir: join(import.meta.dirname, "..", "public"), origin: base, secureCookies: false, scalvs: async () => ({ ok: true, text: "Brief." }) }).server();
+  server = createMailApp({ suite, publicDir: join(import.meta.dirname, "..", "public"), origin: base, secureCookies: false, scalvs: async () => ({ ok: true, text: "Brief." }), cleanAgent: scalvsCleanAgent({ model: "m" }) }).server();
   await new Promise<void>((r) => server.listen(port, "127.0.0.1", r));
 });
 after(() => new Promise<void>((r) => server.close(() => r())));
@@ -126,5 +127,97 @@ describe("Cumulus://Mail over HTTP", () => {
     await b.signUp("leaver");
     assert.equal((await b.call("POST", "/api/auth/signout", {})).status, 200);
     assert.equal((await b.call("GET", "/api/state")).status, 401);
+  });
+
+  it("SCALVS Clean suggests, the owner approves, and it can be undone", async () => {
+    const owner = new Browser();
+    await owner.signUp("tidy");
+    const bulk = new Browser();
+    await bulk.signUp("digest");
+    for (const n of [1, 2, 3]) await bulk.call("POST", "/api/send", { to: "tidy@cumulusmail.cloud", subject: `Weekly ${n}`, body: "News. Unsubscribe." });
+
+    const review = await owner.call("POST", "/api/clean/scalvs", {});
+    assert.equal(review.status, 200, JSON.stringify(review.data));
+    const mute = review.data.clean.suggestions.find((s: any) => s.kind === "mute");
+    assert.equal(mute?.email, "digest@cumulusmail.cloud");
+    const approved = await owner.call("POST", "/api/clean/approve", { id: mute.id });
+    assert.equal(approved.status, 200);
+    assert.deepEqual(approved.data.clean.rules.muted, ["digest@cumulusmail.cloud"]);
+    assert.equal(approved.data.state.messages.filter((m: any) => m.subject.startsWith("Weekly") && m.folder === "archive").length, 3);
+
+    const undo = await owner.call("POST", "/api/clean/undo", { id: approved.data.clean.log[0].id });
+    assert.equal(undo.data.restored, 3);
+    const rules = await owner.call("POST", "/api/clean/rules", { auto: false, newslettersAfterDays: 3, emptyTrashAfterDays: null });
+    assert.equal(rules.data.clean.rules.auto, false);
+    assert.equal(rules.data.clean.rules.newslettersAfterDays, 3);
+    assert.equal((await owner.call("POST", "/api/clean/mute", { email: "security@cumulusmail.cloud" })).status, 400);
+  });
+});
+
+describe("SCALVS Clean agent", () => {
+  it("turns SCALVS proposals into suggestions and drops ids it wasn't shown", async () => {
+    const calls: any[] = [];
+    const replies = [
+      { stop_reason: "tool_use", content: [{ type: "tool_use", id: "t1", name: "list_inbox", input: {} }] },
+      { stop_reason: "tool_use", content: [
+        { type: "tool_use", id: "t2", name: "archive_messages", input: { ids: ["m1", "not-yours"], reason: "Old newsletter" } },
+        { type: "tool_use", id: "t3", name: "trash_messages", input: { ids: ["starred"], reason: "Junk" } },
+      ] },
+      { stop_reason: "end_turn", content: [{ type: "text", text: "Mostly newsletters." }] },
+    ];
+    const fetchImpl = (async (_url: string, init: any) => {
+      calls.push(JSON.parse(init.body));
+      return new Response(JSON.stringify(replies.shift()), { status: 200 });
+    }) as typeof fetch;
+    const at = new Date("2026-11-01T00:00:00Z").toISOString();
+    const base = { threadId: "x", folder: "inbox" as const, to: [], cc: [], body: "Unsubscribe", at, unread: false, labels: [] };
+    const agent = scalvsCleanAgent({ apiKey: "test-key", model: "m", fetchImpl });
+    const out = await agent({
+      messages: [
+        { ...base, id: "m1", from: { name: "Paper", email: "news@paper.example" }, subject: "Daily", starred: false },
+        { ...base, id: "starred", from: { name: "Paper", email: "news@paper.example" }, subject: "Keep", starred: true },
+      ],
+      rules: { auto: true, newslettersAfterDays: 7, notificationsAfterDays: 14, bouncesAfterDays: 30, emptyTrashAfterDays: null, muted: [] },
+      preview: [],
+      now: new Date("2026-11-05T00:00:00Z"),
+    });
+    assert.deepEqual(out.suggestions.map((s) => [s.kind, s.ids]), [["archive", ["m1"]]]);
+    assert.equal(out.note, "Mostly newsletters.");
+    assert.match(calls[0].system, /untrusted/);
+  });
+  it("acts on conversations in bulk and undoes over HTTP", async () => {
+    const ivy = new Browser();
+    const jo = new Browser();
+    await ivy.signUp("ivyb");
+    await jo.signUp("joan");
+    for (const subject of ["One", "Two"]) assert.equal((await jo.call("POST", "/api/send", { to: "ivyb@cumulusmail.cloud", subject, body: "Hi" })).status, 200);
+    const inbox = (await ivy.call("GET", "/api/state")).data.messages.filter((m: any) => m.folder === "inbox" && ["One", "Two"].includes(m.subject));
+    assert.equal(inbox.length, 2);
+    const ids = inbox.map((m: any) => m.threadId);
+    assert.equal((await ivy.call("POST", "/api/threads", { threadIds: ids, action: "nuke" })).status, 400);
+    const done = await ivy.call("POST", "/api/threads", { threadIds: ids, action: "archive", box: "inbox" });
+    assert.equal(done.status, 200, JSON.stringify(done.data));
+    assert.equal(done.data.count, 2);
+    assert.ok(done.data.state.messages.filter((m: any) => ids.includes(m.threadId)).every((m: any) => m.folder === "archive"));
+    assert.equal((await jo.call("POST", "/api/undo", { id: done.data.undo })).status, 404, "someone else can't undo it");
+    const back = await ivy.call("POST", "/api/undo", { id: done.data.undo });
+    assert.equal(back.data.restored, 2);
+    assert.ok(back.data.state.messages.filter((m: any) => ids.includes(m.threadId)).every((m: any) => m.folder === "inbox"));
+    assert.equal((await ivy.call("POST", "/api/undo", { id: done.data.undo })).status, 404, "undo works once");
+  });
+  it("schedules a send, lists it in Scheduled and cancels it over HTTP", async () => {
+    const kim = new Browser();
+    await kim.signUp("kimsched");
+    const when = new Date(Date.now() + 3_600_000).toISOString();
+    const r = await kim.call("POST", "/api/schedule", { to: "nora@cumulusmail.cloud", subject: "Later on", body: "Hi", sendAt: when });
+    assert.equal(r.status, 200, JSON.stringify(r.data));
+    const draft = r.data.state.messages.find((m: any) => m.id === r.data.id);
+    assert.equal(draft.folder, "drafts");
+    assert.equal(draft.sendAt, when);
+    assert.equal((await kim.call("POST", "/api/schedule", { to: "nora@cumulusmail.cloud", subject: "x", body: "x", sendAt: "2001-01-01T00:00:00Z" })).status, 400);
+    const c = await kim.call("POST", "/api/schedule/cancel", { id: r.data.id });
+    assert.equal(c.status, 200);
+    assert.equal(c.data.messages.find((m: any) => m.id === r.data.id).sendAt, undefined);
+    assert.equal((await kim.call("POST", "/api/schedule/cancel", { id: r.data.id })).status, 404);
   });
 });

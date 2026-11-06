@@ -11,6 +11,11 @@ export interface Instrument {
   execute(input: Record<string, unknown>, permissions: Step["permissions"]): Promise<{ output: unknown; evidence: string[] }>;
 }
 
+function permissionGranted(granted: Set<string>, resource: string, actions: string[]): boolean {
+  if (granted.has(`${resource}:${actions.join(",")}`)) return true;
+  return actions.every((action) => granted.has(`${resource}:${action}`));
+}
+
 const registry = new Map<string, Instrument>();
 
 export function registerInstrument(inst: Instrument) {
@@ -37,7 +42,7 @@ export async function perform(
 
   for (const rawStep of score.steps) {
     const step = decision.dryRun ? applyDryRun(rawStep) : rawStep;
-    const missing = step.permissions.filter((p) => !granted.has(`${p.resource}:${p.actions.join(",")}`));
+    const missing = step.permissions.filter((p) => !permissionGranted(granted, p.resource, p.actions));
     if (missing.length) {
       results.push({
         stepId: step.id,

@@ -34,6 +34,20 @@ test("sending drops the draft and files the note under sent", () => {
   assert.equal(mail.messages.find((message) => message.subject === "Notes received")?.delivery?.[0]?.status, "inside");
 });
 
+test("an external Cc is not labeled Personal", () => {
+  const mail = new Mailbox();
+  const sent = mail.send({
+    to: "leah@cumulusmail.cloud",
+    cc: "priya.shah@vyral.example",
+    subject: "Shared note",
+    body: "Copying Priya.",
+  });
+  assert.equal(sent.ok, true);
+  const message = mail.messages.find((item) => item.subject === "Shared note");
+  assert.equal(message?.labels[0], "External");
+  assert.deepEqual(message?.delivery?.map((hop) => hop.status), ["inside", "outbound"]);
+});
+
 test("a bad address is refused", () => {
   const mail = new Mailbox();
   const sent = mail.send({ to: "not-an-email", subject: "Hi", body: "Hi" });

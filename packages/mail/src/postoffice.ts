@@ -11,7 +11,9 @@
 import { randomUUID } from "node:crypto";
 import { Mailbox, type MailSnapshot, type SendInput } from "./mailbox.ts";
 import type { FolderId, MailMessage, MailPayment, Person } from "./model.ts";
-import { isCumulus, parsePeople, validEmail } from "./logic.ts";
+import { isCumulus, parsePeople, tomorrowMorning, validEmail } from "./logic.ts";
+import type { CumulusTunnel } from "./tunnel.ts";
+import { DEFAULT_CLEAN_RULES, isProtected, normalizeRules, planSweep, type CleanAction, type CleanLogEntry, type CleanRules, type CleanState } from "./clean.ts";
 
 export const MAIL_DOMAIN = "cumulusmail.cloud";
 
@@ -38,7 +40,13 @@ export interface StoredMailbox extends MailSnapshot {
   cid: string;
   owner: Person;
   createdAt: string;
+  /** SCALVS Clean rules and history for this mailbox. */
+  clean?: CleanState;
 }
+
+export type ThreadAction = "archive" | "trash" | "inbox" | "read" | "unread" | "star" | "unstar" | "snooze";
+export const THREAD_ACTIONS: ThreadAction[] = ["archive", "trash", "inbox", "read", "unread", "star", "unstar", "snooze"];
+export interface ThreadSnapshot { id: string; folder: FolderId; unread: boolean; starred: boolean; snoozeUntil?: string }
 
 export interface OutboundMail {
   id: string;
@@ -75,6 +83,8 @@ export interface PostOfficeOptions {
   quota?: MailQuota;
   payments?: MailPayments;
   clock?: () => Date;
+  /** Seals mail between Cumulus accounts (and, with a master key, mailboxes at rest). */
+  tunnel?: CumulusTunnel;
 }
 
 export interface PostOfficeSendInput extends Omit<SendInput, "id" | "now"> {
@@ -94,11 +104,13 @@ export class PostOffice {
   private readonly quota?: MailQuota;
   private readonly payments?: MailPayments;
   private readonly clock: () => Date;
+  readonly tunnel?: CumulusTunnel;
 
   constructor(opts: PostOfficeOptions = {}) {
     this.store = opts.store ?? new PostOfficeStore();
     this.quota = opts.quota;
     this.payments = opts.payments;
+    this.tunnel = opts.tunnel;
     this.clock = opts.clock ?? (() => new Date());
   }
 
@@ -127,6 +139,7 @@ export class PostOffice {
     };
     this.store.mailboxes.set(input.cid, box);
     this.store.addresses.set(address, input.cid);
+    this.tunnel?.ensure(input.cid); // keys are made for people, never by them
     return box;
   }
 
@@ -244,7 +257,7 @@ export class PostOffice {
         bounced.push(address);
         continue;
       }
-      this.deliver(rcpt, { ...sent, id: `m-${randomUUID()}`, folder: "inbox", unread: rcpt !== cid, starred: false, payment });
+      this.deliver(rcpt, { ...sent, ...this.throughTunnel(cid, rcpt, sent), id: `m-${randomUUID()}`, folder: "inbox", unread: rcpt !== cid, starred: false, payment });
       this.quota?.charge(rcpt, "mail", size);
       delivered++;
     }
@@ -258,6 +271,7 @@ export class PostOffice {
         ? { ...hop, status: "bounced", detail: "Not delivered. No such Cumulus address, or the mailbox is full." }
         : hop);
     }
+    if (this.tunnel && delivered > 0 && external.length === 0 && bounced.length === 0) sent.tunnel = { verified: true, fingerprint: this.tunnel.fingerprint(cid) };
     const selfCopy = sender.messages.find((m) => m.id === `${id}-in`);
     if (selfCopy) Object.assign(selfCopy, { delivery: sent.delivery, payment: sent.payment, labels: sent.labels });
     for (const address of bounced) {
@@ -270,8 +284,32 @@ export class PostOffice {
     return { id, delivered, queued: external.length, bounced, payment };
   }
 
+  /**
+   * The recipient's copy of the subject, body and files comes only out of an envelope sealed to the
+   * recipient and signed by the sender, so what lands is exactly what the sender's account sealed.
+   */
+  private throughTunnel(from: string, to: string, sent: MailMessage): Partial<MailMessage> {
+    if (!this.tunnel) return {};
+    this.tunnel.ensure(from);
+    this.tunnel.ensure(to);
+    const envelope = this.tunnel.seal(from, [to], { subject: sent.subject, body: sent.body, attachments: sent.attachments ?? [] });
+    const opened = this.tunnel.open<{ subject: string; body: string; attachments: MailMessage["attachments"] }>(to, envelope);
+    return { ...opened.payload, tunnel: { verified: opened.verified, fingerprint: this.tunnel.fingerprint(from) } };
+  }
+
+  /** Tunnel fingerprint for a CID, for showing next to its address. */
+  fingerprint(cid: string): string {
+    return this.tunnel?.fingerprint(cid) ?? "";
+  }
+
   private deliver(cid: string, message: MailMessage) {
-    this.box(cid).messages.unshift(message);
+    const box = this.box(cid);
+    // A muted sender's mail skips the inbox. Product mail is never muted.
+    if (!message.system && box.clean?.rules.muted.includes(message.from.email.toLowerCase())) {
+      message.folder = "archive";
+      message.unread = false;
+    }
+    box.messages.unshift(message);
   }
 
   /**
@@ -318,6 +356,61 @@ export class PostOffice {
 
   saveDraft(cid: string, input: Omit<SendInput, "id" | "now">) {
     return this.edit(cid, (mail) => mail.saveDraft({ ...input, now: this.now() }));
+  }
+
+  /* ---------------- Schedule send ---------------- */
+
+  /** Save a message to go out on its own later. It waits in Scheduled (a draft with a send time). */
+  schedule(cid: string, input: PostOfficeSendInput, sendAt: string): { id: string; sendAt: string } {
+    if (input.payment) throw new MailError("scheduled_payment", "Payments go out right away. Send this one now.");
+    const at = Date.parse(sendAt);
+    const now = this.clock().getTime();
+    if (!Number.isFinite(at) || at <= now) throw new MailError("bad_time", "Pick a time in the future.");
+    if (at > now + 366 * 86_400_000) throw new MailError("bad_time", "Schedule up to a year ahead.");
+    const to = parsePeople(input.to);
+    const cc = parsePeople(input.cc ?? "");
+    if (to.length === 0 || [...to, ...cc].some((p) => !validEmail(p.email))) throw new MailError("bad_address", "Add a real address in To.");
+    if (!input.subject.trim() && !input.body.trim()) throw new MailError("empty", "Write a subject or a message.");
+    const { id } = this.saveDraft(cid, input);
+    const draft = this.box(cid).messages.find((m) => m.id === id)!;
+    draft.sendAt = new Date(at).toISOString();
+    return { id, sendAt: draft.sendAt };
+  }
+
+  /** Cancel a scheduled send. The message stays in Drafts. */
+  unschedule(cid: string, id: string): boolean {
+    const draft = this.box(cid).messages.find((m) => m.id === id && m.folder === "drafts" && m.sendAt);
+    if (!draft) return false;
+    delete draft.sendAt;
+    return true;
+  }
+
+  /** Send this mailbox's scheduled messages that are due. A failure goes back to Drafts with a notice. */
+  async sendDue(cid: string): Promise<number> {
+    const now = this.clock().getTime();
+    const due = this.box(cid).messages.filter((m) => m.folder === "drafts" && m.sendAt && Date.parse(m.sendAt) <= now);
+    let sent = 0;
+    for (const draft of due) {
+      delete draft.sendAt;
+      try {
+        await this.send(cid, {
+          to: draft.to.map((p) => p.email).join(", "), cc: draft.cc.map((p) => p.email).join(", "),
+          subject: draft.subject === "(no subject)" ? "" : draft.subject, body: draft.body,
+          threadId: draft.threadId !== draft.id ? draft.threadId : undefined, draftId: draft.id, attachments: draft.attachments,
+        });
+        sent++;
+      } catch (error) {
+        this.notify(cid, "postmaster", { subject: "A scheduled message wasn't sent", body: `"${draft.subject}" couldn't go out: ${(error as Error).message} It's waiting in Drafts.` });
+      }
+    }
+    return sent;
+  }
+
+  /** Every mailbox's due scheduled mail. The app runs this on a timer. */
+  async sendAllDue(): Promise<number> {
+    let sent = 0;
+    for (const cid of this.store.mailboxes.keys()) sent += await this.sendDue(cid);
+    return sent;
   }
 
   markThreadRead(cid: string, threadId: string) {
@@ -377,6 +470,177 @@ export class PostOffice {
         note: "Saved from a message.",
       }),
     );
+  }
+
+  /* ---------------- Conversation actions (with undo) ---------------- */
+
+  /**
+   * Act on whole conversations, the way Gmail does: archive or trash every message of the thread that
+   * is in the box you're looking at, mark it read or unread, star or unstar it. Returns what changed
+   * so the caller can offer Undo.
+   */
+  actOnThreads(cid: string, threadIds: string[], action: ThreadAction, box: string = "inbox"): { count: number; before: ThreadSnapshot[] } {
+    const want = new Set(threadIds.slice(0, 500));
+    const me = this.box(cid).owner.email.toLowerCase();
+    const before: ThreadSnapshot[] = [];
+    const touched = new Set<string>();
+    const remember = (m: MailMessage) => {
+      before.push({ id: m.id, folder: m.folder, unread: m.unread, starred: m.starred, snoozeUntil: m.snoozeUntil });
+      touched.add(m.threadId);
+    };
+    const inView = (m: MailMessage) => (box === "starred" ? m.starred && m.folder !== "trash" : m.folder === box);
+    const messages = this.box(cid).messages.filter((m) => want.has(m.threadId) && m.folder !== "drafts");
+    for (const thread of want) {
+      const all = messages.filter((m) => m.threadId === thread);
+      if (!all.length) continue;
+      const shown = all.filter(inView);
+      if (action === "archive") for (const m of shown.filter((x) => x.folder === "inbox")) { remember(m); m.folder = "archive"; m.unread = false; }
+      else if (action === "trash") for (const m of all.filter((x) => x.folder !== "trash")) { remember(m); m.folder = "trash"; m.unread = false; }
+      else if (action === "inbox") for (const m of shown.filter((x) => x.folder === "archive" || x.folder === "trash")) {
+        remember(m);
+        m.folder = m.from.email.toLowerCase() === me && !m.system ? "sent" : "inbox";
+      }
+      else if (action === "read") for (const m of all.filter((x) => x.unread)) { remember(m); m.unread = false; }
+      else if (action === "unread") {
+        const received = all.filter((x) => x.from.email.toLowerCase() !== me && x.folder !== "trash").sort((a, b) => (a.at < b.at ? 1 : -1))[0];
+        if (received && !received.unread) { remember(received); received.unread = true; }
+      }
+      else if (action === "star" || action === "unstar") {
+        const latest = [...(shown.length ? shown : all)].sort((a, b) => (a.at < b.at ? 1 : -1))[0]!;
+        if (action === "star" && !all.some((x) => x.starred)) { remember(latest); latest.starred = true; }
+        if (action === "unstar") for (const m of all.filter((x) => x.starred)) { remember(m); m.starred = false; }
+      }
+      else if (action === "snooze") {
+        const until = tomorrowMorning(this.clock());
+        for (const m of all.filter((x) => x.folder !== "trash")) { remember(m); m.snoozeUntil = until; m.unread = false; }
+      }
+    }
+    return { count: touched.size, before };
+  }
+
+  /** Hide a conversation until `until` (ISO). It leaves the inbox and comes back on its own. */
+  snooze(cid: string, id: string, until: string) {
+    const at = Date.parse(until);
+    if (!Number.isFinite(at)) return false;
+    const messages = this.box(cid).messages;
+    const message = messages.find((item) => item.id === id);
+    if (!message) return false;
+    for (const item of messages) {
+      if (item.threadId !== message.threadId || item.folder === "drafts" || item.folder === "trash") continue;
+      item.snoozeUntil = new Date(at).toISOString();
+      item.unread = false;
+    }
+    return true;
+  }
+
+  /** Put messages back exactly as they were before an action. Only this mailbox's own messages. */
+  restore(cid: string, before: ThreadSnapshot[]): number {
+    const box = this.box(cid);
+    let n = 0;
+    for (const s of before) {
+      const m = box.messages.find((x) => x.id === s.id);
+      if (!m) continue;
+      Object.assign(m, { folder: s.folder, unread: s.unread, starred: s.starred, snoozeUntil: s.snoozeUntil });
+      n++;
+    }
+    return n;
+  }
+
+  /* ---------------- SCALVS Clean ---------------- */
+
+  cleanState(cid: string): CleanState {
+    const box = this.box(cid);
+    box.clean ??= { rules: { ...DEFAULT_CLEAN_RULES, muted: [] }, log: [] };
+    box.clean.rules = normalizeRules(box.clean.rules);
+    return box.clean;
+  }
+
+  setCleanRules(cid: string, patch: Partial<CleanRules>): CleanRules {
+    const state = this.cleanState(cid);
+    state.rules = normalizeRules({ ...state.rules, ...patch });
+    return state.rules;
+  }
+
+  /** What the rules would clean right now, without moving anything. */
+  previewClean(cid: string): CleanAction[] {
+    return planSweep(this.box(cid).messages, this.cleanState(cid).rules, this.clock());
+  }
+
+  /**
+   * Carry out cleaning actions. Only this mailbox's own messages move, protected mail is skipped,
+   * and "delete" only removes mail that is already in Trash.
+   */
+  applyClean(cid: string, actions: CleanAction[], by: CleanLogEntry["by"]): CleanLogEntry[] {
+    const state = this.cleanState(cid);
+    const box = this.box(cid);
+    const entries: CleanLogEntry[] = [];
+    for (const action of actions) {
+      const ids = [...new Set(action.ids)].filter((id) => {
+        const m = box.messages.find((x) => x.id === id);
+        if (!m) return false;
+        if (action.kind === "delete") return m.folder === "trash" && !m.starred;
+        return (m.folder === "inbox" || (action.kind === "trash" && m.folder === "archive")) && !isProtected(m);
+      });
+      if (!ids.length) continue;
+      for (const id of ids) {
+        if (action.kind === "delete") this.remove(cid, id);
+        else this.move(cid, id, action.kind === "archive" ? "archive" : "trash");
+      }
+      const entry: CleanLogEntry = { id: `cl-${randomUUID()}`, at: this.now(), kind: action.kind, ids, reason: action.reason.slice(0, 200), by };
+      entries.push(entry);
+      state.log.unshift(entry);
+    }
+    state.log = state.log.slice(0, 50);
+    return entries;
+  }
+
+  /** Run the rules now ("Clean now"), or on their own when `by` is "rules". */
+  runClean(cid: string, by: "rules" | "you" = "you"): CleanLogEntry[] {
+    const state = this.cleanState(cid);
+    state.lastRun = this.now();
+    return this.applyClean(cid, this.previewClean(cid), by);
+  }
+
+  /** Automatic cleaning: runs when the mailbox is opened, at most once an hour, if the owner left it on. */
+  autoClean(cid: string): CleanLogEntry[] {
+    if (!this.has(cid)) return [];
+    const state = this.cleanState(cid);
+    if (!state.rules.auto) return [];
+    if (state.lastRun && this.clock().getTime() - Date.parse(state.lastRun) < 3_600_000) return [];
+    return this.runClean(cid, "rules");
+  }
+
+  /** Put an archive or trash clean-up back in the inbox. Deleting forever can't be undone. */
+  undoClean(cid: string, logId: string): number {
+    const state = this.cleanState(cid);
+    const entry = state.log.find((e) => e.id === logId);
+    if (!entry || entry.undone || entry.kind === "delete") return 0;
+    let restored = 0;
+    for (const id of entry.ids) {
+      const m = this.message(cid, id);
+      if (m && (m.folder === "archive" || m.folder === "trash")) {
+        this.move(cid, id, "inbox");
+        restored++;
+      }
+    }
+    entry.undone = true;
+    return restored;
+  }
+
+  /** Send a sender's future mail to Archive, and archive what's already in the inbox from them. */
+  muteSender(cid: string, email: string): CleanLogEntry[] {
+    const address = email.trim().toLowerCase();
+    if (!validEmail(address)) throw new MailError("bad_address", "That isn't an email address.");
+    if (Object.values(SYSTEM_SENDERS).some((s) => s.email === address)) throw new MailError("protected_sender", "Cumulus account mail can't be muted.");
+    const rules = this.cleanState(cid).rules;
+    this.setCleanRules(cid, { muted: [...rules.muted, address] });
+    const ids = this.box(cid).messages.filter((m) => m.folder === "inbox" && m.from.email.toLowerCase() === address).map((m) => m.id);
+    return this.applyClean(cid, [{ kind: "archive", ids, reason: `Muted ${address}` }], "you");
+  }
+
+  unmuteSender(cid: string, email: string) {
+    const address = email.trim().toLowerCase();
+    this.setCleanRules(cid, { muted: this.cleanState(cid).rules.muted.filter((m) => m !== address) });
   }
 
   message(cid: string, id: string): MailMessage | undefined {

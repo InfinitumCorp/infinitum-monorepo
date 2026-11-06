@@ -18,7 +18,8 @@
     "@infinitum/cumulus": "workspace:*",
     "@infinitum/firm": "workspace:*",
     "@infinitum/firmament": "workspace:*",
-    "@infinitum/mail": "workspace:*"
+    "@infinitum/mail": "workspace:*",
+    "@infinitum/scalus": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.0",
