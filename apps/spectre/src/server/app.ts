@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { readFile } from "node:fs/promises";
 import { join, normalize, extname } from "node:path";
-import { CidService, CidError, type Account } from "@infinitum/cid";
+import { CidService, CidError, cumulusCorsHeaders, type Account } from "@infinitum/cid";
 import type { CumulusSuite } from "@infinitum/cumulus";
 import { SpectreCRM, SpectreError } from "../core/crm.ts";
 import { scoreDealMetatron as scoreDeal } from "../core/intelligence-metatron.ts";
@@ -1063,6 +1063,14 @@ export function createApp(deps: AppDeps) {
     const embeddable = EMBEDDABLE.has(url.pathname);
     if (!embeddable) res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Content-Security-Policy", `default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors ${embeddable ? "*" : "'none'"}`);
+    const requestOrigin = typeof req.headers.origin === "string" ? req.headers.origin : undefined;
+    const cors = cumulusCorsHeaders(requestOrigin);
+    for (const [name, value] of Object.entries(cors)) res.setHeader(name, value);
+    if (req.method === "OPTIONS" && cors["Access-Control-Allow-Origin"]) {
+      res.writeHead(204, { "Cache-Control": "no-store" });
+      res.end();
+      return;
+    }
     try {
       if (!url.pathname.startsWith("/api/")) {
         if (req.method !== "GET" && req.method !== "HEAD") throw new HttpError(405, "Method not allowed");

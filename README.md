@@ -5,13 +5,13 @@ Shared foundation for every Infinitum product, by Infinitum Corporation®.
 | Package | What it is |
 |---|---|
 | `packages/firmament` | Firmament Network core: append-only, hash-chained, Ed25519-signed ledger for identity, provenance, licensing, payments and audit. Merkle roots for anchoring to Base. |
-| `packages/cid` | Cumulus://ID (CID): one account for every product. Passkeys and security keys (WebAuthn), authenticator-app MFA, session revocation, app-by-app permissions recorded on Firmament, organization SSO (OIDC), and social sign-in with Google, Apple, Microsoft, GitHub and ChatGPT (PKCE, state bound to the browser, nonce, issuer checks; accounts are never joined by email). |
+| `packages/cid` | Cumulus://ID (CID): one account for every product. Passkeys and security keys (WebAuthn), authenticator-app MFA, session revocation, app-by-app permissions recorded on Firmament, organization SSO (OIDC), and social sign-in with Google, Apple, Microsoft, GitHub and ChatGPT (PKCE, state bound to the browser, nonce, issuer checks; accounts are never joined by email). Canonical host `id.cumuluscloud.app`. |
 | `packages/aether` | ÆTHER™ mesh protocol core: Ed25519 node addresses, signed packets, flooding with TTL and ttl upgrades, store-and-forward, delivery receipts, rate limits, and a radio simulator. 100 nodes with 20% churn deliver 100% of messages across 6–13 hops (19 passing tests). Not encrypted yet. |
 
 | `apps/spectre` | +SPCTR™ (Spectre) intelligent CRM. Core so far: companies, contacts, deals, activities and relationships with a Firmament audit trail and source provenance; opt-out handling; predictive pipeline with explained win probability, risk alerts, next best action and monthly forecast; warmest-path relationship map and buying-committee gaps; duplicate detection, merging and stale-data flags (17 passing tests). |
 
 | `packages/cumulus` | The Cumulus account suite. Every CID gets Cumulus://Mail, Cumulus://Cloud and a FIRM Wallet on the free tier (15 GB shared by Mail and Cloud), like Gmail with a Google account. Sends login security notices, Cloud share notices and wallet receipts by mail. Products build their CID from `createCumulus()`. |
-| `packages/mail` | Cumulus://Mail post office: one mailbox per CID, delivery between Cumulus addresses, bounces, an outbound queue, reserved product senders, pay-by-mail, folders, threads, aliases and Architect tasks. |
+| `packages/mail` | Cumulus://Mail post office: one mailbox per CID (`name@cumuluscloud.app`), delivery between Cumulus addresses, bounces, an outbound queue, reserved product senders, pay-by-mail, folders, threads, aliases and Architect tasks. |
 | `apps/cumulus-mail` | Cumulus://Mail web client (unlisted, noindex). Sign in with a Cumulus://ID. |
 | `packages/eon` | E(O)N™ AI wearable core: X25519 pairing with a 6-digit safety code, AES-256-GCM voice and text frames with replay protection, on-device intents, and an aggregate-only usage meter (9 tests). |
 | `packages/argus` | >_ARGUS™ sensor fusion: gated multi-sensor association, constant-velocity Kalman tracks, track lifecycle and per-track sensor provenance (6 tests). Military edition stays out of the public Data Exchange. |
@@ -21,6 +21,20 @@ Shared foundation for every Infinitum product, by Infinitum Corporation®.
 Run Cumulus://Mail: `node --experimental-strip-types apps/cumulus-mail/src/server.ts`, then open http://localhost:3010. Set `XAI_API_KEY` to turn on SCALVS briefs. Mail is intentionally not listed on the public site.
 
 Run +SPCTR locally: `node apps/spectre/src/server/main.ts`, then open http://localhost:3000 and create a CID with a passkey. Set `ANTHROPIC_API_KEY` to turn on Ask Spectre.
+
+### Cumulus domain
+
+`cumuluscloud.app` is the canonical domain for Cumulus://ID, Cumulus://Cloud and Cumulus://Mail. It is configured with environment variables (see `.env.example`):
+
+| Variable | Default | Use |
+|---|---|---|
+| `CUMULUS_ROOT_DOMAIN` | `cumuluscloud.app` | Mail addresses: `name@cumuluscloud.app` |
+| `CUMULUS_ID_HOST` | `id.cumuluscloud.app` | Host for the Cumulus://ID Keycloak issuer |
+| `CUMULUS_KEYCLOAK_REALM` | `cumulus` | Issuer `https://id.cumuluscloud.app/realms/cumulus`. JWKS `https://id.cumuluscloud.app/realms/cumulus/protocol/openid-connect/certs` |
+| `CUMULUS_CLOUD_HOST` | `cloud.cumuluscloud.app` | Cumulus://Cloud |
+| `CUMULUS_MAIL_HOST` | `mail.cumuluscloud.app` | Cumulus://Mail |
+
+The issuer is derived from the ID host and realm: `https://<CUMULUS_ID_HOST>/realms/<CUMULUS_KEYCLOAK_REALM>`. CORS allows only the exact HTTPS origins of the three hosts. A wildcard origin is rejected, and `Access-Control-Allow-Origin` is never `*`. When `CUMULUS_ROOT_DOMAIN` is overridden on its own, the three hosts follow it (`id.`, `cloud.`, `mail.`). An explicit host must be that root domain or one of its subdomains.
 
 ### Social sign-in
 

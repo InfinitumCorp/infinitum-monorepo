@@ -12,7 +12,7 @@ import { scalvsCleanAgent, type CleanAgent, type CleanSuggestion } from "./clean
 import { bulkSenders, classify, inboxMix, THREAD_ACTIONS, type ThreadAction, type ThreadSnapshot } from "@infinitum/mail";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize, sep } from "node:path";
-import { CidError, type Account } from "@infinitum/cid";
+import { CidError, MAIL_DOMAIN, cumulusCorsHeaders, type Account } from "@infinitum/cid";
 import { QuotaError } from "@infinitum/cloud";
 import { WalletError } from "@infinitum/firm";
 import { MailError, isE2E, threadOf, transcript, type MailMessage } from "@infinitum/mail";
@@ -99,8 +99,12 @@ async function readBody(req: IncomingMessage): Promise<Record<string, any>> {
 }
 
 const str = (v: unknown, max = 100_000) => String(v ?? "").slice(0, max);
-/** Your Cumulus://ID is your mail address: "alex@cumulusmail.cloud" and "alex" name the same account. */
-const idName = (v: unknown) => str(v, 80).trim().toLowerCase().replace(/@cumulusmail\.cloud$/, "").slice(0, 40);
+/** Your Cumulus://ID is your mail address: "alex@cumuluscloud.app" and "alex" name the same account. */
+const MAIL_SUFFIX = `@${MAIL_DOMAIN}`;
+const idName = (v: unknown) => {
+  const value = str(v, 80).trim().toLowerCase();
+  return (value.endsWith(MAIL_SUFFIX) ? value.slice(0, -MAIL_SUFFIX.length) : value).slice(0, 40);
+};
 /** Drive file references on a message: names and sizes only, at most 10, each under 25 MB. */
 const files = (v: unknown) => (Array.isArray(v) ? v : []).slice(0, 10)
   .map((f) => ({ name: str(f?.name, 200).trim(), size: Math.floor(Number(f?.size)) }))
@@ -447,8 +451,22 @@ export function createMailApp(deps: MailAppDeps) {
     res.setHeader("Referrer-Policy", "no-referrer");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+    const requestOrigin = typeof req.headers.origin === "string" ? req.headers.origin : undefined;
+    const cors = cumulusCorsHeaders(requestOrigin);
+    for (const [name, value] of Object.entries(cors)) res.setHeader(name, value);
+    if (req.method === "OPTIONS" && cors["Access-Control-Allow-Origin"]) {
+      res.writeHead(204, { "Cache-Control": "no-store" });
+      res.end();
+      return;
+    }
     const url = new URL(req.url ?? "/", "http://localhost");
     try {
+      if (url.pathname === "/cumulus-config.js") {
+        const body = `globalThis.CUMULUS=${JSON.stringify({ mailDomain: MAIL_DOMAIN })};`;
+        res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" });
+        res.end(body);
+        return;
+      }
       if (url.pathname === "/robots.txt") {
         res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
         res.end("User-agent: *\nDisallow: /\n");

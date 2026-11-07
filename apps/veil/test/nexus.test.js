@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { APPS, DEFAULT_ORIGINS, badgeText, launcher, parseSummary, resolveOrigins, safeOrigin } from "../lib/nexus.js";
 
 const spectreMe = {
-  cid: "cid_1", username: "alex", mailAddress: "alex@cumulusmail.cloud", handle: "@alex.veil", workspace: "cid_1",
+  cid: "cid_1", username: "alex", mailAddress: "alex@cumuluscloud.app", handle: "@alex.veil", workspace: "cid_1",
   cumulus: {
     cid: "cid_1", plan: "Free", entitlements: ["x"],
     mail: { unread: 3, url: "https://mail.example" },
@@ -41,7 +41,7 @@ test("parses the +SPCTR /api/me shape and drops junk", () => {
 });
 
 test("parses the Cumulus::Mail /api/me shape (summary at top level)", () => {
-  const s = parseSummary({ ...spectreMe.cumulus, username: "alex", mailAddress: "alex@cumulusmail.cloud" });
+  const s = parseSummary({ ...spectreMe.cumulus, username: "alex", mailAddress: "alex@cumuluscloud.app" });
   assert.equal(s.username, "alex");
   assert.equal(s.mail.unread, 3);
 });
@@ -60,7 +60,7 @@ test("launcher uses the account's mail origin, unread badge and storage", () => 
   const by = Object.fromEntries(apps.map((a) => [a.id, a]));
   assert.equal(by.mail.url, "https://mail.example");
   assert.equal(by.mail.badge, 3);
-  assert.equal(by.mail.blurb, "alex@cumulusmail.cloud");
+  assert.equal(by.mail.blurb, "alex@cumuluscloud.app");
   assert.match(by.cloud.blurb, /1\.2 MB of 15 GB/);
   assert.equal(by.cloud.url, null);
   assert.equal(by.wallet.panel, "wallet");

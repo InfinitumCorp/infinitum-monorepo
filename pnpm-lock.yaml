@@ -285,13 +285,14 @@ importers:
         version: 5.9.3
 
   packages/lbrnth:
-    devDependencies:
+    dependencies:
       '@infinitum/cid':
         specifier: workspace:*
         version: link:../cid
       '@infinitum/firmament':
         specifier: workspace:*
         version: link:../firmament
+    devDependencies:
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.5
@@ -300,6 +301,10 @@ importers:
         version: 5.9.3
 
   packages/mail:
+    dependencies:
+      '@infinitum/cid':
+        specifier: workspace:*
+        version: link:../cid
     devDependencies:
       '@types/node':
         specifier: ^22.0.0

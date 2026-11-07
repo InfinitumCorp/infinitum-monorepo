@@ -14,10 +14,12 @@
     "test": "node --test --experimental-strip-types src/*.test.ts",
     "typecheck": "tsc -p . --noEmit"
   },
-  "devDependencies": {
-    "typescript": "^5.9.0",
-    "@types/node": "^22.0.0",
+  "dependencies": {
     "@infinitum/cid": "workspace:*",
     "@infinitum/firmament": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/node": "^22.0.0"
   }
 }
