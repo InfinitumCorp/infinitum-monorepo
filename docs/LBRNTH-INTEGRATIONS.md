@@ -130,3 +130,9 @@ Labyrinth adapter is supplied—do not use local snapshot files on ephemeral Ver
 storage. All prior single-active-writer, capacity, archival, KMS/backup and
 unanchored-audit limitations still apply. No firmware integration or product GUI
 onboarding is claimed by these library/HTTP capabilities.
+
+## This branch
+
+Labyrinth here is the SDK already on main plus the Cumulus ID integration. It
+does not import the CONJURE scenario engine or orbital planning. Operator steps
+are in [LBRNTH-RUN-DEPLOY.md](./LBRNTH-RUN-DEPLOY.md). Nothing here is deployed.

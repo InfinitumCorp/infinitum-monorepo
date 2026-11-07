@@ -79,7 +79,7 @@ pnpm typecheck
 
 ### Labyrinth *LBRNTH — private client repositories
 
-`packages/lbrnth` (`@infinitum/lbrnth`) gives client organizations private code and artifact repositories inside Infinitum products: org roles, SHA-256 versions, branches/tags, history, file diffs, audit and per-org encrypted persistence. Access requires a client LBRNTH plan entitlement **and** existing CID `can()` scopes. This release is the backend SDK; product UI/HTTP deployment and Git protocol are separate. See [integration/API guide](packages/lbrnth/README.md) and [design](docs/LBRNTH.md).
+`packages/lbrnth` (`@infinitum/lbrnth`) gives client organizations private code and artifact repositories inside Infinitum products: org roles, SHA-256 versions, branches/tags, history, file diffs, audit and per-org encrypted persistence. Access requires a client LBRNTH plan entitlement **and** existing CID `can()` scopes. There is no Git protocol. Nothing in this tree is deployed. See [integration/API guide](packages/lbrnth/README.md), [design](docs/LBRNTH.md) and [run/deploy plan](docs/LBRNTH-RUN-DEPLOY.md).
 
 Labyrinth now has real Cumulus ID session authentication and a browser/Worker-safe
 `@infinitum/lbrnth-client` transport. All website product brands are registered;
