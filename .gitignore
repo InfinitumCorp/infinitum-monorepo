@@ -14,3 +14,6 @@ apps/spectre/screenshots/
 
 # Android build output
 apps/cumulus-mail/android/build/
+
+# Vercel build output
+apps/cumulus-mail/.vercel/
