@@ -8,7 +8,7 @@ This document is a plan. It does not deploy Labyrinth, change DNS, publish a pac
 |---|---|
 | Source | Located and extracted. Canonical Labyrinth is the SDK merged to `main` in PR #25, plus the Cumulus ID integration in PR #26 (`feat/lbrnth-integrations`, commit `e3938ea`). This branch is `main` plus that integration, release tests, CI, and this plan. PR #29 and PR #30 are not imported. |
 | Built | Local pack succeeded for `@infinitum/lbrnth@0.1.0` and `@infinitum/lbrnth-client@0.1.0`. Tarballs are gitignored. They are not published. CI uploads the same pack as artifacts. |
-| Tested | Local `pnpm typecheck` and `pnpm test` passed: 433 tests, 0 failures, on Node 22.23.4 and pnpm 10.28.0. That includes the release tests below. GitHub Actions is the PR check; do not treat this row as deployed. |
+| Tested | Local `pnpm typecheck` and `pnpm test` passed: 433 tests, 0 failures, on Node 22.23.4 and pnpm 10.28.0, including the release tests below. GitHub Actions run [42380479972](https://github.com/InfinitumCorp/infinitum-nexus/actions/runs/42380479972) passed the same install, typecheck, test, security script, and pack. This row is not a deployment. |
 | Deployed | Not deployed. No host, DNS record, Vercel project, or registry publish was changed. |
 
 ## Source
