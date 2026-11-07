@@ -6,6 +6,8 @@ add a cipher.
 
 `apps/veil` (the Chrome extension), FABRIC, and Cumulus are unchanged.
 
+The VEIL browser product host is `https://infinitumveil.app`, hosted on Cloudflare. This lab does not dial that host. Peer endpoints remain IPv4 loopback.
+
 ## What the tests prove
 
 Two wireguard-go devices exchange an ICMP packet over UDP bound to
