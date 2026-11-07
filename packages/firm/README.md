@@ -1,6 +1,6 @@
 # FIRM
 
-Ecosystem token, wallet, and DEX.
+Ecosystem token, wallet, and DEX. FIRM Wallet domain: `FIRM_ROOT_DOMAIN`, default `firmwallet.app` (bare hostname, hosted at Cloudflare).
 
 ## Status
 - JSON-RPC EVM client (`evm-client.ts`)
