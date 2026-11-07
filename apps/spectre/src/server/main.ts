@@ -14,6 +14,11 @@ import { saveSnapshot, loadSnapshot } from "./persist.ts";
  * Starts +SPCTR.
  *   PORT                 default 3000
  *   SPECTRE_ORIGIN       public origin for passkeys, default http://localhost:PORT
+ *   CUMULUS_ROOT_DOMAIN  mail addresses, default cumuluscloud.app
+ *   CUMULUS_ID_HOST      Cumulus://ID issuer and JWKS, default id.cumuluscloud.app
+ *   CUMULUS_CLOUD_HOST   Cumulus://Cloud, default cloud.cumuluscloud.app
+ *   CUMULUS_MAIL_HOST    Cumulus://Mail, default mail.cumuluscloud.app
+ *   CUMULUS_MAIL_ORIGIN  full mail URL in notices; default https://CUMULUS_MAIL_HOST
  *   SPECTRE_DATA_DIR     default ./data
  *   ANTHROPIC_API_KEY    enables AI features
  *   USE_METATRON         set to 1 (default) to use METATRON scorer

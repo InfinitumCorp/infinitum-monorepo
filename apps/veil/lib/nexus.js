@@ -19,7 +19,7 @@ export const DEFAULT_ORIGINS = Object.freeze({
  */
 export const APPS = Object.freeze([
   { id: "cid", name: "Cumulus://ID", blurb: "Your account and permissions", origin: "cid" },
-  { id: "mail", name: "Cumulus://Mail", blurb: "Free email at you@cumulusmail.cloud", origin: "mail" },
+  { id: "mail", name: "Cumulus://Mail", blurb: "Free email at you@cumuluscloud.app", origin: "mail" },
   { id: "cloud", name: "Cumulus://Cloud", blurb: "15 GB of Drive storage and a free cloud tier" },
   { id: "scalvs", name: "SCALVS.ai", blurb: "Free AI agents beside every page" },
   { id: "architect", name: ":\\ARCHITECT\\", blurb: "Turn a page, an email or an idea into finished work", origin: "architect" },

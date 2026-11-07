@@ -43,6 +43,24 @@ permission, billing flags, or encryption keys from a request body. Derive identi
 from the host's verified session and protect mutations against CSRF. Browser
 products call their authenticated backend; do not bundle this SDK or keys into VEIL.
 
+## Canonical domain
+
+Cumulus://ID, Cumulus://Cloud and Cumulus://Mail share `cumuluscloud.app`
+(Cloudflare). Hosts read it from the environment; these are the defaults:
+
+| Variable | Default |
+|---|---|
+| `CUMULUS_ROOT_DOMAIN` | `cumuluscloud.app` (mail addresses are `name@cumuluscloud.app`) |
+| `CUMULUS_ID_HOST` | `id.cumuluscloud.app` (OIDC issuer and JWKS) |
+| `CUMULUS_CLOUD_HOST` | `cloud.cumuluscloud.app` |
+| `CUMULUS_MAIL_HOST` | `mail.cumuluscloud.app` |
+
+`labyrinth.corsHeaders(requestOrigin)` allows only the exact HTTPS origins of
+those three hosts. A wildcard origin is rejected, and `Access-Control-Allow-Origin`
+is never `*`. Pass `corsOrigins` to narrow that list; every entry must be an
+exact origin. The issuer is `https://id.cumuluscloud.app` and its keys are
+published at `https://id.cumuluscloud.app/.well-known/jwks.json`.
+
 ## Authorization and data model
 
 Every operation checks **both** live client-org `LBRNTH` entitlement and CID's

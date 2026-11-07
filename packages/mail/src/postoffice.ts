@@ -1,7 +1,7 @@
 /**
  * Cumulus://Mail post office: one mailbox per Cumulus://ID, the way every Google account has Gmail.
  *
- * - `provision` gives a CID its address (username@cumulusmail.cloud) when the account is created.
+ * - `provision` gives a CID its address (username@cumuluscloud.app) when the account is created.
  * - Mail between Cumulus addresses is delivered directly into the recipient's mailbox.
  * - Mail to outside addresses is queued for the outbound relay.
  * - Products send account mail with `notify` (security notices, Cloud shares, wallet receipts).
@@ -11,11 +11,12 @@
 import { randomUUID } from "node:crypto";
 import { Mailbox, type MailSnapshot, type SendInput } from "./mailbox.ts";
 import type { FolderId, MailMessage, MailPayment, Person } from "./model.ts";
+import { MAIL_DOMAIN } from "@infinitum/cid";
 import { isCumulus, parsePeople, tomorrowMorning, validEmail } from "./logic.ts";
 import type { CumulusTunnel } from "./tunnel.ts";
 import { DEFAULT_CLEAN_RULES, isProtected, normalizeRules, planSweep, type CleanAction, type CleanLogEntry, type CleanRules, type CleanState } from "./clean.ts";
 
-export const MAIL_DOMAIN = "cumulusmail.cloud";
+export { MAIL_DOMAIN };
 
 /** Product senders allowed to write account mail. Addresses are reserved; no person can take them. */
 export const SYSTEM_SENDERS = {
