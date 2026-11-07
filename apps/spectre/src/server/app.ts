@@ -23,6 +23,8 @@ import { registerEngageRoutes, RawResponse } from "./engage-routes.ts";
 import { dispatch, runDue, type AutomationEngine } from "../core/automations.ts";
 import type { Providers } from "../core/messaging.ts";
 import type { Complete } from "@infinitum/conjure";
+import { createVeilControl, serveNodeVeil } from "@infinitum/veil/server";
+import type { DeviceExitConfig, VeilServer } from "@infinitum/veil/server";
 import { runLlmAgent, LlmError } from "@infinitum/scalus";
 import { AGENTS, AGENT_IDS, agentDefinition, applyProposal, newProposalId, newRunId, type AgentId, type AgentRunRecord } from "../core/agent-team.ts";
 
@@ -62,6 +64,16 @@ export interface AppDeps {
   twilioAuthToken?: string;
   /** Tests: scripted model for Conjure simulations. */
   conjureComplete?: Complete;
+  /**
+   * VEIL browser proxy. A plan is required for the exit and for bridges.
+   * Local Tor in the extension does not call this.
+   */
+  veil?: {
+    entitled?: (cid: string) => boolean;
+    servers?: readonly VeilServer[];
+    bridges?: readonly string[];
+    deviceExit?: DeviceExitConfig;
+  };
 }
 
 class HttpError extends Error {
@@ -1035,6 +1047,14 @@ export function createApp(deps: AppDeps) {
 
   registerConjureRoutes({ route, crm, ai: deps.ai, httpError: (status, message) => new HttpError(status, message), complete: deps.conjureComplete });
 
+  const veilControl = createVeilControl({
+    cid: deps.cid,
+    entitled: deps.veil?.entitled,
+    servers: deps.veil?.servers,
+    bridges: deps.veil?.bridges,
+    deviceExit: deps.veil?.deviceExit,
+  });
+
   /* ---------------- Request handling ---------------- */
 
   const MUTATING = new Set(["POST", "PATCH", "PUT", "DELETE"]);
@@ -1072,6 +1092,7 @@ export function createApp(deps: AppDeps) {
       return;
     }
     try {
+      if (url.pathname.startsWith("/api/veil/")) return await serveNodeVeil(req, res, veilControl, deps.origin);
       if (!url.pathname.startsWith("/api/")) {
         if (req.method !== "GET" && req.method !== "HEAD") throw new HttpError(405, "Method not allowed");
         return await serveStatic(url.pathname, res);

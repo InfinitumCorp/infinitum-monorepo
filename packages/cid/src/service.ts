@@ -832,6 +832,13 @@ export class CidService {
     return [...this.store.accounts.values()].filter((a) => a.orgId === orgId);
   }
 
+  /** Server-side linked-credential checks; a session id by itself is never a login token. */
+  isSessionActive(cid: string, sessionId: string): boolean {
+    const session = this.store.sessions.get(sessionId);
+    const expiresAt = session ? Date.parse(session.expiresAt) : NaN;
+    return !!session && session.cid === cid && !session.revokedAt && Number.isFinite(expiresAt) && expiresAt > this.now().getTime() && this.store.accounts.has(cid);
+  }
+
   /** Admin control: sign a member out of every device (e.g. a lost laptop or offboarding). */
   async adminRevokeMemberSessions(orgId: string, adminCid: string, memberCid: string) {
     this.org(orgId, adminCid);

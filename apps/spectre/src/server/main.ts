@@ -6,6 +6,7 @@ import { socialFromEnv } from "@infinitum/cid";
 import { createCumulus, emptyCumulusStores, loadCumulusStores, loadOrCreateMasterKey, saveCumulusStores } from "@infinitum/cumulus";
 import { SpectreCRM, emptyStore } from "../core/crm.ts";
 import { createApp } from "./app.ts";
+import { veilFromEnv } from "@infinitum/veil/server";
 import { aiConfigFromEnv } from "./ai.ts";
 import { providersFromEnv } from "../core/messaging.ts";
 import { saveSnapshot, loadSnapshot } from "./persist.ts";
@@ -94,6 +95,7 @@ const app = createApp({
   providers: providersFromEnv(),
   cronSecret: process.env.CRON_SECRET,
   twilioAuthToken: process.env.TWILIO_AUTH_TOKEN,
+  veil: veilFromEnv(process.env),
   onChange: () => {
     saveCumulusStores(dataDir, cumulusStores, { tunnel: suite.tunnel });
     saveSnapshot(join(dataDir, "spectre.json"), spectreStore);
