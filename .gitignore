@@ -3,6 +3,7 @@ dist
 artifacts/
 .env
 .env.*
+!.env.example
 packages/contracts/artifacts
 packages/contracts/cache
 packages/contracts/typechain-types

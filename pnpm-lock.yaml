@@ -125,6 +125,9 @@ importers:
       '@infinitum/scalus':
         specifier: workspace:*
         version: link:../../packages/scalus
+      '@infinitum/veil':
+        specifier: workspace:*
+        version: link:../veil
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -133,7 +136,23 @@ importers:
         specifier: ^5.9.0
         version: 5.9.3
 
-  apps/veil: {}
+  apps/veil:
+    dependencies:
+      '@infinitum/cid':
+        specifier: workspace:*
+        version: link:../../packages/cid
+    devDependencies:
+      '@infinitum/firmament':
+        specifier: workspace:*
+        version: link:../../packages/firmament
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.5
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
+  apps/veil-desktop: {}
 
   packages/aether:
     dependencies:
@@ -362,13 +381,13 @@ importers:
       '@infinitum/cid':
         specifier: workspace:*
         version: link:../cid
+      '@infinitum/firmament':
+        specifier: workspace:*
+        version: link:../firmament
       '@infinitum/lbrnth-client':
         specifier: workspace:*
         version: link:../lbrnth-client
     devDependencies:
-      '@infinitum/firmament':
-        specifier: workspace:*
-        version: link:../firmament
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.5

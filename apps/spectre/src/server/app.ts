@@ -2,7 +2,7 @@ import { serveNodeLabyrinth } from "@infinitum/lbrnth";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { readFile } from "node:fs/promises";
 import { join, normalize, extname } from "node:path";
-import { CidService, CidError, type Account } from "@infinitum/cid";
+import { CidService, CidError, cumulusCorsHeaders, type Account } from "@infinitum/cid";
 import type { CumulusSuite } from "@infinitum/cumulus";
 import { SpectreCRM, SpectreError } from "../core/crm.ts";
 import { scoreDealMetatron as scoreDeal } from "../core/intelligence-metatron.ts";
@@ -24,6 +24,8 @@ import { registerEngageRoutes, RawResponse } from "./engage-routes.ts";
 import { dispatch, runDue, type AutomationEngine } from "../core/automations.ts";
 import type { Providers } from "../core/messaging.ts";
 import type { Complete } from "@infinitum/conjure";
+import { createVeilControl, serveNodeVeil } from "@infinitum/veil/server";
+import type { DeviceExitConfig, VeilServer } from "@infinitum/veil/server";
 import { runLlmAgent, LlmError } from "@infinitum/scalus";
 import { AGENTS, AGENT_IDS, agentDefinition, applyProposal, newProposalId, newRunId, type AgentId, type AgentRunRecord } from "../core/agent-team.ts";
 
@@ -63,6 +65,16 @@ export interface AppDeps {
   twilioAuthToken?: string;
   /** Tests: scripted model for Conjure simulations. */
   conjureComplete?: Complete;
+  /**
+   * VEIL browser proxy. A plan is required for the exit and for bridges.
+   * Local Tor in the extension does not call this.
+   */
+  veil?: {
+    entitled?: (cid: string) => boolean;
+    servers?: readonly VeilServer[];
+    bridges?: readonly string[];
+    deviceExit?: DeviceExitConfig;
+  };
 }
 
 class HttpError extends Error {
@@ -1036,6 +1048,14 @@ export function createApp(deps: AppDeps) {
 
   registerConjureRoutes({ route, crm, ai: deps.ai, httpError: (status, message) => new HttpError(status, message), complete: deps.conjureComplete });
 
+  const veilControl = createVeilControl({
+    cid: deps.cid,
+    entitled: deps.veil?.entitled,
+    servers: deps.veil?.servers,
+    bridges: deps.veil?.bridges,
+    deviceExit: deps.veil?.deviceExit,
+  });
+
   /* ---------------- Request handling ---------------- */
 
   const MUTATING = new Set(["POST", "PATCH", "PUT", "DELETE"]);
@@ -1064,8 +1084,17 @@ export function createApp(deps: AppDeps) {
     const embeddable = EMBEDDABLE.has(url.pathname);
     if (!embeddable) res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Content-Security-Policy", `default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors ${embeddable ? "*" : "'none'"}`);
+    const requestOrigin = typeof req.headers.origin === "string" ? req.headers.origin : undefined;
+    const cors = cumulusCorsHeaders(requestOrigin);
+    for (const [name, value] of Object.entries(cors)) res.setHeader(name, value);
+    if (req.method === "OPTIONS" && cors["Access-Control-Allow-Origin"]) {
+      res.writeHead(204, { "Cache-Control": "no-store" });
+      res.end();
+      return;
+    }
     try {
       if (url.pathname === "/api/labyrinth") return await serveNodeLabyrinth(req, res, deps.suite?.labyrinth, parseCookies(req.headers.cookie)[COOKIE], deps.onChange);
+      if (url.pathname.startsWith("/api/veil/")) return await serveNodeVeil(req, res, veilControl, deps.origin);
       if (!url.pathname.startsWith("/api/")) {
         if (req.method !== "GET" && req.method !== "HEAD") throw new HttpError(405, "Method not allowed");
         return await serveStatic(url.pathname, res);

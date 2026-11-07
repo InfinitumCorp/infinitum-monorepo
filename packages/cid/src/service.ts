@@ -9,6 +9,14 @@ import {
 import { generateTotpSecret, verifyTotp, otpauthUri } from "./totp.ts";
 import { verifyIdToken, type SsoConfig } from "./oidc.ts";
 import {
+  assertExactOrigin,
+  cumulusCorsHeaders,
+  cumulusDomains,
+  exactCorsOrigin,
+  MAIL_DOMAIN,
+  type CidIssuerMetadata,
+} from "./domains.ts";
+import {
   PROVIDERS,
   SocialClient,
   pkcePair,
@@ -17,6 +25,8 @@ import {
   type SocialProfile,
   type SocialProviderId,
 } from "./social.ts";
+
+export { MAIL_DOMAIN };
 
 /* ------------------------------------------------------------------ *
  * Product registry: every app a CID can sign in to and grant access to.
@@ -47,8 +57,6 @@ export const FREE_ENTITLEMENTS = {
   metatronDashboard: true,
 } as const;
 
-export const MAIL_DOMAIN = "cumulusmail.cloud";
-
 /* ------------------------------------------------------------------ *
  * Data model
  * ------------------------------------------------------------------ */
@@ -56,7 +64,7 @@ export const MAIL_DOMAIN = "cumulusmail.cloud";
 export interface Account {
   cid: string;
   username: string;
-  /** e.g. alex@cumulusmail.cloud */
+  /** e.g. alex@cumuluscloud.app */
   mailAddress: string;
   /** Ecosystem handle, e.g. @alex.veil */
   handle: string;
@@ -158,9 +166,9 @@ export class CidStore {
 export interface CidConfig {
   ledger: Ledger;
   signer: Signer;
-  /** WebAuthn relying party ID, e.g. "infinitum.id". */
+  /** WebAuthn relying party ID, e.g. "id.cumuluscloud.app". */
   rpId: string;
-  /** Origins allowed to run passkey ceremonies (web, VEIL, #THRONE shells). */
+  /** Exact origins allowed to run passkey ceremonies. Wildcards are rejected. */
   origins: string[];
   store?: CidStore;
   clock?: () => Date;
@@ -214,6 +222,14 @@ const hashToken = (t: string) => createHash("sha256").update(t).digest("hex");
 
 export class CidService {
   readonly store: CidStore;
+  /** Keycloak issuer for Cumulus://ID, https://id.cumuluscloud.app/realms/cumulus by default. */
+  readonly issuer: string;
+  /** JWKS URI for `issuer`. */
+  readonly jwksUri: string;
+  /** Email domain, cumuluscloud.app by default. */
+  readonly mailDomain: string;
+  /** Exact CORS origins for ID, Cloud and Mail. Never a wildcard. */
+  readonly corsOrigins: readonly string[];
   private readonly cfg: Required<Omit<CidConfig, "store" | "social" | "onEvent">>;
   private readonly socialProviders: Partial<Record<SocialProviderId, SocialCredentials>>;
   private readonly socialClient: SocialClient;
@@ -222,11 +238,22 @@ export class CidService {
   constructor(config: CidConfig) {
     this.onEvent = config.onEvent;
     this.store = config.store ?? new CidStore();
+    const domains = cumulusDomains();
+    this.issuer = domains.issuer;
+    this.jwksUri = domains.jwksUri;
+    this.mailDomain = domains.mailDomain;
+    this.corsOrigins = domains.corsOrigins;
     this.cfg = {
       ledger: config.ledger,
       signer: config.signer,
       rpId: config.rpId,
-      origins: config.origins,
+      origins: config.origins.map((origin) => {
+        try {
+          return assertExactOrigin(origin);
+        } catch (err) {
+          throw new CidError("invalid_origin", err instanceof Error ? err.message : "Origin must be exact");
+        }
+      }),
       clock: config.clock ?? (() => new Date()),
       sessionDays: config.sessionDays ?? 30,
     };
@@ -236,6 +263,21 @@ export class CidService {
 
   private now() {
     return this.cfg.clock();
+  }
+
+  /** Issuer and JWKS for Cumulus://ID. The issuer string has no trailing slash. */
+  issuerMetadata(): CidIssuerMetadata {
+    return { issuer: this.issuer, jwks_uri: this.jwksUri, id_host: new URL(this.issuer).host };
+  }
+
+  /** Allowlisted origin for this request, or null. Never "*". */
+  corsAllowOrigin(requestOrigin: string | undefined): string | null {
+    return exactCorsOrigin(requestOrigin, this.corsOrigins);
+  }
+
+  /** CORS headers for a browser call. Allow-Origin is set only for an exact match. */
+  corsHeaders(requestOrigin: string | undefined): Record<string, string> {
+    return cumulusCorsHeaders(requestOrigin, this.corsOrigins);
   }
 
   private record(type: Entry["type"], actor: string, subject: string, payload: Record<string, unknown>) {
@@ -273,7 +315,7 @@ export class CidService {
     const account: Account = {
       cid: `cid_${randomUUID()}`,
       username,
-      mailAddress: `${username}@${MAIL_DOMAIN}`,
+      mailAddress: `${username}@${this.mailDomain}`,
       handle: `@${username}.veil`,
       orgId: input.orgId,
       createdAt: this.now().toISOString(),

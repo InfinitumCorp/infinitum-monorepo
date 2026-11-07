@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { mkdtempSync, readFileSync, writeFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { cumulusDomains } from "@infinitum/cid";
 import { Labyrinth, LBRNTH, LabyrinthError, MemoryStorage, EncryptedFileStorage, hashBytes, verifyAudit } from "./index.ts";
 import type { CommitInput, LabyrinthOptions, Scope } from "./index.ts";
 
@@ -195,7 +196,7 @@ test("real CID grants cannot substitute for the client organization's paid entit
   const { CidService } = await import("@infinitum/cid");
   const { Ledger, generateSigner } = await import("@infinitum/firmament");
   const signer = generateSigner();
-  const cid = new CidService({ ledger: new Ledger(undefined, { authorizedSigners: [signer.publicKey] }), signer, rpId: "infinitum.id", origins: ["https://infinitum.id"] });
+  const cid = new CidService({ ledger: new Ledger(undefined, { authorizedSigners: [signer.publicKey] }), signer, rpId: "id.cumuluscloud.app", origins: ["https://id.cumuluscloud.app"] });
   const account = await cid.createAccount({ username: "labyrinth-client" });
   let entitled = false;
   const lab = new Labyrinth({ can: cid.can.bind(cid), entitled: () => entitled, canProvision: (actor, org) => actor === account.cid && org === "real-client" });
@@ -291,6 +292,24 @@ test("unauthorized commits are denied before inspecting or scanning any payload"
   const s = setup();
   const input = { get changes() { throw new Error("Payload must not be inspected"); } };
   error(() => s.lab.commit("bob", "client-a", s.repo.id, input as never), "forbidden");
+});
+
+test("CORS allows the exact Cumulus ID, Cloud and Mail origins", () => {
+  const s = setup();
+  const origins = cumulusDomains().corsOrigins;
+  assert.equal(origins.includes("*"), false);
+  assert.deepEqual(origins.map((origin) => s.lab.corsAllowOrigin(origin)), [...origins]);
+  assert.equal(s.lab.corsAllowOrigin("*"), null);
+  assert.equal(s.lab.corsAllowOrigin("https://id.cumuluscloud.app.evil.com"), null);
+  const headers = s.lab.corsHeaders("https://mail.cumuluscloud.app");
+  assert.equal(headers["Access-Control-Allow-Origin"], "https://mail.cumuluscloud.app");
+  assert.equal(JSON.stringify(headers).includes("*"), false);
+  assert.equal(s.lab.corsHeaders("https://evil.example")["Access-Control-Allow-Origin"], undefined);
+  error(() => new Labyrinth({ ...s.opts, corsOrigins: ["*"] }), "invalid");
+  error(() => new Labyrinth({ ...s.opts, corsOrigins: ["https://*.cumuluscloud.app"] }), "invalid");
+  const narrowed = new Labyrinth({ ...s.opts, corsOrigins: ["https://id.cumuluscloud.app"] });
+  assert.equal(narrowed.corsAllowOrigin("https://cloud.cumuluscloud.app"), null);
+  assert.equal(narrowed.corsAllowOrigin("https://id.cumuluscloud.app"), "https://id.cumuluscloud.app");
 });
 
 test("rejected async authorities are denied without unhandled rejections", async () => {
