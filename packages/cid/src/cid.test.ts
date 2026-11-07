@@ -40,8 +40,9 @@ describe("CID accounts", () => {
     assert.equal(a.username, "alex");
     assert.equal(a.mailAddress, `alex@${MAIL_DOMAIN}`);
     assert.equal(MAIL_DOMAIN, "cumuluscloud.app");
-    assert.equal(cid.issuer, "https://id.cumuluscloud.app");
-    assert.equal(cid.jwksUri, "https://id.cumuluscloud.app/.well-known/jwks.json");
+    assert.equal(cid.issuer, "https://id.cumuluscloud.app/realms/cumulus");
+    assert.equal(cid.jwksUri, "https://id.cumuluscloud.app/realms/cumulus/protocol/openid-connect/certs");
+    assert.equal(cid.issuerMetadata().id_host, "id.cumuluscloud.app");
     assert.equal(cid.corsAllowOrigin(ORIGIN), ORIGIN);
     assert.equal(cid.corsAllowOrigin("*"), null);
     assert.equal(cid.corsHeaders("https://cloud.cumuluscloud.app")["Access-Control-Allow-Origin"], "https://cloud.cumuluscloud.app");

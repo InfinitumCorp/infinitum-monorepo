@@ -51,15 +51,18 @@ Cumulus://ID, Cumulus://Cloud and Cumulus://Mail share `cumuluscloud.app`
 | Variable | Default |
 |---|---|
 | `CUMULUS_ROOT_DOMAIN` | `cumuluscloud.app` (mail addresses are `name@cumuluscloud.app`) |
-| `CUMULUS_ID_HOST` | `id.cumuluscloud.app` (OIDC issuer and JWKS) |
+| `CUMULUS_ID_HOST` | `id.cumuluscloud.app` |
+| `CUMULUS_KEYCLOAK_REALM` | `cumulus` |
 | `CUMULUS_CLOUD_HOST` | `cloud.cumuluscloud.app` |
 | `CUMULUS_MAIL_HOST` | `mail.cumuluscloud.app` |
 
 `labyrinth.corsHeaders(requestOrigin)` allows only the exact HTTPS origins of
 those three hosts. A wildcard origin is rejected, and `Access-Control-Allow-Origin`
 is never `*`. Pass `corsOrigins` to narrow that list; every entry must be an
-exact origin. The issuer is `https://id.cumuluscloud.app` and its keys are
-published at `https://id.cumuluscloud.app/.well-known/jwks.json`.
+exact origin. The CID issuer is the Keycloak realm
+`https://id.cumuluscloud.app/realms/cumulus`, derived from `CUMULUS_ID_HOST` and
+`CUMULUS_KEYCLOAK_REALM`. Its keys are published at
+`https://id.cumuluscloud.app/realms/cumulus/protocol/openid-connect/certs`.
 
 ## Authorization and data model
 

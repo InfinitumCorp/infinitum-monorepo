@@ -20,7 +20,8 @@ Open http://localhost:3010 and sign in with a passkey.
 | `PORT` | Listener, default 3010 |
 | `MAIL_ORIGIN` | Public origin; passkeys are bound to it |
 | `CUMULUS_ROOT_DOMAIN` | Mail-address domain, default `cumuluscloud.app` |
-| `CUMULUS_ID_HOST` | Cumulus://ID issuer and JWKS host, default `id.cumuluscloud.app` |
+| `CUMULUS_ID_HOST` | Cumulus://ID host, default `id.cumuluscloud.app`. Issuer is `https://id.cumuluscloud.app/realms/cumulus` |
+| `CUMULUS_KEYCLOAK_REALM` | Keycloak realm, default `cumulus`. JWKS is `https://id.cumuluscloud.app/realms/cumulus/protocol/openid-connect/certs` |
 | `CUMULUS_CLOUD_HOST` | Cumulus://Cloud host, default `cloud.cumuluscloud.app` |
 | `CUMULUS_MAIL_HOST` | Cumulus://Mail host, default `mail.cumuluscloud.app` |
 | `MAIL_DATA_DIR` | Where stores and the Firmament ledger live, default `./data` |

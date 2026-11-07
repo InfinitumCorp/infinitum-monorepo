@@ -12,6 +12,7 @@ import {
 const defaults = {
   CUMULUS_ROOT_DOMAIN: undefined,
   CUMULUS_ID_HOST: undefined,
+  CUMULUS_KEYCLOAK_REALM: undefined,
   CUMULUS_CLOUD_HOST: undefined,
   CUMULUS_MAIL_HOST: undefined,
 };
@@ -24,9 +25,10 @@ describe("Cumulus domain", () => {
     assert.equal(domains.idHost, "id.cumuluscloud.app");
     assert.equal(domains.cloudHost, "cloud.cumuluscloud.app");
     assert.equal(domains.mailHost, "mail.cumuluscloud.app");
+    assert.equal(domains.realm, "cumulus");
     assert.deepEqual(cidIssuerMetadata(domains), {
-      issuer: "https://id.cumuluscloud.app",
-      jwks_uri: "https://id.cumuluscloud.app/.well-known/jwks.json",
+      issuer: "https://id.cumuluscloud.app/realms/cumulus",
+      jwks_uri: "https://id.cumuluscloud.app/realms/cumulus/protocol/openid-connect/certs",
       id_host: "id.cumuluscloud.app",
     });
     assert.deepEqual(domains.corsOrigins, [
@@ -40,15 +42,18 @@ describe("Cumulus domain", () => {
   it("derives hosts from the root domain and accepts an explicit host under that root", () => {
     const derived = cumulusDomains({ ...defaults, CUMULUS_ROOT_DOMAIN: "Example.Test" });
     assert.equal(derived.idHost, "id.example.test");
-    assert.equal(derived.issuer, "https://id.example.test");
+    assert.equal(derived.issuer, "https://id.example.test/realms/cumulus");
+    assert.equal(derived.jwksUri, "https://id.example.test/realms/cumulus/protocol/openid-connect/certs");
     assert.equal(derived.mailDomain, "example.test");
     const explicit = cumulusDomains({
       ...defaults,
       CUMULUS_ROOT_DOMAIN: "cumuluscloud.app",
       CUMULUS_ID_HOST: "login.cumuluscloud.app",
+      CUMULUS_KEYCLOAK_REALM: "Staff",
     });
-    assert.equal(explicit.issuer, "https://login.cumuluscloud.app");
-    assert.equal(explicit.jwksUri, "https://login.cumuluscloud.app/.well-known/jwks.json");
+    assert.equal(explicit.realm, "staff");
+    assert.equal(explicit.issuer, "https://login.cumuluscloud.app/realms/staff");
+    assert.equal(explicit.jwksUri, "https://login.cumuluscloud.app/realms/staff/protocol/openid-connect/certs");
     assert.equal(explicit.corsOrigins[0], "https://login.cumuluscloud.app");
   });
 
@@ -61,6 +66,9 @@ describe("Cumulus domain", () => {
       /subdomains/,
     );
     assert.throws(() => cumulusDomains({ ...defaults, CUMULUS_CLOUD_HOST: "cloud.evil.com" }), /subdomains/);
+    for (const bad of ["*", "cumulus/admin", "../cumulus", "cumulus.realm", ""]) {
+      assert.throws(() => cumulusDomains({ ...defaults, CUMULUS_KEYCLOAK_REALM: bad }), /realm name/, bad);
+    }
   });
 });
 

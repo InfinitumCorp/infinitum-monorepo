@@ -221,7 +221,7 @@ const hashToken = (t: string) => createHash("sha256").update(t).digest("hex");
 
 export class CidService {
   readonly store: CidStore;
-  /** OIDC issuer for Cumulus://ID, https://id.cumuluscloud.app by default. */
+  /** Keycloak issuer for Cumulus://ID, https://id.cumuluscloud.app/realms/cumulus by default. */
   readonly issuer: string;
   /** JWKS URI for `issuer`. */
   readonly jwksUri: string;

@@ -3,9 +3,14 @@
  *
  * Defaults (override with the environment; never a wildcard):
  *   CUMULUS_ROOT_DOMAIN=cumuluscloud.app
- *   CUMULUS_ID_HOST=id.cumuluscloud.app       issuer and JWKS
+ *   CUMULUS_ID_HOST=id.cumuluscloud.app
+ *   CUMULUS_KEYCLOAK_REALM=cumulus
  *   CUMULUS_CLOUD_HOST=cloud.cumuluscloud.app
  *   CUMULUS_MAIL_HOST=mail.cumuluscloud.app
+ *
+ * The CID issuer is the Keycloak realm on the ID host:
+ *   https://id.cumuluscloud.app/realms/cumulus
+ *   JWKS: https://id.cumuluscloud.app/realms/cumulus/protocol/openid-connect/certs
  *
  * Mail addresses are name@CUMULUS_ROOT_DOMAIN. The three hosts are the HTTPS
  * origins of the products. CORS allowlists those exact origins and nothing else.
@@ -13,10 +18,12 @@
 
 const HOSTNAME =
   /^(?=.{1,253}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/;
+const REALM = /^[a-z0-9](?:[a-z0-9_-]{0,62})$/;
 
 export const CUMULUS_DOMAIN_DEFAULTS = Object.freeze({
   rootDomain: "cumuluscloud.app",
   idHost: "id.cumuluscloud.app",
+  realm: "cumulus",
   cloudHost: "cloud.cumuluscloud.app",
   mailHost: "mail.cumuluscloud.app",
 });
@@ -28,9 +35,11 @@ export interface CumulusDomains {
   mailHost: string;
   /** Email domain. Addresses look like alex@cumuluscloud.app. */
   mailDomain: string;
-  /** OIDC issuer for Cumulus://ID. Exact string, no trailing slash. */
+  /** Keycloak realm. Default cumulus. */
+  realm: string;
+  /** Keycloak issuer: https://<id-host>/realms/<realm>. No trailing slash. */
   issuer: string;
-  /** JWKS document for that issuer. */
+  /** Keycloak JWKS: <issuer>/protocol/openid-connect/certs. */
   jwksUri: string;
   origins: { id: string; cloud: string; mail: string };
   /** Exact browser origins. Never includes "*". */
@@ -55,12 +64,21 @@ function underRoot(host: string, root: string): boolean {
   return host === root || host.endsWith(`.${root}`);
 }
 
+function realmName(value: string | undefined, fallback: string): string {
+  const realm = (value ?? fallback).trim().toLowerCase();
+  if (!realm || realm.includes("*") || realm.includes("/") || realm.includes(".") || !REALM.test(realm)) {
+    throw new Error("CUMULUS_KEYCLOAK_REALM must be an exact realm name, not a path or wildcard");
+  }
+  return realm;
+}
+
 /** Read the Cumulus domain from `env`. Pass `{}` to force the defaults. */
 export function cumulusDomains(env: Record<string, string | undefined> = process.env): CumulusDomains {
   const rootDomain = hostname(env.CUMULUS_ROOT_DOMAIN, CUMULUS_DOMAIN_DEFAULTS.rootDomain, "CUMULUS_ROOT_DOMAIN");
   const idHost = hostname(env.CUMULUS_ID_HOST, `id.${rootDomain}`, "CUMULUS_ID_HOST");
   const cloudHost = hostname(env.CUMULUS_CLOUD_HOST, `cloud.${rootDomain}`, "CUMULUS_CLOUD_HOST");
   const mailHost = hostname(env.CUMULUS_MAIL_HOST, `mail.${rootDomain}`, "CUMULUS_MAIL_HOST");
+  const realm = realmName(env.CUMULUS_KEYCLOAK_REALM, CUMULUS_DOMAIN_DEFAULTS.realm);
   for (const [name, host] of [
     ["CUMULUS_ID_HOST", idHost],
     ["CUMULUS_CLOUD_HOST", cloudHost],
@@ -77,15 +95,16 @@ export function cumulusDomains(env: Record<string, string | undefined> = process
   if (corsOrigins.some((origin) => origin === "*" || origin.includes("*"))) {
     throw new Error("CORS origins must be exact");
   }
-  const issuer = origins.id;
+  const issuer = `https://${idHost}/realms/${realm}`;
   return {
     rootDomain,
     idHost,
     cloudHost,
     mailHost,
     mailDomain: rootDomain,
+    realm,
     issuer,
-    jwksUri: `${issuer}/.well-known/jwks.json`,
+    jwksUri: `${issuer}/protocol/openid-connect/certs`,
     origins,
     corsOrigins,
   };

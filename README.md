@@ -29,11 +29,12 @@ Run +SPCTR locally: `node apps/spectre/src/server/main.ts`, then open http://loc
 | Variable | Default | Use |
 |---|---|---|
 | `CUMULUS_ROOT_DOMAIN` | `cumuluscloud.app` | Mail addresses: `name@cumuluscloud.app` |
-| `CUMULUS_ID_HOST` | `id.cumuluscloud.app` | Cumulus://ID issuer `https://id.cumuluscloud.app` and JWKS `https://id.cumuluscloud.app/.well-known/jwks.json` |
+| `CUMULUS_ID_HOST` | `id.cumuluscloud.app` | Host for the Cumulus://ID Keycloak issuer |
+| `CUMULUS_KEYCLOAK_REALM` | `cumulus` | Issuer `https://id.cumuluscloud.app/realms/cumulus`. JWKS `https://id.cumuluscloud.app/realms/cumulus/protocol/openid-connect/certs` |
 | `CUMULUS_CLOUD_HOST` | `cloud.cumuluscloud.app` | Cumulus://Cloud |
 | `CUMULUS_MAIL_HOST` | `mail.cumuluscloud.app` | Cumulus://Mail |
 
-CORS allows only those exact HTTPS origins. A wildcard origin is rejected, and `Access-Control-Allow-Origin` is never `*`. When `CUMULUS_ROOT_DOMAIN` is overridden on its own, the three hosts follow it (`id.`, `cloud.`, `mail.`). An explicit host must be that root domain or one of its subdomains.
+The issuer is derived from the ID host and realm: `https://<CUMULUS_ID_HOST>/realms/<CUMULUS_KEYCLOAK_REALM>`. CORS allows only the exact HTTPS origins of the three hosts. A wildcard origin is rejected, and `Access-Control-Allow-Origin` is never `*`. When `CUMULUS_ROOT_DOMAIN` is overridden on its own, the three hosts follow it (`id.`, `cloud.`, `mail.`). An explicit host must be that root domain or one of its subdomains.
 
 ### Social sign-in
 
