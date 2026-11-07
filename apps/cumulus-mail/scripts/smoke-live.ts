@@ -11,7 +11,7 @@ import { writeFileSync } from "node:fs";
 import { VirtualAuthenticator } from "../../../packages/cid/src/testing/virtual-authenticator.ts";
 
 const base = (process.argv[2] ?? "").replace(/\/$/, "");
-if (!base.startsWith("https://")) throw new Error("Pass the deployment's https URL");
+if (!/^https:\/\/|^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(base)) throw new Error("Pass the deployment's https URL (or a local http URL)");
 const username = process.argv[3] ?? `smoketest${Date.now().toString(36)}`;
 const rpId = new URL(base).hostname;
 const auth = new VirtualAuthenticator();

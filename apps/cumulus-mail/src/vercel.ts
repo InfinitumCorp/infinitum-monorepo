@@ -27,6 +27,15 @@ function required(name: string): string {
   return v;
 }
 
+/** Workers give modules a non-URL import.meta.url, so fall back to a fixed path there. */
+function publicDir(): string {
+  try {
+    return new URL("./public/", import.meta.url).pathname;
+  } catch {
+    return "/public/";
+  }
+}
+
 function build() {
   const origin = required("MAIL_ORIGIN").replace(/\/$/, "");
   const signer = signerFromPrivateKey(required("FIRMAMENT_SIGNER_KEY"));
@@ -59,7 +68,7 @@ function build() {
   let app: ReturnType<typeof createMailApp>;
   app = createMailApp({
     suite,
-    publicDir: new URL("./public/", import.meta.url).pathname, // static files come from Vercel's CDN
+    publicDir: publicDir(), // static files come from the CDN (Vercel) or static assets (Workers)
     origin,
     secureCookies: origin.startsWith("https://"),
     noTimers: true,
