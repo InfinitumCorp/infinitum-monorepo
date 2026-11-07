@@ -951,6 +951,9 @@ async function boot() {
   }
   try {
     state.data = await api("/api/state");
+    const params = new URLSearchParams(location.search);
+    if (params.get("compose") === "1") state.composer = blankComposer({ to: params.get("to") || "" });
+    if (params.has("compose") || params.has("source")) history.replaceState(null, "", "/");
     render();
   } catch {
     // Not signed in: renderAuth() has already been shown.
@@ -958,3 +961,8 @@ async function boot() {
 }
 
 boot();
+
+/* Installable app: register the service worker, and open the composer from the "Compose" shortcut. */
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+  navigator.serviceWorker.register("/sw.js").catch(() => {});
+}
