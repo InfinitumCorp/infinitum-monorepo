@@ -406,6 +406,9 @@ importers:
 
   packages/mail:
     dependencies:
+      '@infinitum/cid':
+        specifier: workspace:*
+        version: link:../cid
       '@infinitum/lbrnth-client':
         specifier: workspace:*
         version: link:../lbrnth-client
