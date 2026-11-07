@@ -35,12 +35,13 @@ export { MAIL_DOMAIN };
 export const INFINITUM_APPS = [
   "veil", "fabric", "throne", "eon", "scalvs", "architect", "spectre", "metatron",
   "cumulus", "cumulus-mail", "firm-wallet", "aether", "argus", "hrvst", "eidetic",
-  "orbis", "pollen", "flower", "nemesis", "LBRNTH",
+  "orbis", "pollen", "flower", "nemesis", "LBRNTH", "firm", "daemon", "slug", "seraphim", "tokens",
+  "odin", "firmament", "cumulus-exchange", "cherubim", "azrail", "cloud", "conjure",
 ] as const;
 export type AppId = (typeof INFINITUM_APPS)[number];
 
 /** Earlier ids for the same app, still accepted for one release. */
-const LEGACY_APP_IDS: Record<string, AppId> = { architct: "architect", cndctr: "architect" };
+const LEGACY_APP_IDS: Record<string, AppId> = { architct: "architect", cndctr: "architect", scalus: "scalvs" };
 
 /**
  * What every new CID comes with, per the Cumulus://ID page. Like a Google account and Gmail,
@@ -837,6 +838,13 @@ export class CidService {
     const session = this.store.sessions.get(sessionId);
     const expiresAt = session ? Date.parse(session.expiresAt) : NaN;
     return !!session && session.cid === cid && !session.revokedAt && Number.isFinite(expiresAt) && expiresAt > this.now().getTime() && this.store.accounts.has(cid);
+  }
+
+  /** Trusted current directory membership; never infer organizations by email. */
+  organizationMembership(cid: string): { id: string; name: string; admin: boolean } | null {
+    const account = this.account(cid);
+    const org = account.orgId ? this.store.orgs.get(account.orgId) : undefined;
+    return org ? { id: org.id, name: org.name, admin: org.admins.includes(cid) } : null;
   }
 
   /** Admin control: sign a member out of every device (e.g. a lost laptop or offboarding). */

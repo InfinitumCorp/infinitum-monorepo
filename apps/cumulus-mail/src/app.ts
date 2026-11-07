@@ -1,3 +1,4 @@
+import { serveNodeLabyrinth } from "@infinitum/lbrnth";
 /**
  * Cumulus://Mail HTTP app. Sign-in is Cumulus://ID; every request is scoped to the signed-in CID,
  * and access needs the "cumulus-mail" grant, so revoking it in the CID permissions dashboard
@@ -461,6 +462,7 @@ export function createMailApp(deps: MailAppDeps) {
     }
     const url = new URL(req.url ?? "/", "http://localhost");
     try {
+      if (url.pathname === "/api/labyrinth") return await serveNodeLabyrinth(req, res, deps.suite?.labyrinth, parseCookies(req.headers.cookie)[COOKIE], deps.onChange);
       if (url.pathname === "/cumulus-config.js") {
         const body = `globalThis.CUMULUS=${JSON.stringify({ mailDomain: MAIL_DOMAIN })};`;
         res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" });
