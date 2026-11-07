@@ -6,7 +6,19 @@ add a cipher.
 
 `apps/veil` (the Chrome extension), FABRIC, and Cumulus are unchanged.
 
-The VEIL browser product host is `https://infinitumveil.app`, hosted on Cloudflare. This lab does not dial that host. Peer endpoints remain IPv4 loopback.
+## Product domain
+
+Canonical name for the VEIL VPN product: `infinitumveilvpn.app`, hosted at
+Cloudflare. The constant is `VPNProduct()` in `tunnel/product.go`.
+
+That name is product metadata. It is not a WireGuard peer, not a DNS server,
+and not a running tunnel. This lab still binds `127.0.0.1` only and rejects
+the product domain as an endpoint. No production key is stored here, and no
+live endpoint has been provisioned.
+
+`infinitumveil.app` is the separate browser product. Do not use it for the VPN.
+
+Status of this tree: `lab-only`. Android `VpnService` is not built yet.
 
 ## What the tests prove
 

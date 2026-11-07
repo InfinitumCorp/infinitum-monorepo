@@ -4,6 +4,7 @@ package tunnel
 
 import (
 	"net/netip"
+	"os"
 	"strings"
 	"testing"
 )
@@ -48,7 +49,14 @@ func TestEndpointRejectsHostnamesIPv6AndPublicAddresses(t *testing.T) {
 	if err := ValidateEndpoint("127.0.0.1:51820"); err != nil {
 		t.Fatal(err)
 	}
-	for _, endpoint := range []string{"dns.example:51820", "[::1]:51820", "203.0.113.10:51820", "127.0.0.1:0"} {
+	for _, endpoint := range []string{
+		"dns.example:51820",
+		"[::1]:51820",
+		"203.0.113.10:51820",
+		"127.0.0.1:0",
+		VPNProduct().Domain,
+		VPNProduct().Domain + ":51820",
+	} {
 		if err := ValidateEndpoint(endpoint); err == nil {
 			t.Fatalf("accepted %s", endpoint)
 		}
@@ -71,6 +79,42 @@ func TestCaptureRoutesAreFullTunnel(t *testing.T) {
 	v4, v6 := CaptureRoutes()
 	if v4.String() != "0.0.0.0/0" || v6.String() != "::/0" {
 		t.Fatalf("capture routes = %s %s", v4, v6)
+	}
+}
+
+func TestProductDomainIsMetadataNotAnEndpoint(t *testing.T) {
+	product := VPNProduct()
+	if product.Domain != "infinitumveilvpn.app" || product.Host != "Cloudflare" {
+		t.Fatalf("product = %+v", product)
+	}
+	if product.Status != ProductStatusLabOnly {
+		t.Fatalf("status = %s", product.Status)
+	}
+	if product.DistinctFrom != "infinitumveil.app" || product.Domain == product.DistinctFrom {
+		t.Fatalf("browser domain collided with VPN domain: %+v", product)
+	}
+	if err := ValidateEndpoint("https://infinitumveil.app"); err == nil {
+		t.Fatal("browser host accepted as a VPN peer")
+	}
+	if err := ValidateEndpoint(product.Domain + ":51820"); err != ErrEndpoint {
+		t.Fatalf("product domain as peer error = %v", err)
+	}
+	session := NewSession()
+	if err := session.SetPeer([32]byte{}, product.Domain+":51820"); err != ErrEndpoint {
+		t.Fatalf("SetPeer error = %v", err)
+	}
+	if session.Listening() || session.Connected() {
+		t.Fatal("metadata lookup opened a session")
+	}
+	bindSrc, err := os.ReadFile("bind.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(bindSrc), product.Domain) || !strings.Contains(string(bindSrc), "127.0.0.1") {
+		t.Fatal("loopback bind no longer stays on 127.0.0.1")
+	}
+	if LabProfile().DNS == nil || LabProfile().DNS.String() != "10.77.0.1" {
+		t.Fatal("lab DNS changed away from the tunnel prefix")
 	}
 }
 
