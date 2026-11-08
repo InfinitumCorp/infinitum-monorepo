@@ -52,10 +52,13 @@ export {
   messageBytes,
   isReservedMailName,
   MAX_INBOUND_BODY,
+  OUTBOUND_MAX_ATTEMPTS,
 } from "./postoffice.ts";
 export type {
   StoredMailbox,
   OutboundMail,
+  OutboundSend,
+  OutboundResult,
   MailQuota,
   MailPayments,
   PostOfficeOptions,
