@@ -1,4 +1,5 @@
 import { Hono, type Context, type Next } from "hono";
+import { cors } from "hono/cors";
 import { timingSafeEqual } from "node:crypto";
 import { z, ZodError } from "zod";
 import { AppError, fail, type Ctx } from "./context.js";
@@ -47,8 +48,30 @@ export function createApp(ctx: Ctx) {
     await next();
   };
 
+  // Product web apps (rchtch.app, scalvs.app, …) call the customer API from the browser.
+  // Only allow-listed https origins get CORS; admin and webhook routes never do.
+  const productCors = cors({
+    origin: (origin) => (billing.isAllowedOrigin(ctx, origin) ? origin : null),
+    allowHeaders: ["authorization", "content-type"], allowMethods: ["GET", "POST", "OPTIONS"], maxAge: 600,
+  });
+  app.use("/v1/*", async (c, next) => {
+    const p = c.req.path;
+    if (p.startsWith("/v1/admin") || p.startsWith("/v1/webhooks")) return next();
+    return productCors(c, next);
+  });
+
   // ------------------------------------------------------------ public
   app.get("/health", (c) => c.json({ ok: true }));
+
+  // Fallback landing pages when Checkout / the portal was opened without an app returnUrl.
+  const page = (title: string, text: string) => `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#fff;color:#000;font:16px/1.5 system-ui,sans-serif}
+main{max-width:28rem;padding:2rem;border:1px solid #000}h1{font-size:1.25rem;margin:0 0 .5rem}p{margin:0}</style></head>
+<body><main><h1>${title}</h1><p>${text}</p></main></body></html>`;
+  app.get("/billing/success", (c) => c.html(page("Payment complete", "Thank you. Your plan is active. You can close this tab and return to the app.")));
+  app.get("/billing/cancelled", (c) => c.html(page("Checkout cancelled", "No charge was made. You can close this tab and return to the app.")));
+  app.get("/billing", (c) => c.html(page("Billing updated", "Your billing settings are saved. You can close this tab and return to the app.")));
 
   app.get("/v1/catalog", (c) => c.json({
     plans: billing.publicPlans(), meters: METERS, hardware: HARDWARE, marketplaces: MARKETPLACES, creditPacks: CREDIT_PACKS,
@@ -121,22 +144,25 @@ export function createApp(ctx: Ctx) {
   v1.get("/me/entitlements", async (c) => c.json(await billing.entitlements(db, c.get("org"))));
 
   v1.post("/subscriptions/checkout", async (c) => {
-    const b = await body(c, z.object({ planId: z.string(), quantity: z.number().int().min(1).max(10000).default(1) }));
-    return c.json(await billing.startSubscriptionCheckout(ctx, c.get("org"), b.planId, b.quantity));
+    const b = await body(c, z.object({ planId: z.string(), quantity: z.number().int().min(1).max(10000).default(1),
+      returnUrl: z.string().max(2000).optional() }));
+    return c.json(await billing.startSubscriptionCheckout(ctx, c.get("org"), b.planId, b.quantity, b.returnUrl));
   });
 
   v1.post("/billing/portal", async (c) => {
+    const b = await body(c, z.object({ returnUrl: z.string().max(2000).optional() }));
+    const returnUrl = billing.portalReturnUrl(ctx, b.returnUrl);
     const org = c.get("org");
     const cid = await billing.ensureCustomerId(ctx, org);
-    return c.json({ url: await ctx.pay.billingPortal(cid, `${ctx.config.publicUrl}/billing`) });
+    return c.json({ url: await ctx.pay.billingPortal(cid, returnUrl) });
   });
 
   const usageBody = z.object({ meter: z.string(), quantity: z.number().positive(), idempotencyKey: z.string().min(1).max(200) });
   v1.post("/usage", async (c) => c.json(await billing.recordUsage(ctx, c.get("org"), await body(c, usageBody))));
 
   v1.post("/credits/checkout", async (c) => {
-    const b = await body(c, z.object({ packId: z.string() }));
-    return c.json(await billing.startCreditTopup(ctx, c.get("org"), b.packId));
+    const b = await body(c, z.object({ packId: z.string(), returnUrl: z.string().max(2000).optional() }));
+    return c.json(await billing.startCreditTopup(ctx, c.get("org"), b.packId, b.returnUrl));
   });
 
   v1.post("/orders", async (c) => {

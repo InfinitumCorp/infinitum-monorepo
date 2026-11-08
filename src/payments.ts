@@ -258,7 +258,7 @@ export class FakePayments implements PaymentProvider {
   async paymentCheckout(a: any) { const id = this.id("cs"); return this.rec("paymentCheckout", a, { id, url: `https://pay.test/${id}` }); }
   async sendInvoice(a: any) { const id = this.id("in"); return this.rec("sendInvoice", a, { id, url: `https://pay.test/${id}` }); }
   async reportUsage(a: any) { this.rec("reportUsage", a, undefined); }
-  async billingPortal(c: string) { return this.rec("billingPortal", c, `https://pay.test/portal/${c}`); }
+  async billingPortal(c: string, returnUrl: string) { return this.rec("billingPortal", { customerId: c, returnUrl }, `https://pay.test/portal/${c}`); }
   async connectOnboarding(a: any) { const accountId = a.existingAccountId ?? this.id("acct"); return this.rec("connectOnboarding", a, { accountId, url: `https://pay.test/connect/${accountId}` }); }
   async transfer(a: any) { return this.rec("transfer", a, { id: this.id("tr") }); }
   async refund(a: any) { return this.rec("refund", a, { id: this.id("re") }); }

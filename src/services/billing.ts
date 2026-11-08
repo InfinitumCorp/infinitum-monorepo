@@ -91,8 +91,50 @@ export function assertPurchasable(org: Org, plan: Plan) {
     fail(403, "approval_required", `${plan.name} requires account approval (KYB / purpose review) before purchase.`);
 }
 
-export async function startSubscriptionCheckout(ctx: Ctx, org: Org, planId: string, quantity = 1) {
+// ------------------------------------------------------------- return URLs
+
+/** True when `origin` (scheme://host[:port]) is an https origin on an allow-listed host. */
+export function isAllowedOrigin(ctx: Ctx, origin: string | undefined): boolean {
+  if (!origin) return false;
+  try {
+    const u = new URL(origin);
+    const host = u.hostname.toLowerCase();
+    return u.protocol === "https:" && (ctx.config.returnHosts ?? []).some((h) => host === h || host.endsWith(`.${h}`));
+  } catch { return false; }
+}
+
+/** Validates an app-supplied return URL; null when absent. Rejects anything off the allow-list (open-redirect guard). */
+export function checkReturnUrl(ctx: Ctx, raw: string | undefined): URL | null {
+  if (!raw) return null;
+  let u: URL;
+  try { u = new URL(raw); } catch { return fail(400, "bad_return_url", "returnUrl must be an absolute https URL"); }
+  if (u.username || u.password || !isAllowedOrigin(ctx, u.origin))
+    fail(400, "return_url_not_allowed", "returnUrl must be an https URL on an Infinitum product domain");
+  u.hash = "";
+  return u;
+}
+
+const withParam = (u: URL, key: string, value: string) => { const x = new URL(u); x.searchParams.set(key, value); return x.toString(); };
+
+/** Success / cancel URLs for Checkout. Stripe substitutes {CHECKOUT_SESSION_ID}, so it is appended unencoded. */
+export function checkoutUrls(ctx: Ctx, returnUrl?: string) {
+  const app = checkReturnUrl(ctx, returnUrl);
+  if (!app) return {
+    successUrl: `${ctx.config.publicUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancelUrl: `${ctx.config.publicUrl}/billing/cancelled`,
+  };
+  return {
+    successUrl: `${withParam(app, "billing", "success")}&session_id={CHECKOUT_SESSION_ID}`,
+    cancelUrl: withParam(app, "billing", "cancelled"),
+  };
+}
+
+export const portalReturnUrl = (ctx: Ctx, returnUrl?: string) =>
+  checkReturnUrl(ctx, returnUrl)?.toString() ?? `${ctx.config.publicUrl}/billing`;
+
+export async function startSubscriptionCheckout(ctx: Ctx, org: Org, planId: string, quantity = 1, returnUrl?: string) {
   const plan = getPlan(planId) ?? fail(404, "plan_not_found", `Unknown plan ${planId}`);
+  const urls = checkoutUrls(ctx, returnUrl);
   assertPurchasable(org, plan);
   if (plan.priceCents === 0 && !plan.overage) fail(400, "free_plan", "Free plans are active by default; no checkout needed.");
   if (!plan.perSeat && quantity !== 1) fail(400, "bad_quantity", "This plan is not sold per seat");
@@ -100,9 +142,7 @@ export async function startSubscriptionCheckout(ctx: Ctx, org: Org, planId: stri
     fail(409, "already_subscribed", "Already subscribed to this product. Use the billing portal to change plans.");
   const cid = await customerId(ctx, org);
   const session = await ctx.pay.subscriptionCheckout({
-    customerId: cid, orgId: org.id, planId: plan.id, quantity, trialDays: plan.trialDays,
-    successUrl: `${ctx.config.publicUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancelUrl: `${ctx.config.publicUrl}/billing/cancelled`,
+    customerId: cid, orgId: org.id, planId: plan.id, quantity, trialDays: plan.trialDays, ...urls,
   });
   await audit(ctx.db, org.id, org.id, "subscription.checkout_started", { planId, quantity });
   return session;
@@ -242,12 +282,13 @@ export async function entitlements(db: Db, org: Org) {
 
 // ------------------------------------------------------------- prepaid credits
 
-export async function startCreditTopup(ctx: Ctx, org: Org, packId: string) {
+export async function startCreditTopup(ctx: Ctx, org: Org, packId: string, returnUrl?: string) {
   const pack = CREDIT_PACKS.find((p) => p.id === packId) ?? fail(404, "pack_not_found", "Unknown credit pack");
+  const urls = checkoutUrls(ctx, returnUrl);
   return ctx.pay.paymentCheckout({
     customerId: await customerId(ctx, org), orgId: org.id, purpose: "credits", ref: pack.id,
     items: [{ name: `Infinitum credits ($${(pack.creditCents / 100).toFixed(2)})`, amountCents: pack.priceCents, quantity: 1 }],
-    successUrl: `${ctx.config.publicUrl}/billing/success`, cancelUrl: `${ctx.config.publicUrl}/billing/cancelled`,
+    ...urls,
   });
 }
 

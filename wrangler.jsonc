@@ -12,6 +12,10 @@
   "triggers": { "crons": ["*/15 * * * *"] },
   "vars": {
     "NODE_ENV": "production",
+    // Fallback Checkout / portal landing pages are served by this worker.
+    "PUBLIC_URL": "https://infinitum-revenue.infinitumcorp.workers.dev",
+    // Product domains apps may pass as returnUrl (and that get CORS on the customer API).
+    "RETURN_HOSTS": "rchtch.app,scalvs.app,cumuluscloud.app,infinitumcorp.workers.dev",
     "STRIPE_AUTOMATIC_TAX": "false",
     "TOKEN_PAYOUTS_ENABLED": "false"
   }

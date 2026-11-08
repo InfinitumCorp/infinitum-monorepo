@@ -11,7 +11,7 @@ beforeEach(async () => {
   db = await pgliteDb();
   await migrate(db);
   pay = new FakePayments();
-  ctx = { db, pay, config: { publicUrl: "https://infinitum.test", adminApiKey: ADMIN, tokenPayoutsEnabled: false } };
+  ctx = { db, pay, config: { publicUrl: "https://infinitum.test", returnHosts: ["rchtch.app", "scalvs.app"], adminApiKey: ADMIN, tokenPayoutsEnabled: false } };
   app = createApp(ctx);
 });
 
@@ -305,5 +305,42 @@ describe("refunds and disputes", () => {
     await webhook({ kind: "checkout.completed", sessionId: "cs", paymentIntentId: "pi_o", purpose: "order", ref: o.body.orderId, orgId, amountCents: o.body.dueNowCents } as any);
     await webhook({ kind: "dispute.lost", paymentIntentId: "pi_o", amountCents: o.body.dueNowCents } as any);
     expect((await call("GET", "/v1/orders", apiKey)).body[0].status).toBe("refunded");
+  });
+});
+
+describe("app return URLs and CORS", () => {
+  it("sends Checkout back to an allow-listed product URL", async () => {
+    const { apiKey } = await signup("Ret");
+    const co = await call("POST", "/v1/subscriptions/checkout", apiKey, { planId: "scalvs_pro", returnUrl: "https://scalvs.app/account?tab=plan#x" });
+    expect(co.status).toBe(200);
+    expect(lastCheckout().successUrl).toBe("https://scalvs.app/account?tab=plan&billing=success&session_id={CHECKOUT_SESSION_ID}");
+    expect(lastCheckout().cancelUrl).toBe("https://scalvs.app/account?tab=plan&billing=cancelled");
+
+    await call("POST", "/v1/credits/checkout", apiKey, { packId: "credits_25", returnUrl: "https://www.rchtch.app/" });
+    expect(lastCheckout().successUrl).toBe("https://www.rchtch.app/?billing=success&session_id={CHECKOUT_SESSION_ID}");
+
+    await call("POST", "/v1/billing/portal", apiKey, { returnUrl: "https://rchtch.app/settings" });
+    expect([...pay.calls].reverse().find((c) => c.op === "billingPortal")!.args.returnUrl).toBe("https://rchtch.app/settings");
+  });
+
+  it("falls back to the API's own pages and rejects foreign or insecure return URLs", async () => {
+    const { apiKey } = await signup("Ret2");
+    await call("POST", "/v1/credits/checkout", apiKey, { packId: "credits_25" });
+    expect(lastCheckout().successUrl).toBe("https://infinitum.test/billing/success?session_id={CHECKOUT_SESSION_ID}");
+    for (const returnUrl of ["https://evil.example/", "http://scalvs.app/", "https://scalvs.app.evil.example/", "https://u:p@scalvs.app/", "nope"]) {
+      const r = await call("POST", "/v1/subscriptions/checkout", apiKey, { planId: "scalvs_pro", returnUrl });
+      expect(r.status, returnUrl).toBe(400);
+    }
+    const page = await app.request("/billing/success");
+    expect(page.status).toBe(200);
+    expect(await page.text()).toContain("Payment complete");
+  });
+
+  it("grants CORS only to allow-listed origins and never on admin routes", async () => {
+    const pre = (path: string, origin: string) => app.request(path, { method: "OPTIONS",
+      headers: { origin, "access-control-request-method": "POST" } });
+    expect((await pre("/v1/subscriptions/checkout", "https://scalvs.app")).headers.get("access-control-allow-origin")).toBe("https://scalvs.app");
+    expect((await pre("/v1/subscriptions/checkout", "https://evil.example")).headers.get("access-control-allow-origin")).toBeNull();
+    expect((await pre("/v1/admin/reports/revenue", "https://scalvs.app")).headers.get("access-control-allow-origin")).toBeNull();
   });
 });

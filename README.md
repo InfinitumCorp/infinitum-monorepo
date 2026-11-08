@@ -48,7 +48,8 @@ Set secrets with `npx wrangler secret put <NAME>` (or in the Cloudflare dashboar
 | `ADMIN_API_KEY` | secret | At least 32 chars. Operator key for `/v1/admin/*` and for product backends reporting usage. |
 | `LICENCE_SIGNING_KEY` | secret | Ed25519 PKCS8 PEM (`openssl genpkey -algorithm ed25519`). Needed for licences to stay valid across requests. Without it each request signs with a throwaway key. |
 | `CRON_SECRET` | secret | Protects the manual `GET /cron/flush-usage` route. The Worker's own cron trigger doesn't need it. |
-| `PUBLIC_URL` | var | Where Checkout sends customers back to. |
+| `PUBLIC_URL` | var | Fallback Checkout / portal landing pages (`/billing/success`, `/billing/cancelled`, `/billing`). |
+| `RETURN_HOSTS` | var | Comma-separated product domains apps may pass as `returnUrl` on checkout, credits and portal calls; these origins also get CORS on the customer API. |
 | `STRIPE_AUTOMATIC_TAX` | var | `true` to enable Stripe Tax (default `false` in `wrangler.jsonc`). |
 | `TOKEN_PAYOUTS_ENABLED` | var | Leave `false` until the token programme has had legal review. |
 

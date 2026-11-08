@@ -3,6 +3,8 @@ import type { PaymentProvider } from "./payments.js";
 
 export interface Config {
   publicUrl: string;            // where Checkout returns the customer, e.g. https://infinitum-corporation.vercel.app
+  /** Hosts (and their subdomains) that product apps may ask Checkout / the portal to return to. https only. */
+  returnHosts?: string[];
   adminApiKey: string;          // platform operator key for admin routes
   licenceSigningKeyPem?: string; // Ed25519 PKCS8 PEM; generated per process when absent (dev only)
   /** Token (crypto) payouts stay off until counsel signs off on the token programme. */
