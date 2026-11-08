@@ -207,13 +207,16 @@ export class StripePayments implements PaymentProvider {
 }
 
 /** Creates/updates Stripe products, prices and billing meters from the catalog. Idempotent via lookup keys. */
+/** Customer-facing product names on Checkout and invoices (catalog ids are internal). */
+const productLabel = (p: string) => (p === "cndctr" ? ":\\ARCHITECT\\" : p);
+
 export async function syncCatalogToStripe(stripe: Stripe, log = console.log) {
   const existingMeters = await stripe.billing.meters.list({ limit: 100 });
   for (const m of METERS) {
     let meter = existingMeters.data.find((x) => x.event_name === m.id);
     if (!meter) {
       meter = await stripe.billing.meters.create({
-        display_name: `${m.product} · ${m.unit}`, event_name: m.id,
+        display_name: `${productLabel(m.product)} · ${m.unit}`, event_name: m.id,
         default_aggregation: { formula: "sum" },
         customer_mapping: { type: "by_id", event_payload_key: "stripe_customer_id" },
         value_settings: { event_payload_key: "value" },
@@ -226,7 +229,7 @@ export async function syncCatalogToStripe(stripe: Stripe, log = console.log) {
       await stripe.prices.create({
         lookup_key: key, currency: "usd", unit_amount_decimal: Stripe.Decimal.from(String(m.unitPriceCents)),
         recurring: { interval: "month", usage_type: "metered", meter: meter.id },
-        product_data: { name: `${m.product} overage · ${m.unit}`, metadata: { meter: m.id } },
+        product_data: { name: `${productLabel(m.product)} overage · ${m.unit}`, metadata: { meter: m.id } },
       });
       log(`metered price created ${key}`);
     }

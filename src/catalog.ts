@@ -118,10 +118,10 @@ export const PLANS: Plan[] = [
   { id: "scalvs_team", product: "scalvs", name: "SCALVS.ai Team", channel: "self_serve", priceCents: 4900, interval: "month", perSeat: true, included: { scalvs_agent_task: 5000 }, overage: true, allowedKinds: ORGS_ONLY },
   { id: "scalvs_private", product: "scalvs", name: "SCALVS.ai Private Tenant", channel: "sales_assisted", priceCents: 250000, interval: "month", included: { scalvs_agent_task: 250000 }, overage: true, features: ["isolated_tenant", "sso", "audit_export"], allowedKinds: ORGS_ONLY },
 
-  // /CNDCTR/ — AI execution workspace
-  { id: "cndctr_free", product: "cndctr", name: "/CNDCTR/ Free", channel: "self_serve", priceCents: 0, interval: "month", included: { cndctr_execution_credit: 50 }, allowedKinds: ALL_CIVIL },
-  { id: "cndctr_pro", product: "cndctr", name: "/CNDCTR/ Pro", channel: "self_serve", priceCents: 3900, interval: "month", included: { cndctr_execution_credit: 500, cndctr_verified_outcome: 20 }, overage: true, features: ["autopilot"], trialDays: 14, allowedKinds: ALL_CIVIL },
-  { id: "cndctr_business", product: "cndctr", name: "/CNDCTR/ Business", channel: "self_serve", priceCents: 9900, interval: "month", perSeat: true, included: { cndctr_execution_credit: 2000, cndctr_verified_outcome: 100 }, overage: true, features: ["autopilot", "standing_permissions", "sso"], allowedKinds: ORGS_ONLY },
+  // :\ARCHITECT\ (catalog id "cndctr") — AI execution workspace
+  { id: "cndctr_free", product: "cndctr", name: ":\\ARCHITECT\\ Free", channel: "self_serve", priceCents: 0, interval: "month", included: { cndctr_execution_credit: 50 }, allowedKinds: ALL_CIVIL },
+  { id: "cndctr_pro", product: "cndctr", name: ":\\ARCHITECT\\ Pro", channel: "self_serve", priceCents: 3900, interval: "month", included: { cndctr_execution_credit: 500, cndctr_verified_outcome: 20 }, overage: true, features: ["autopilot"], trialDays: 14, allowedKinds: ALL_CIVIL },
+  { id: "cndctr_business", product: "cndctr", name: ":\\ARCHITECT\\ Business", channel: "self_serve", priceCents: 9900, interval: "month", perSeat: true, included: { cndctr_execution_credit: 2000, cndctr_verified_outcome: 100 }, overage: true, features: ["autopilot", "standing_permissions", "sso"], allowedKinds: ORGS_ONLY },
 
   // +SPCTR — intelligent CRM
   { id: "spectre_starter", product: "spectre", name: "+SPCTR Starter", channel: "self_serve", priceCents: 4900, interval: "month", perSeat: true, included: { spectre_agent_credit: 500 }, overage: true, trialDays: 14, allowedKinds: ORGS_ONLY },
