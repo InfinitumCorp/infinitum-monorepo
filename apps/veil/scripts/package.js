@@ -11,6 +11,7 @@ import { chromeManifest, firefoxManifest } from "./manifests.js";
 const root = fileURLToPath(new URL("../", import.meta.url));
 
 export const EXTENSION_FILES = [
+  "THIRD_PARTY_NOTICES.md",
   "background.js",
   "content.js",
   "popup.html",
@@ -21,11 +22,18 @@ export const EXTENSION_FILES = [
   "firm-suite.css",
   "lib/ask.js",
   "lib/build.js",
+  "lib/blocklist.js",
   "lib/browser-proxy.js",
+  "lib/content-pii.js",
+  "lib/downloads.js",
   "lib/labyrinth.js",
   "lib/nexus.js",
+  "lib/passgen.js",
+  "lib/password-guard.js",
+  "lib/password-rules.js",
   "lib/privacy.js",
   "lib/proxy.js",
+  "lib/safety.js",
   "lib/rewards.js",
   "lib/veil-api.js",
   "lib/workspace.js",
