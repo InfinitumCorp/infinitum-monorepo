@@ -18,9 +18,27 @@
   // Inside VEIL for Android (bundled hub) or the Android WebView.
   var inApp = location.protocol === "file:" || /; wv\)/.test(navigator.userAgent);
   if (inApp) {
+    document.documentElement.classList.add("in-app"); // hides every .dl-only block
     $("in-app").hidden = false;
     $("get").hidden = true;
     $("mode-chip").textContent = "Anonymous session";
+  } else {
+    // Lead with the download that fits this device: the APK on Android, the extension on desktop.
+    var ua = navigator.userAgent;
+    if (/Android/i.test(ua)) {
+      $("rec-android").hidden = false;
+    } else if (!/iPhone|iPad|iPod/i.test(ua)) {
+      $("hero-primary").href = "downloads/veil-extension.zip";
+      $("hero-primary-label").textContent = "Get the Chrome extension";
+      $("hero-secondary").href = "downloads/veil-browser.apk";
+      $("hero-secondary-label").textContent = "Download for Android";
+      $("rec-chrome").hidden = false;
+      $("apk-link").classList.remove("solid");
+      $("ext-link").classList.add("solid");
+      $("final-android").classList.remove("solid");
+      $("final-chrome").classList.add("solid");
+      $("final-android").parentNode.insertBefore($("final-chrome"), $("final-android"));
+    }
   }
 
   $("clean-btn").addEventListener("click", function () {
