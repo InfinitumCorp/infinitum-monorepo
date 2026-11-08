@@ -6,6 +6,13 @@ import { RemoteState, HttpGateway } from "../../spectre/src/server/remote.ts";
 import type { InboundMail } from "@infinitum/mail";
 import { createMailApp } from "./app.ts";
 import { deliverOutbound, type Sender } from "./outbound.ts";
+import type { FileStore } from "./files.ts";
+
+/** Attachment storage, set by the Workers entry (R2) before the first request. */
+let fileStore: FileStore | undefined;
+export function useFileStore(store: FileStore) {
+  fileStore = store;
+}
 
 /**
  * Cumulus://Mail on Vercel (serverless). Same state as every hosted Infinitum product: it lives in
@@ -70,6 +77,7 @@ function build() {
   let app: ReturnType<typeof createMailApp>;
   app = createMailApp({
     suite,
+    files: fileStore,
     publicDir: publicDir(), // static files come from the CDN (Vercel) or static assets (Workers)
     origin,
     secureCookies: origin.startsWith("https://"),

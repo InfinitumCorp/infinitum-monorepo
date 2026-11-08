@@ -1,4 +1,5 @@
 import type { OutboundResult, OutboundSend, PostOffice } from "@infinitum/mail";
+import type { FileStore } from "./files.ts";
 
 /**
  * Mail from Cumulus to addresses outside it, sent through Cloudflare Email Sending.
@@ -17,6 +18,7 @@ export interface EmailBinding {
     text: string;
     html?: string;
     headers?: Record<string, string>;
+    attachments?: { content: Uint8Array; filename: string; type: string; disposition: "attachment" }[];
   }): Promise<{ messageId: string }>;
 }
 
@@ -48,8 +50,24 @@ const PERMANENT: Record<string, string> = {
   E_DELIVERY_FAILED: "The recipient's mail server refused the message.",
 };
 
-export function cloudflareSender(binding: EmailBinding): Sender {
+/** Email Sending refuses messages over 25 MiB; leave room for the text, HTML and encoding. */
+const MAX_OUTBOUND_ATTACHMENTS = 24 * 1024 * 1024;
+
+export function cloudflareSender(binding: EmailBinding, files?: FileStore): Sender {
   return async (job) => {
+    let attachments: NonNullable<Parameters<EmailBinding["send"]>[0]["attachments"]> | undefined;
+    if (job.attachments.length) {
+      if (job.attachments.reduce((n, a) => n + a.size, 0) > MAX_OUTBOUND_ATTACHMENTS) {
+        return { ok: false, error: "The attached files add up to more than 24 MB, which is too large to send outside Cumulus. Share them from Cloud instead.", permanent: true };
+      }
+      if (!files) return { ok: false, error: "Attachments can't be sent right now.", permanent: false };
+      attachments = [];
+      for (const a of job.attachments) {
+        const file = await files.get(a.id);
+        if (!file) return { ok: false, error: `The attached file "${a.name}" is no longer available.`, permanent: true };
+        attachments.push({ content: file.data, filename: a.name, type: a.type ?? file.type, disposition: "attachment" });
+      }
+    }
     try {
       const { messageId } = await binding.send({
         to: job.to,
@@ -59,6 +77,7 @@ export function cloudflareSender(binding: EmailBinding): Sender {
         text: job.text,
         html: textToHtml(job.text),
         headers: { "X-Cumulus-Job": job.id },
+        ...(attachments ? { attachments } : {}),
       });
       return { ok: true, providerId: messageId };
     } catch (err) {
