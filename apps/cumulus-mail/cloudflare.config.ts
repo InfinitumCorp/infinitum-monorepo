@@ -4,6 +4,12 @@ import { bindings, defineConfig, triggers } from "cf/config";
  * Cumulus://Mail on Cloudflare Workers at mail.cumuluscloud.app, with Supabase (nexus-store) as the
  * back end. Deploy with `cf deploy --secrets-file <file>`; the secrets file holds
  * FIRMAMENT_SIGNER_KEY, NEXUS_STORE_URL and NEXUS_STORE_KEY.
+ *
+ * Optional sign-in providers, set as Worker secrets (`wrangler secret put NAME`). Each provider's
+ * "Continue with …" button appears on the sign-in page once its secrets are set; no deploy needed.
+ *   Google: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+ *   Apple:  APPLE_CLIENT_ID (the Services ID), APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY (.p8 contents)
+ * Callback URLs to register with the provider: https://mail.cumuluscloud.app/api/auth/oauth/{google|apple}/callback
  */
 const host = "mail.cumuluscloud.app";
 
