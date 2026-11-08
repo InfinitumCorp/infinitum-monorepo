@@ -5,6 +5,8 @@
 #
 # Needs ANDROID_HOME (build-tools 35+ and platform 35+) and a JDK 17+.
 # Signs with KEYSTORE / KEY_ALIAS / KEY_PASS when set, otherwise with the local debug key.
+# The release key lives outside the repo (for example ~/.cumulus-mail/release.keystore); keep it backed up:
+# Android only accepts updates signed with the same key.
 # Output: apps/cumulus-mail/android/build/cumulus-mail.apk
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"

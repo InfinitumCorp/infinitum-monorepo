@@ -80,10 +80,21 @@ function build() {
       });
     },
   });
-  return app;
+  // For a cron trigger: send scheduled mail that is due, without waiting for a request.
+  const sendDue = async () => {
+    await verifyOnce();
+    return state.transaction(() => suite.mail.sendAllDue());
+  };
+  return Object.assign(app, { sendDueNow: sendDue });
 }
 
 let app: ReturnType<typeof build> | undefined;
+
+/** Sends scheduled mail that is due. Called by the Workers cron trigger. */
+export async function sendScheduledMail(): Promise<number> {
+  app ??= build();
+  return app.sendDueNow();
+}
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   try {

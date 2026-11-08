@@ -1,4 +1,4 @@
-import { bindings, defineConfig } from "cf/config";
+import { bindings, defineConfig, triggers } from "cf/config";
 
 /**
  * Cumulus://Mail on Cloudflare Workers at mail.cumuluscloud.app, with Supabase (nexus-store) as the
@@ -15,6 +15,7 @@ export default defineConfig({
     compatibilityFlags: ["nodejs_compat"],
     domains: [host],
     observability: { enabled: true },
+    triggers: [triggers.scheduled({ schedule: "* * * * *" })], // send scheduled mail that is due
     env: {
       MAIL_ORIGIN: bindings.text(`https://${host}`),
       FIRMAMENT_SIGNER_KEY: bindings.secret(),
