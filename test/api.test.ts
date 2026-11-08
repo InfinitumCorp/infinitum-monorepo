@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
 import { migrate, pgliteDb, type Db } from "../src/db.js";
@@ -342,5 +343,15 @@ describe("app return URLs and CORS", () => {
     expect((await pre("/v1/subscriptions/checkout", "https://scalvs.app")).headers.get("access-control-allow-origin")).toBe("https://scalvs.app");
     expect((await pre("/v1/subscriptions/checkout", "https://evil.example")).headers.get("access-control-allow-origin")).toBeNull();
     expect((await pre("/v1/admin/reports/revenue", "https://scalvs.app")).headers.get("access-control-allow-origin")).toBeNull();
+  });
+
+  it("allow-lists METATRON¹⁰⁰ at mttrn.app in the deployed RETURN_HOSTS", async () => {
+    const vars = readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8").match(/"RETURN_HOSTS":\s*"([^"]+)"/);
+    const returnHosts = vars![1].split(",");
+    expect(returnHosts).toContain("mttrn.app");
+    const mttrn = createApp({ ...ctx, config: { ...ctx.config, returnHosts } });
+    const pre = await mttrn.request("/v1/subscriptions/checkout", { method: "OPTIONS",
+      headers: { origin: "https://mttrn.app", "access-control-request-method": "POST" } });
+    expect(pre.headers.get("access-control-allow-origin")).toBe("https://mttrn.app");
   });
 });

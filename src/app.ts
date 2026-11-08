@@ -48,7 +48,7 @@ export function createApp(ctx: Ctx) {
     await next();
   };
 
-  // Product web apps (rchtch.app, scalvs.app, …) call the customer API from the browser.
+  // Product web apps (rchtch.app, scalvs.app, mttrn.app, …) call the customer API from the browser.
   // Only allow-listed https origins get CORS; admin and webhook routes never do.
   const productCors = cors({
     origin: (origin) => (billing.isAllowedOrigin(ctx, origin) ? origin : null),

@@ -26,7 +26,7 @@ export async function bootFromEnv(opts: { worker?: boolean } = {}) {
     db, pay,
     config: {
       publicUrl: process.env.PUBLIC_URL ?? "http://localhost:3000",
-      returnHosts: (process.env.RETURN_HOSTS ?? "rchtch.app,scalvs.app,cumuluscloud.app,infinitumcorp.workers.dev")
+      returnHosts: (process.env.RETURN_HOSTS ?? "rchtch.app,scalvs.app,cumuluscloud.app,mttrn.app,infinitumcorp.workers.dev")
         .split(",").map((h) => h.trim().toLowerCase()).filter(Boolean),
       adminApiKey: adminApiKey.length >= 32 ? adminApiKey : "",
       licenceSigningKeyPem: process.env.LICENCE_SIGNING_KEY?.replace(/\\n/g, "\n"),
