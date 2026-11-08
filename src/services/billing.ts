@@ -60,8 +60,28 @@ export async function activeSubscription(db: Db, orgId: string, product: string)
 /** The plan an org is on for a product: its live subscription, else the product's free tier, else none. */
 export async function effectivePlan(db: Db, orgId: string, product: ProductId) {
   const sub = await activeSubscription(db, orgId, product);
-  const plan = sub ? getPlan(sub.plan_id) : freePlanFor(product);
-  return { plan: plan ?? null, sub };
+  if (sub) return { plan: getPlan(sub.plan_id) ?? null, sub, grantedBy: null as string | null };
+  const granted = await bundledPlanFor(db, orgId, product);
+  if (granted) return { plan: granted.plan, sub: null, grantedBy: granted.by };
+  return { plan: freePlanFor(product) ?? null, sub: null, grantedBy: null as string | null };
+}
+
+/** Whether the org holds `plan`: a live subscription to it, or it is the free tier of a product the org hasn't subscribed to. */
+async function holdsPlan(db: Db, orgId: string, plan: Plan) {
+  const sub = await activeSubscription(db, orgId, plan.product);
+  return sub ? sub.plan_id === plan.id : freePlanFor(plan.product)?.id === plan.id;
+}
+
+/** The best plan for `product` that comes bundled with a plan the org holds (e.g. Cumulus Drive with the $FIRM Suite). */
+async function bundledPlanFor(db: Db, orgId: string, product: ProductId) {
+  let best: { plan: Plan; by: string } | null = null;
+  for (const holder of PLANS) {
+    if (!holder.bundle?.length || holder.product === product) continue;
+    const plan = holder.bundle.map(getPlan).find((p) => p?.product === product);
+    if (!plan || (best && best.plan.priceCents >= plan.priceCents)) continue;
+    if (await holdsPlan(db, orgId, holder)) best = { plan, by: holder.id };
+  }
+  return best;
 }
 
 export function assertPurchasable(org: Org, plan: Plan) {
@@ -207,14 +227,14 @@ export async function flushUnreportedUsage(ctx: Ctx) {
 export async function entitlements(db: Db, org: Org) {
   const out: any[] = [];
   for (const product of PRODUCTS) {
-    const { plan, sub } = await effectivePlan(db, org.id, product);
+    const { plan, sub, grantedBy } = await effectivePlan(db, org.id, product);
     if (!plan) continue;
     const { start, end } = periodFor(sub);
     const meters: Record<string, { included: number; used: number }> = {};
     for (const [m, included] of Object.entries(plan.included ?? {})) {
       meters[m] = { included, used: await usedInPeriod(db, org.id, m, start, end) };
     }
-    out.push({ product, plan: plan.id, status: sub?.status ?? "free", seats: sub?.quantity ?? 1,
+    out.push({ product, plan: plan.id, status: sub?.status ?? (grantedBy ? "bundled" : "free"), grantedBy, seats: sub?.quantity ?? 1,
       features: plan.features ?? [], overage: !!plan.overage && !!sub, period: { start, end }, meters });
   }
   return { orgId: org.id, credits_cents: await creditBalance(db, org.id), products: out };
@@ -238,5 +258,5 @@ export async function applyCreditTopup(db: Db, orgId: string, packId: string, se
     on conflict (reason, ref) do nothing`, [newId("cred"), orgId, pack.creditCents, sessionId]);
 }
 
-export const publicPlans = () => PLANS.map(({ id, product, name, channel, priceCents, interval, perSeat, included, overage, features, trialDays, allowedKinds }) =>
-  ({ id, product, name, channel, priceCents, interval, perSeat: !!perSeat, included: included ?? {}, overage: !!overage, features: features ?? [], trialDays, allowedKinds }));
+export const publicPlans = () => PLANS.map(({ id, product, name, channel, priceCents, interval, perSeat, included, overage, features, bundle, trialDays, allowedKinds }) =>
+  ({ id, product, name, channel, priceCents, interval, perSeat: !!perSeat, included: included ?? {}, overage: !!overage, features: features ?? [], bundle: bundle ?? [], trialDays, allowedKinds }));

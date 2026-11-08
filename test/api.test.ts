@@ -41,6 +41,30 @@ describe("catalog & auth", () => {
   });
 });
 
+describe("$FIRM Suite", () => {
+  it("comes with Cumulus://ID, Mail and Drive; a paid Drive plan still takes precedence", async () => {
+    const cat = await call("GET", "/v1/catalog");
+    const suite = cat.body.plans.find((p: any) => p.id === "firm_suite");
+    expect(suite.features).toEqual(expect.arrayContaining(["cumulus_id", "cumulus_mail", "cumulus_drive", "any_token_swap"]));
+    expect(suite.bundle).toContain("cumulus_drive_free");
+
+    const { apiKey, orgId } = await signup("Satoshi", "individual");
+    const ent = (await call("GET", "/v1/me/entitlements", apiKey)).body.products;
+    const firm = ent.find((p: any) => p.product === "firm_wallet");
+    expect(firm.plan).toBe("firm_suite");
+    expect(firm.features).toEqual(expect.arrayContaining(["cumulus_id", "cumulus_mail", "cumulus_drive"]));
+    const drive = ent.find((p: any) => p.product === "cumulus");
+    expect(drive).toMatchObject({ plan: "cumulus_drive_free", grantedBy: "firm_suite", status: "bundled" });
+
+    const co = await call("POST", "/v1/subscriptions/checkout", apiKey, { planId: "cumulus_drive_200" });
+    expect(co.status).toBe(200);
+    await webhook({ kind: "subscription.updated", orgId, planId: "cumulus_drive_200", status: "active", quantity: 1,
+      providerSubscriptionId: "sub_drive", periodStart: new Date(), periodEnd: new Date(Date.now() + 864e5), cancelAtPeriodEnd: false } as any);
+    const after = (await call("GET", "/v1/me/entitlements", apiKey)).body.products.find((p: any) => p.product === "cumulus");
+    expect(after).toMatchObject({ plan: "cumulus_drive_200", grantedBy: null });
+  });
+});
+
 describe("usage, free tiers and prepaid credits", () => {
   it("allows free allowance, blocks beyond it, then draws on credits; idempotent", async () => {
     const { apiKey, orgId } = await signup("Ada", "individual");

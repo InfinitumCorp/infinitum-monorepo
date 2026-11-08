@@ -37,6 +37,11 @@ export interface Plan {
   included?: Record<string, number>;
   /** When true, usage beyond `included` is billed at the meter price. Otherwise it is blocked (or paid from prepaid credits). */
   overage?: boolean;
+  /**
+   * Plans in other products that come with this one. While an org holds this plan, each bundled plan
+   * applies to its product unless the org has its own subscription there.
+   */
+  bundle?: string[];
   features?: string[];
   /** Only these org kinds may hold the plan. Defaults to all except military. */
   allowedKinds?: OrgKind[];
@@ -74,6 +79,20 @@ export type ProductId = (typeof PRODUCTS)[number];
 
 const ALL_CIVIL: OrgKind[] = ["individual", "business", "government"];
 const ORGS_ONLY: OrgKind[] = ["business", "government"];
+
+/**
+ * What a Cumulus://ID™ (CID) brings: one sign-in for every Infinitum app, plus Cumulus://Mail™
+ * (name@cumuluscloud.app) and Cumulus://Drive™ storage. Any plan that "comes with Cumulus://ID"
+ * lists these features.
+ */
+export const CUMULUS_ID_FEATURES = ["cumulus_id", "cumulus_id_sso", "cumulus_mail", "cumulus_drive"] as const;
+
+/** The $FIRM Suite™: the apps in it, and the Cumulus://ID™ services that come with it. */
+export const FIRM_SUITE = {
+  planId: "firm_suite",
+  apps: ["$FIRM Wallet™", "$FIRM™ any-token swap", "$Firmament Network™"],
+  comesWith: { account: "Cumulus://ID™ (CID)", services: ["Cumulus://Mail™", "Cumulus://Drive™", "Single sign-on to every Infinitum app"] },
+} as const;
 
 export const METERS: Meter[] = [
   { id: "scalvs_agent_task", product: "scalvs", unit: "agent task", unitPriceCents: 2 },
@@ -133,6 +152,12 @@ export const PLANS: Plan[] = [
   { id: "hrvst_free", product: "hrvst", name: "[HRVST] Free", channel: "self_serve", priceCents: 0, interval: "month", allowedKinds: ALL_CIVIL },
   { id: "hrvst_pro", product: "hrvst", name: "[HRVST] Pro Contributor", channel: "self_serve", priceCents: 999, interval: "month", features: ["personal_silo_unlimited", "priority_missions", "advanced_filters"], allowedKinds: ["individual", "business"] },
   { id: "hrvst_buyer", product: "hrvst", name: "[HRVST] Buyer Access", channel: "sales_assisted", priceCents: 49900, interval: "month", features: ["post_missions", "bulk_licensing", "api"], allowedKinds: ORGS_ONLY },
+
+  // $FIRM Suite™ — $FIRM Wallet™, any-token swap and $Firmament Network™, and it comes with a
+  // Cumulus://ID™ (CID): the one Infinitum account, with Cumulus://Mail™ and Cumulus://Drive™ included.
+  { id: "firm_suite", product: "firm_wallet", name: "$FIRM Suite", channel: "self_serve", priceCents: 0, interval: "month",
+    features: ["firm_wallet", "any_token_swap", "firmament_network", ...CUMULUS_ID_FEATURES],
+    bundle: ["cumulus_drive_free", "firmament_dev"], allowedKinds: ALL_CIVIL },
 
   // Firmament Network — attestation API + enterprise permissioned instances
   { id: "firmament_dev", product: "firmament", name: "Firmament Developer", channel: "self_serve", priceCents: 0, interval: "month", included: { firmament_attestation: 10000 }, overage: true, allowedKinds: ALL_CIVIL },
