@@ -1,13 +1,23 @@
-import { migrate, pgliteDb, postgresDb } from "./db.js";
+import { DB_SCHEMA, migrate, pgliteDb, postgresDb } from "./db.js";
 import { FakePayments, StripePayments } from "./payments.js";
 import type { Ctx } from "./context.js";
 import { createApp } from "./app.js";
 
-/** Builds the app from environment variables. Without DATABASE_URL / STRIPE_SECRET_KEY it runs fully local. */
-export async function bootFromEnv() {
-  if (process.env.VERCEL && !process.env.DATABASE_URL) throw new Error("DATABASE_URL is required on Vercel (add Neon from the Marketplace)");
-  const db = process.env.DATABASE_URL ? await postgresDb(process.env.DATABASE_URL) : await pgliteDb(process.env.PGLITE_DIR ?? "./.data");
-  await migrate(db);
+/**
+ * Builds the app from environment variables. Without DATABASE_URL / STRIPE_SECRET_KEY it runs fully local.
+ *
+ * `worker: true` (Cloudflare Workers): DATABASE_URL is required, the connection
+ * lives for one request, and the schema is assumed migrated (supabase db push).
+ */
+export async function bootFromEnv(opts: { worker?: boolean } = {}) {
+  if (opts.worker && !process.env.DATABASE_URL) throw new Error("DATABASE_URL is required on Workers (Supabase session pooler for the Infinitum Corp project)");
+  const db = process.env.DATABASE_URL
+    ? await postgresDb(process.env.DATABASE_URL, { perRequest: opts.worker })
+    : await pgliteDb(process.env.PGLITE_DIR ?? "./.data");
+  if (!opts.worker) {
+    if (process.env.DATABASE_URL) await db.exec(`create schema if not exists ${DB_SCHEMA}`);
+    await migrate(db);
+  }
   const pay = process.env.STRIPE_SECRET_KEY ? StripePayments.fromEnv() : new FakePayments();
   if (process.env.NODE_ENV === "production" && pay instanceof FakePayments) throw new Error("STRIPE_SECRET_KEY is required in production");
   const adminApiKey = process.env.ADMIN_API_KEY ?? "";

@@ -198,7 +198,8 @@ export function createApp(ctx: Ctx) {
   app.route("/v1", v1);
 
 
-  // Vercel Cron calls this with `Authorization: Bearer $CRON_SECRET`.
+  // Manual / external trigger with `Authorization: Bearer $CRON_SECRET`. On
+  // Cloudflare the Worker's cron trigger calls the same flush directly.
   app.get("/cron/flush-usage", async (c) => {
     if (!process.env.CRON_SECRET || bearer(c) !== process.env.CRON_SECRET) fail(401, "unauthorized", "Cron secret required");
     return c.json(await billing.flushUnreportedUsage(ctx));

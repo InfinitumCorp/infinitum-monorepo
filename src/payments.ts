@@ -48,7 +48,8 @@ export class StripePayments implements PaymentProvider {
     const key = process.env.STRIPE_SECRET_KEY;
     const wh = process.env.STRIPE_WEBHOOK_SECRET;
     if (!key || !wh) throw new Error("STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET are required");
-    return new StripePayments(new Stripe(key), wh);
+    // Fetch-based client works on both Node and Cloudflare Workers.
+    return new StripePayments(new Stripe(key, { httpClient: Stripe.createFetchHttpClient() }), wh);
   }
 
   private async priceId(key: string) {
