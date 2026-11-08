@@ -2,7 +2,8 @@ import { createServer } from "node:http";
 import { httpServerHandler } from "cloudflare:node";
 import PostalMime from "postal-mime";
 import { MailError } from "@infinitum/mail";
-import handler, { receiveMail, sendScheduledMail } from "./vercel.ts";
+import handler, { deliverOutboundMail, receiveMail, sendScheduledMail } from "./vercel.ts";
+import { cloudflareSender, type EmailBinding } from "./outbound.ts";
 import { toInbound } from "./inbound.ts";
 
 /**
@@ -12,6 +13,7 @@ import { toInbound } from "./inbound.ts";
  * Configuration comes from the Worker's variables and secrets (see cloudflare.config.ts).
  * A once-a-minute cron trigger sends scheduled mail that is due.
  * Email Routing hands mail sent to @cumuluscloud.app from outside to email().
+ * Mail to outside addresses goes out on the same cron through Email Sending (the EMAIL binding).
  */
 const PORT = 8080;
 createServer((req, res) => void handler(req, res)).listen(PORT);
@@ -28,9 +30,14 @@ interface IncomingEmail {
 
 export default {
   fetch: http.fetch,
-  async scheduled() {
+  async scheduled(_controller: unknown, env: { EMAIL?: EmailBinding }) {
     const sent = await sendScheduledMail();
     if (sent) console.log(`Sent ${sent} scheduled message(s)`);
+    // Without the binding (Email Sending not set up), outside mail stays queued.
+    if (env.EMAIL) {
+      const out = await deliverOutboundMail(cloudflareSender(env.EMAIL));
+      if (out) console.log(`Sent ${out} message(s) outside Cumulus`);
+    }
   },
   async email(message: IncomingEmail) {
     const parsed = await PostalMime.parse(await new Response(message.raw).arrayBuffer());

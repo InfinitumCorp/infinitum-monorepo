@@ -5,6 +5,10 @@ import { bindings, defineConfig, triggers } from "cf/config";
  * back end. Deploy with `cf deploy --secrets-file <file>`; the secrets file holds
  * FIRMAMENT_SIGNER_KEY, NEXUS_STORE_URL and NEXUS_STORE_KEY.
  *
+ * Mail to outside addresses goes out through Cloudflare Email Sending: the zone is onboarded
+ * (`wrangler email sending enable cumuluscloud.app`) and the Worker needs a send_email binding
+ * named EMAIL (`"send_email": [{ "name": "EMAIL" }]`). Without it, outside mail stays queued.
+ *
  * Optional sign-in providers, set as Worker secrets (`wrangler secret put NAME`). Each provider's
  * "Continue with …" button appears on the sign-in page once its secrets are set; no deploy needed.
  *   Google: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
