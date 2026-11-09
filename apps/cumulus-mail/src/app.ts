@@ -32,6 +32,8 @@ export interface MailAppDeps {
   publicDir: string;
   origin: string;
   secureCookies: boolean;
+  /** Parent domain, for example .cumuluscloud.app. Omit on localhost. */
+  cookieDomain?: string;
   onChange?: () => void;
   /** Open-model router for SCALVS; defaults to the shared router built from the environment. */
   ai?: AiRouter;
@@ -161,8 +163,9 @@ export function createMailApp(deps: MailAppDeps) {
   };
   const briefs = new Map<string, string>(); // `${cid}|${messageIds}` -> brief, kept in memory only
 
+  const domainAttr = deps.cookieDomain ? `; Domain=${deps.cookieDomain}` : "";
   const sessionCookie = (token: string, maxAge = 30 * 86400) =>
-    `${COOKIE}=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${maxAge}${deps.secureCookies ? "; Secure" : ""}`;
+    `${COOKIE}=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${maxAge}${domainAttr}${deps.secureCookies ? "; Secure" : ""}`;
   const device = (ctx: Ctx) => String(ctx.req.headers["user-agent"] ?? "Browser").slice(0, 120);
   const need = (ctx: Ctx, ...fields: string[]) => {
     for (const f of fields) if (ctx.body[f] === undefined || ctx.body[f] === "") throw new HttpError(400, `Missing ${f}`);
@@ -300,7 +303,7 @@ export function createMailApp(deps: MailAppDeps) {
 
   const oauthCookie = (provider: string, value: string, maxAge: number) => {
     const sameSite = provider === "apple" && deps.secureCookies ? "None" : "Lax";
-    return `${OAUTH_COOKIE}=${value}; HttpOnly; Path=/api/auth/oauth; SameSite=${sameSite}; Max-Age=${maxAge}${deps.secureCookies ? "; Secure" : ""}`;
+    return `${OAUTH_COOKIE}=${value}; HttpOnly; Path=/api/auth/oauth; SameSite=${sameSite}; Max-Age=${maxAge}${domainAttr}${deps.secureCookies ? "; Secure" : ""}`;
   };
   route("GET", "/api/auth/oauth/:provider/start", async (ctx) => {
     const { url, state: st } = await cid.startSocialSignIn(ctx.params.provider, `${deps.origin}/api/auth/oauth/${ctx.params.provider}/callback`);

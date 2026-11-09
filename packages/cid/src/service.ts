@@ -34,7 +34,7 @@ export { MAIL_DOMAIN };
 
 export const INFINITUM_APPS = [
   "veil", "fabric", "throne", "eon", "scalvs", "architect", "spectre", "metatron",
-  "cumulus", "cumulus-mail", "firm-wallet", "aether", "argus", "hrvst", "eidetic",
+  "cumulus", "cumulus-mail", "cumulus-cloud", "firm-wallet", "aether", "argus", "hrvst", "eidetic",
   "orbis", "pollen", "flower", "nemesis", "LBRNTH", "firm", "daemon", "slug", "seraphim", "tokens",
   "odin", "firmament", "cumulus-exchange", "cherubim", "azrail", "cloud", "conjure",
 ] as const;
