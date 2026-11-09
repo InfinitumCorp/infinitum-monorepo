@@ -29,6 +29,9 @@ importers:
 
   apps/cumulus-mail:
     dependencies:
+      '@infinitum/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@infinitum/cid':
         specifier: workspace:*
         version: link:../../packages/cid
@@ -175,6 +178,9 @@ importers:
 
   apps/spectre:
     dependencies:
+      '@infinitum/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@infinitum/architect':
         specifier: workspace:*
         version: link:../architect
@@ -247,6 +253,15 @@ importers:
       '@infinitum/lbrnth-client':
         specifier: workspace:*
         version: link:../lbrnth-client
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.5
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
+  packages/ai:
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -330,6 +345,9 @@ importers:
 
   packages/conjure:
     dependencies:
+      '@infinitum/ai':
+        specifier: workspace:*
+        version: link:../ai
       '@infinitum/lbrnth-client':
         specifier: workspace:*
         version: link:../lbrnth-client
@@ -544,6 +562,9 @@ importers:
 
   packages/scalus:
     dependencies:
+      '@infinitum/ai':
+        specifier: workspace:*
+        version: link:../ai
       '@infinitum/lbrnth-client':
         specifier: workspace:*
         version: link:../lbrnth-client
