@@ -42,20 +42,24 @@ async function main() {
   const wrangler = (...args) => {
     for (let attempt = 1; ; attempt++) {
       try { return execFileSync("npx", ["wrangler", ...args], { stdio: ["ignore", "inherit", "inherit"], shell: process.platform === "win32" }); }
-      catch (e) { if (attempt >= 5) throw e; console.log(`retrying (${attempt}/4)...`); }
+      catch (e) { if (attempt >= 8) throw e; console.log(`retrying (${attempt}/7)...`); }
     }
   };
-  const published = (name) => fetch(`${SITE}/files/${encodeURIComponent(name)}`, { method: "HEAD" }).then((r) => (r.ok ? Number(r.headers.get("content-length")) : -1)).catch(() => -1);
+  // Uploads that finished are recorded next to the files, so a re-run only sends what's missing.
+  const record = join(dir, ".published.json");
+  const done = (() => { try { return JSON.parse(readFileSync(record, "utf8")); } catch { return {}; } })();
+  const published = async (name) => done[name] ?? -1;
+  const markPublished = (name, sha256) => { done[name] = sha256; writeFileSync(record, JSON.stringify(done, null, 2)); };
 
   const entries = [];
   for (const { name, info, path } of found) {
     const data = readFileSync(path);
     const entry = { key: info.key, name, version: info.version, size: data.length, sha256: createHash("sha256").update(data).digest("hex") };
-    if (!dry && (await published(name)) === entry.size) {
+    if (!dry && (await published(name)) === entry.sha256) {
       console.log(`already published ${name}`);
     } else {
       console.log(`${dry ? "would upload" : "uploading"} ${name} (${entry.key}, ${entry.size} bytes)`);
-      if (!dry) wrangler("r2", "object", "put", `${BUCKET}/${name}`, "--file", path, "--remote");
+      if (!dry) { wrangler("r2", "object", "put", `${BUCKET}/${name}`, "--file", path, "--remote"); markPublished(name, entry.sha256); }
     }
     entries.push(entry);
   }

@@ -12,10 +12,10 @@
     : "web";
 
   const labels = {
-    windows: ["Download for Windows", "/get/windows"],
-    mac: ["Download for Mac", "/get/mac"],
-    linux: ["Download for Linux (AppImage)", "/get/linux-appimage-x64"],
-    android: ["Download for Android", "/get/android"],
+    windows: ["Download for Windows", "get/windows"],
+    mac: ["Download for Mac", "get/mac"],
+    linux: ["Download for Linux (AppImage)", "get/linux-appimage-x64"],
+    android: ["Download for Android", "get/android"],
     ios: ["Add to your iPhone or iPad", "#ios"],
     web: ["Open Cumulus://Mail", "https://mail.cumuluscloud.app/"],
   };
@@ -29,14 +29,14 @@
   document.getElementById("suggest").hidden = false;
 
   const size = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(n >= 1e8 ? 0 : 1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`);
-  fetch("/files/manifest.json", { cache: "no-cache" })
+  fetch("files/manifest.json", { cache: "no-cache" })
     .then((r) => (r.ok ? r.json() : null))
     .then((manifest) => {
       const files = new Map((manifest?.files || []).map((f) => [f.key, f]));
       document.querySelectorAll("[data-key]").forEach((a) => {
         const f = files.get(a.dataset.key);
         if (!f) { a.setAttribute("aria-disabled", "true"); a.title = "Coming soon"; return; }
-        a.href = `/files/${encodeURIComponent(f.name)}`;
+        a.href = `files/${encodeURIComponent(f.name)}`;
       });
       document.querySelectorAll("[data-meta]").forEach((p) => {
         const f = files.get(p.dataset.meta);
