@@ -8,8 +8,9 @@ import { initSchema, loadState, commitState, type CommitResult } from "./do-stor
 
 /**
  * Cumulus://ID (+SPCTR) on Cloudflare Workers at id.cumuluscloud.app, free plan.
- * Static files (public/) are Workers static assets; /api/* reaches the same hosted handler as the
- * Vercel build through Workers' Node.js HTTP server support. State (Firmament ledger + CID and
+ * scripts/build-cloudflare.mjs bundles public/ into the Worker (dist/entry.mjs) and serves it
+ * with serveStatic(); /api/* reaches the same hosted handler as the Vercel build through Workers'
+ * Node.js HTTP server support. State (Firmament ledger + CID and
  * Spectre stores) lives in one SQLite-backed Durable Object, NexusStore, with the same
  * all-or-nothing commit rules as the Supabase nexus-store function.
  * Configuration: wrangler.jsonc (vars) and Worker secrets (FIRMAMENT_SIGNER_KEY, sign-in secrets
@@ -69,9 +70,51 @@ function configure(env: Env) {
   configured = true;
 }
 
+/** A file from public/, embedded at build time. */
+export interface StaticFile {
+  type: string;
+  /** base64 */
+  body: string;
+}
+
+const EMBEDDABLE = new Set(["/form.html", "/book.html"]);
+
+/** Same headers the app (app.ts) and the Vercel build send for static files. */
+function staticHeaders(path: string, type: string): Headers {
+  const frame = EMBEDDABLE.has(path) ? "*" : "'none'";
+  const h = new Headers({
+    "Content-Type": type,
+    "Cache-Control": path === "/index.html" ? "no-cache" : "public, max-age=300",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+    "Content-Security-Policy": `default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors ${frame}`,
+  });
+  if (!EMBEDDABLE.has(path)) h.set("X-Frame-Options", "DENY");
+  return h;
+}
+
+/** Serve an embedded public/ file, or undefined to let the app handle the request. */
+export function serveStatic(request: Request, files: Record<string, StaticFile>): Response | undefined {
+  if (request.method !== "GET" && request.method !== "HEAD") return undefined;
+  const url = new URL(request.url);
+  if (url.pathname.startsWith("/api/")) return undefined;
+  const path = url.pathname === "/" ? "/index.html" : url.pathname;
+  const file = files[path];
+  if (!file) return undefined;
+  const body = request.method === "HEAD" ? null : Uint8Array.from(atob(file.body), (c) => c.charCodeAt(0));
+  return new Response(body, { status: 200, headers: staticHeaders(path, file.type) });
+}
+
+export function handleRequest(request: Request, env: Env, ctx: unknown, files: Record<string, StaticFile> = {}) {
+  const hit = serveStatic(request, files);
+  if (hit) return hit;
+  configure(env);
+  return http.fetch(request, env, ctx);
+}
+
 export default {
   fetch(request: Request, env: Env, ctx: unknown) {
-    configure(env);
-    return http.fetch(request, env, ctx);
+    return handleRequest(request, env, ctx);
   },
 };

@@ -1,17 +1,16 @@
 // Cumulus://ID (+SPCTR) on Cloudflare Workers, free plan. See src/server/worker.ts.
-// Build assets first: node scripts/build-cloudflare.mjs. Secrets (wrangler secret put NAME):
+// Build first: node scripts/build-cloudflare.mjs (writes dist/entry.mjs with public/ embedded). Secrets (wrangler secret put NAME):
 //   FIRMAMENT_SIGNER_KEY   base64 PKCS#8 Ed25519 ledger signing key (keep a safe copy)
 //   COGNITO_CLIENT_SECRET  Amazon Cognito app client secret (Cognito stays off until it is set)
 // Other sign-in providers use the variables listed in src/server/main.ts.
 {
   "name": "cumulus-id",
-  "main": "src/server/worker.ts",
+  "main": "dist/entry.mjs",
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat"],
   "routes": [{ "pattern": "id.cumuluscloud.app", "custom_domain": true }],
   "workers_dev": false,
   "observability": { "enabled": true },
-  "assets": { "directory": "./dist/assets" },
   "vars": {
     "SPECTRE_ORIGIN": "https://id.cumuluscloud.app",
     "CUMULUS_MAIL_ORIGIN": "https://mail.cumuluscloud.app",
