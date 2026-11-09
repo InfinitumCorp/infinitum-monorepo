@@ -10,13 +10,16 @@ import * as market from "./services/marketplace.js";
 import * as contracts from "./services/contracts.js";
 import { handlePaymentEvent } from "./services/webhooks.js";
 import { revenueReport } from "./services/reports.js";
+import { conjureRoutesFromEnv, type ConjureRouteHandler } from "./conjure/conjure.mjs";
 
 type Env = { Variables: { org: billing.Org } };
 
 const kind = z.enum(["individual", "business", "government", "military"]);
 const product = z.enum(PRODUCTS);
 
-export function createApp(ctx: Ctx) {
+export function createApp(ctx: Ctx, opts: { conjure?: ConjureRouteHandler } = {}) {
+  // @conjure: live Conjure forecasts for an org (CONJURE_URL + CONJURE_PRODUCT_KEY).
+  const conjure = opts.conjure ?? conjureRoutesFromEnv(globalThis.process?.env ?? {}, { prefix: "/v1/conjure", source: "revenue" });
   const app = new Hono<Env>();
   const { db } = ctx;
 
@@ -140,6 +143,16 @@ main{max-width:28rem;padding:2rem;border:1px solid #000}h1{font-size:1.25rem;mar
   // ------------------------------------------------------------ customer (org API key)
   const v1 = new Hono<Env>();
   v1.use("*", requireOrg);
+
+  // @conjure: POST /v1/conjure { text, context?, source? }, then GET /v1/conjure/<ticket> to follow it.
+  // Military organisations are excluded until a person approves Conjure for MIL editions.
+  v1.all("/conjure/*", async (c) => conjureFor(c));
+  v1.post("/conjure", async (c) => conjureFor(c));
+  const conjureFor = async (c: Context<Env>) => {
+    const org = c.get("org");
+    if (org.kind === "military") fail(403, "not_available", "Conjure isn't available for military organisations yet");
+    return (await conjure(c.req.raw, { user: org.id })) ?? fail(404, "not_found", "Not found");
+  };
 
   v1.get("/me/entitlements", async (c) => c.json(await billing.entitlements(db, c.get("org"))));
 
