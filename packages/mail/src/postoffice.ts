@@ -86,7 +86,11 @@ export type OutboundResult = { ok: true; providerId?: string } | { ok: false; er
 
 /** Temporary failures are retried this many times, with growing gaps, before the sender is told. */
 export const OUTBOUND_MAX_ATTEMPTS = 6;
-/** A job claimed but never finished (the sender crashed) goes back in the queue after this long. */
+/**
+ * A job claimed but never finished after this long: the run stopped between taking it and recording
+ * the result, so it may or may not have gone out. It is never sent again (no duplicates); the
+ * sender is told delivery couldn't be confirmed instead.
+ */
 const OUTBOUND_CLAIM_TIMEOUT_MS = 10 * 60_000;
 
 export class PostOfficeStore {
@@ -463,16 +467,20 @@ export class PostOffice {
   /**
    * Take up to `limit` jobs that are due for sending and mark them "sending", so a second sender
    * running at the same time skips them. Call inside one transaction, send outside it, then report
-   * each outcome with finishOutbound(). Jobs from before outside sending existed carry no body and
-   * are closed with a notice instead.
+   * each outcome with finishOutbound() as soon as it's known. Every job is handed out at most once
+   * per attempt: one left in "sending" is closed as unconfirmed, never re-sent. Jobs from before
+   * outside sending existed carry no body and are closed with a notice instead.
    */
   claimOutbound(limit = 20): OutboundSend[] {
     const now = this.clock().getTime();
     const claimed: OutboundSend[] = [];
     for (const job of this.store.outbound.values()) {
       if (claimed.length >= limit) break;
-      const stale = job.status === "sending" && Date.parse(job.claimedAt ?? "") < now - OUTBOUND_CLAIM_TIMEOUT_MS;
-      if (job.status !== "queued" && !stale) continue;
+      if (job.status === "sending" && Date.parse(job.claimedAt ?? "") < now - OUTBOUND_CLAIM_TIMEOUT_MS) {
+        this.unconfirmedOutbound(job);
+        continue;
+      }
+      if (job.status !== "queued") continue;
       if (job.nextAttemptAt && Date.parse(job.nextAttemptAt) > now) continue;
       if (job.body === undefined) {
         this.closeOutbound(job, "Sending to addresses outside Cumulus wasn't available yet when this was sent. Please send it again.");
@@ -521,6 +529,19 @@ export class PostOffice {
       body: `Your message to ${job.to.join(", ")} wasn't delivered.
 
 ${reason}`,
+      threadId: sent?.threadId,
+    });
+  }
+
+  private unconfirmedOutbound(job: OutboundMail) {
+    job.status = "failed";
+    job.claimedAt = undefined;
+    job.error = "unconfirmed";
+    this.updateHops(job, "outbound", "Delivery couldn't be confirmed. It may have arrived.");
+    const sent = job.messageId ? this.findMessage(job.fromCid, job.messageId) : undefined;
+    this.notify(job.fromCid, "postmaster", {
+      subject: `Delivery not confirmed: ${job.subject}`,
+      body: `Cumulus started sending your message to ${job.to.join(", ")} but couldn't confirm it was delivered. It may have arrived. To avoid sending it twice, Cumulus won't retry on its own. If the recipient didn't get it, send it again.`,
       threadId: sent?.threadId,
     });
   }

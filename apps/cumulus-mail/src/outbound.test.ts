@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { PostOffice } from "@infinitum/mail";
-import { cloudflareSender, deliverOutbound, type EmailBinding } from "./outbound.ts";
+import { cloudflareSender, deliverOutbound, textToHtml, type EmailBinding } from "./outbound.ts";
 
 const tx = <T>(fn: () => Promise<T>) => fn();
 const failing = (code: string): EmailBinding => ({
@@ -15,7 +15,7 @@ test("sends through the binding with the sender's name and the right recipients"
   const binding: EmailBinding = { send: async (m) => (calls.push(m), { messageId: "cf-123" }) };
   const result = await cloudflareSender(binding)({ id: "out-1", from: { email: "alex@cumuluscloud.app", name: "Alex" }, to: ["priya@gmail.com"], cc: [], subject: "", text: "Hi" });
   assert.deepEqual(result, { ok: true, providerId: "cf-123" });
-  assert.deepEqual(calls, [{ to: ["priya@gmail.com"], cc: undefined, from: { email: "alex@cumuluscloud.app", name: "Alex" }, subject: "(no subject)", text: "Hi" }]);
+  assert.deepEqual(calls, [{ to: ["priya@gmail.com"], cc: undefined, from: { email: "alex@cumuluscloud.app", name: "Alex" }, subject: "(no subject)", text: "Hi", html: textToHtml("Hi"), headers: { "X-Cumulus-Job": "out-1" } }]);
 });
 
 test("errors that will repeat are permanent; service trouble is retried", async () => {
@@ -53,4 +53,34 @@ test("a sender that throws counts as a temporary failure", async () => {
   await po.send("a", { to: "priya@gmail.com", subject: "Boom", body: "x" });
   assert.equal(await deliverOutbound(tx, po, async () => { throw new Error("network down"); }), 0);
   assert.equal(po.outboundQueue().length, 1, "back in the queue for a retry");
+});
+
+test("HTML version: escaped, paragraphs, line breaks and links", () => {
+  const html = textToHtml("Hi <b>Sam</b> & co,\nsee https://cumuluscloud.app/x?a=1&b=2.\n\nThanks");
+  assert.ok(html.includes('<p style="margin:0 0 1em">Hi &lt;b&gt;Sam&lt;/b&gt; &amp; co,<br>see <a href="https://cumuluscloud.app/x?a=1&amp;b=2">https://cumuluscloud.app/x?a=1&amp;b=2</a>.</p>'), html);
+  assert.ok(html.includes('<p style="margin:0 0 1em">Thanks</p>'), html);
+  assert.doesNotMatch(html, /<b>/);
+});
+
+test("each result is recorded as soon as it's known", async () => {
+  const po = new PostOffice({ clock: () => new Date("2026-11-09T10:00:00Z") });
+  po.provision({ cid: "a", address: "alex@cumuluscloud.app", name: "Alex" });
+  await po.send("a", { to: "fast@gmail.com", subject: "Fast", body: "1" });
+  await po.send("a", { to: "slow@gmail.com", subject: "Slow", body: "2" });
+  let release!: () => void;
+  const gate = new Promise<void>((r) => (release = r));
+  let recordedBeforeSlow = false;
+  const run = deliverOutbound(tx, po, async (job) => {
+    if (job.subject === "Slow") {
+      await gate;
+      return { ok: true };
+    }
+    return { ok: true };
+  });
+  await new Promise((r) => setTimeout(r, 10));
+  recordedBeforeSlow = po.outboundQueue().length === 0 && (po as any).store.outbound.size === 2 &&
+    [...(po as any).store.outbound.values()].some((j: any) => j.subject === "Fast" && j.status === "sent");
+  release();
+  assert.equal(await run, 2);
+  assert.ok(recordedBeforeSlow, "the fast job was recorded while the slow one was still sending");
 });
