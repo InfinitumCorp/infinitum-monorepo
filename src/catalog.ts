@@ -196,11 +196,13 @@ export const HARDWARE: HardwareSku[] = [
   { id: "daemon_zenith_service", product: "daemon", name: "DAEMON ZENITH coverage service", priceCents: 0, depositRatio: 0, channel: "contract" },
 ];
 
+// 85% of net licence revenue to the contributor on every marketplace, as published on
+// infinitumcorporation.ai and in infinitum-nexus packages/data-exchange (SHARE = 0.85).
 export const MARKETPLACES: MarketplaceTerms[] = [
-  { product: "fabric", contributorShareBps: 7000, missionFeeBps: 0, holdDays: 14 }, // 70% to users, as published
-  { product: "hrvst", contributorShareBps: 7000, missionFeeBps: 2000, holdDays: 14 },
-  { product: "cumulus", contributorShareBps: 8000, missionFeeBps: 1500, holdDays: 14 },
-  { product: "scalvs", contributorShareBps: 8000, missionFeeBps: 0, holdDays: 7 }, // agent template marketplace
+  { product: "fabric", contributorShareBps: 8500, missionFeeBps: 0, holdDays: 14 },
+  { product: "hrvst", contributorShareBps: 8500, missionFeeBps: 2000, holdDays: 14 },
+  { product: "cumulus", contributorShareBps: 8500, missionFeeBps: 1500, holdDays: 14 },
+  { product: "scalvs", contributorShareBps: 8500, missionFeeBps: 0, holdDays: 7 }, // agent template marketplace
 ];
 
 export const CREDIT_PACKS = [
