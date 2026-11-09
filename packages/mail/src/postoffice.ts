@@ -10,7 +10,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { Mailbox, type MailSnapshot, type SendInput } from "./mailbox.ts";
-import type { FolderId, MailMessage, MailPayment, Person } from "./model.ts";
+import type { Attachment, FolderId, MailMessage, MailPayment, Person } from "./model.ts";
 import { MAIL_DOMAIN } from "@infinitum/cid";
 import { isCumulus, parsePeople, tomorrowMorning, validEmail } from "./logic.ts";
 import type { CumulusTunnel } from "./tunnel.ts";
@@ -64,6 +64,8 @@ export interface OutboundMail {
   toList?: string[];
   ccList?: string[];
   body?: string;
+  /** Stored files to attach (name-only entries can't be sent and are left out). */
+  attachments?: { id: string; name: string; type?: string; size: number }[];
   attempts?: number;
   /** Earliest time to try again after a temporary failure. */
   nextAttemptAt?: string;
@@ -80,6 +82,7 @@ export interface OutboundSend {
   cc: string[];
   subject: string;
   text: string;
+  attachments: { id: string; name: string; type?: string; size: number }[];
 }
 
 export type OutboundResult = { ok: true; providerId?: string } | { ok: false; error: string; permanent: boolean };
@@ -135,7 +138,7 @@ export interface InboundMail {
   subject: string;
   body: string;
   at?: string;
-  attachments?: { name: string; size: number }[];
+  attachments?: Attachment[];
 }
 
 /** Longest inbound body kept (characters); the rest is cut. */
@@ -143,6 +146,9 @@ export const MAX_INBOUND_BODY = 512 * 1024;
 
 export const messageBytes =(m: Pick<MailMessage, "subject" | "body">) =>
   Buffer.byteLength(m.subject, "utf8") + Buffer.byteLength(m.body, "utf8") + 512; // headers
+
+/** Storage the files on a message take. */
+export const attachmentBytes = (files?: Attachment[]) => (files ?? []).reduce((n, f) => n + (f.size > 0 ? f.size : 0), 0);
 
 const RESERVED_LOCAL = new Set([
   ...Object.values(SYSTEM_SENDERS).map((s) => s.email.split("@")[0]),
@@ -250,7 +256,7 @@ export class PostOffice {
     if (cc.some((p) => !validEmail(p.email))) throw new MailError("bad_address", "Check the Cc addresses.");
     if (!input.subject.trim() && !input.body.trim()) throw new MailError("empty", "Write a subject or a message.");
 
-    const size = messageBytes({ subject: input.subject, body: input.body });
+    const size = messageBytes({ subject: input.subject, body: input.body }) + attachmentBytes(input.attachments);
     if (this.quota && !this.quota.canFit(cid, size)) {
       throw new MailError("quota_exceeded", "Your Cumulus storage is full. Free up space in Mail or Cloud to send.");
     }
@@ -317,6 +323,7 @@ export class PostOffice {
       const job: OutboundMail = {
         id: `out-${randomUUID()}`, fromCid: cid, from: sender.owner.email, fromName: sender.owner.name, to: external,
         toList: outside(to), ccList: outside(cc), subject: sent.subject, body: sent.body, messageId: id,
+        attachments: (sent.attachments ?? []).filter((a): a is Attachment & { id: string } => Boolean(a.id)).map(({ id, name, type, size }) => ({ id, name, type, size })),
         queuedAt: at, status: "queued", attempts: 0,
       };
       this.store.outbound.set(job.id, job);
@@ -408,7 +415,7 @@ export class PostOffice {
     if (isCumulus(sender)) throw new MailError("spoofed_sender", "Mail from a Cumulus address can't arrive from outside Cumulus.");
     const subject = input.subject.slice(0, 998);
     const body = input.body.slice(0, MAX_INBOUND_BODY);
-    const size = messageBytes({ subject, body });
+    const size = messageBytes({ subject, body }) + attachmentBytes(input.attachments);
     const delivered: string[] = [];
     const unknown: string[] = [];
     const seen = new Set<string>();
@@ -490,7 +497,7 @@ export class PostOffice {
       job.claimedAt = this.now();
       const to = job.toList?.length ? job.toList : job.to;
       const cc = job.toList?.length ? (job.ccList ?? []) : [];
-      claimed.push({ id: job.id, from: { email: job.from, name: job.fromName }, to, cc, subject: job.subject, text: job.body });
+      claimed.push({ id: job.id, from: { email: job.from, name: job.fromName }, to, cc, subject: job.subject, text: job.body, attachments: job.attachments ?? [] });
     }
     return claimed;
   }

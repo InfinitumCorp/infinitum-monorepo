@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { PostOffice } from "@infinitum/mail";
+import { MemoryFileStore } from "./files.ts";
 import { cloudflareSender, deliverOutbound, textToHtml, type EmailBinding } from "./outbound.ts";
 
 const tx = <T>(fn: () => Promise<T>) => fn();
@@ -13,13 +14,13 @@ const failing = (code: string): EmailBinding => ({
 test("sends through the binding with the sender's name and the right recipients", async () => {
   const calls: unknown[] = [];
   const binding: EmailBinding = { send: async (m) => (calls.push(m), { messageId: "cf-123" }) };
-  const result = await cloudflareSender(binding)({ id: "out-1", from: { email: "alex@cumuluscloud.app", name: "Alex" }, to: ["priya@gmail.com"], cc: [], subject: "", text: "Hi" });
+  const result = await cloudflareSender(binding)({ id: "out-1", from: { email: "alex@cumuluscloud.app", name: "Alex" }, to: ["priya@gmail.com"], cc: [], subject: "", text: "Hi", attachments: [] });
   assert.deepEqual(result, { ok: true, providerId: "cf-123" });
   assert.deepEqual(calls, [{ to: ["priya@gmail.com"], cc: undefined, from: { email: "alex@cumuluscloud.app", name: "Alex" }, subject: "(no subject)", text: "Hi", html: textToHtml("Hi"), headers: { "X-Cumulus-Job": "out-1" } }]);
 });
 
 test("errors that will repeat are permanent; service trouble is retried", async () => {
-  const job = { id: "out-1", from: { email: "a@cumuluscloud.app" }, to: ["x@gmail.com"], cc: [], subject: "s", text: "t" };
+  const job = { id: "out-1", from: { email: "a@cumuluscloud.app" }, to: ["x@gmail.com"], cc: [], subject: "s", text: "t", attachments: [] };
   const suppressed = await cloudflareSender(failing("E_RECIPIENT_SUPPRESSED"))(job);
   assert.equal(suppressed.ok, false);
   assert.equal(!suppressed.ok && suppressed.permanent, true);
@@ -83,4 +84,20 @@ test("each result is recorded as soon as it's known", async () => {
   release();
   assert.equal(await run, 2);
   assert.ok(recordedBeforeSlow, "the fast job was recorded while the slow one was still sending");
+});
+
+test("stored attachments go out with the message; missing or oversized ones bounce", async () => {
+  const store = new MemoryFileStore();
+  await store.put("u/a/11111111-1111-1111-1111-111111111111", new TextEncoder().encode("hello"), "text/plain");
+  const calls: any[] = [];
+  const binding: EmailBinding = { send: async (m) => (calls.push(m), { messageId: "x" }) };
+  const base = { id: "out-1", from: { email: "a@cumuluscloud.app" }, to: ["x@gmail.com"], cc: [], subject: "s", text: "t" };
+  const ok = await cloudflareSender(binding, store)({ ...base, attachments: [{ id: "u/a/11111111-1111-1111-1111-111111111111", name: "hi.txt", type: "text/plain", size: 5 }] });
+  assert.equal(ok.ok, true);
+  assert.equal(calls[0].attachments[0].filename, "hi.txt");
+  assert.equal(new TextDecoder().decode(calls[0].attachments[0].content), "hello");
+  const missing = await cloudflareSender(binding, store)({ ...base, attachments: [{ id: "u/a/22222222-2222-2222-2222-222222222222", name: "gone.pdf", size: 5 }] });
+  assert.equal(!missing.ok && missing.permanent, true);
+  const huge = await cloudflareSender(binding, store)({ ...base, attachments: [{ id: "u/a/1", name: "big.zip", size: 30 * 1024 * 1024 }] });
+  assert.equal(!huge.ok && huge.permanent, true);
 });

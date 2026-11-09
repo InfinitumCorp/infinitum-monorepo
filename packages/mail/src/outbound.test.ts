@@ -25,6 +25,7 @@ test("outside recipients are queued with everything needed to send, Cumulus ones
     cc: ["lee@example.org"],
     subject: "Plans",
     text: job!.text,
+    attachments: [],
   });
   assert.match(job!.text, /^See you at 3./);
   assert.equal(po.claimOutbound().length, 0, "a claimed job isn't handed out twice");
@@ -92,4 +93,13 @@ test("jobs queued before sending existed are closed with a notice, not sent blin
   assert.equal(po.claimOutbound().length, 0);
   assert.equal(notices(po).length, 1);
   assert.equal(legacy.status, "failed");
+});
+
+test("stored files ride along; name-only entries and storage are counted", async () => {
+  const po = setup();
+  const files = [{ name: "plan.pdf", size: 1000, id: "u/a/1", type: "application/pdf" }, { name: "old.txt", size: 10 }];
+  await po.send("a", { to: "priya@gmail.com", subject: "Files", body: "x", attachments: files });
+  const [job] = po.claimOutbound();
+  assert.deepEqual(job!.attachments, [{ id: "u/a/1", name: "plan.pdf", type: "application/pdf", size: 1000 }]);
+  assert.deepEqual(sentCopy(po, "Files").attachments, files);
 });
