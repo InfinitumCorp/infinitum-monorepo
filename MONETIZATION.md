@@ -1,7 +1,26 @@
 # Infinitum monetization map
 
-Every revenue stream across the portfolio on infinitum-corporation.vercel.app, and where the backend implements it.
+Every revenue stream across the portfolio on infinitumcorporation.ai, and where the backend implements it.
 Prices are **proposed launch prices** (in `src/catalog.ts`), set to be reviewed, not final decisions.
+
+**Where products sell.** Each product sells on its own domain. All of these domains are Cloudflare zones. They are also in `RETURN_HOSTS`, so the product can pass a Stripe `returnUrl` and call the customer API from the browser:
+
+| Product | Domain |
+|---|---|
+| SCALVS.ai | scalvs.app |
+| :\ARCHITECT\ (/CNDCTR/) | rchtch.app |
+| METATRON¹⁰⁰ | mttrn.app |
+| Cumulus://Cloud, Cumulus://Mail, Cumulus://ID | cumuluscloud.app |
+
+The domains below are Cloudflare zones too, but they are not in `RETURN_HOSTS` yet. Add each one before its product starts checkout:
+
+| Product | Domain |
+|---|---|
+| FABRIC | infinitumfabric.app |
+| VEIL</> | infinitumveil.app |
+| VEIL</> VPN | infinitumveilvpn.app |
+| FIRM Wallet | firmwallet.app |
+| Firmament Network | firmnetwork.app |
 
 ## 1. The 13 revenue mechanisms
 
@@ -51,7 +70,12 @@ Prices are **proposed launch prices** (in `src/catalog.ts`), set to be reviewed,
 
 ## 4. Highest-leverage next moves
 
-1. Ship METATRON¹⁰⁰ as the hero bundle. It sells the whole ecosystem in one subscription.
+1. Ship METATRON¹⁰⁰ as the hero bundle at **mttrn.app**. It sells the whole ecosystem in one subscription. Done so far:
+   - The domain is an active Cloudflare zone.
+   - It is in `RETURN_HOSTS`.
+   - It is in the Cumulus://ID CORS allowlist, with sign-in callbacks at `https://mttrn.app/api/auth/oauth/{provider}/callback`.
+
+   Still to do: put a site or Worker on the domain that shows the `metatron_personal`, `metatron_family` and `metatron_business` checkout. The Personal plan has a 30-day trial.
 2. Use VEIL (free) + referral codes as the top-of-funnel; measure conversion to SCALVS / CNDCTR Pro.
 3. Open hardware **reservations with deposits** now. They fund production and prove demand before manufacturing.
 4. Turn services engagements into managed-services retainers (recurring) at handover.
