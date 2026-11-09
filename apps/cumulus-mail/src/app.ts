@@ -186,12 +186,16 @@ export function createMailApp(deps: MailAppDeps) {
   const fileRequest = async (req: IncomingMessage, res: ServerResponse, url: URL) => {
     const store = deps.files;
     if (!store) throw new HttpError(503, "Attachments aren't available yet.");
-    const token = parseCookies(req.headers.cookie)[COOKIE];
-    const session = token ? cid.authenticate(token) : null;
-    if (!session) throw new HttpError(401, "Please sign in");
-    const owner = session.account.cid;
-    const scope = req.method === "GET" ? "mail:read" : "mail:write";
-    if (!cid.can(owner, "cumulus-mail", scope)) throw new HttpError(403, "Mail's access was revoked in your Cumulus://ID permissions");
+    // Hosted: sessions live in the shared state, so check them inside a transaction (which loads it).
+    const signedIn = async () => {
+      const token = parseCookies(req.headers.cookie)[COOKIE];
+      const session = token ? cid.authenticate(token) : null;
+      if (!session) throw new HttpError(401, "Please sign in");
+      const scope = req.method === "GET" ? "mail:read" : "mail:write";
+      if (!cid.can(session.account.cid, "cumulus-mail", scope)) throw new HttpError(403, "Mail's access was revoked in your Cumulus://ID permissions");
+      return session.account.cid;
+    };
+    const owner = deps.transaction ? await deps.transaction(signedIn) : await signedIn();
 
     if (req.method === "POST" && url.pathname === "/api/files") {
       if (req.headers["x-cumulus"] !== "1") throw new HttpError(403, "Missing request header");

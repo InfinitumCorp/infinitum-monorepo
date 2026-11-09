@@ -23,7 +23,12 @@ before(async () => {
   base = `http://localhost:${port}`;
   const signer = generateSigner();
   suite = createCumulus({ ledger: new Ledger(undefined, { authorizedSigners: [signer.publicKey] }), signer, rpId: "localhost", origins: [base], mailOrigin: base });
-  server = createMailApp({ suite, publicDir: join(import.meta.dirname, "..", "public"), origin: base, secureCookies: false, files: store }).server();
+  // Like hosted mode: every request runs inside a transaction, and the app must not touch state outside one.
+  let inTx = false;
+  const transaction = async <T>(fn: () => Promise<T>) => { inTx = true; try { return await fn(); } finally { inTx = false; } };
+  const authenticate = suite.cid.authenticate.bind(suite.cid);
+  suite.cid.authenticate = ((token: string) => { if (!inTx) throw new Error("session checked outside a transaction"); return authenticate(token); }) as typeof suite.cid.authenticate;
+  server = createMailApp({ suite, publicDir: join(import.meta.dirname, "..", "public"), origin: base, secureCookies: false, files: store, transaction }).server();
   await new Promise<void>((r) => server.listen(port, "127.0.0.1", r));
 });
 after(() => new Promise<void>((r) => server.close(() => r())));
