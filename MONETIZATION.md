@@ -3,7 +3,7 @@
 Every revenue stream across the portfolio on infinitumcorporation.ai (infinitum-corporation.vercel.app now redirects there), and where the backend implements it.
 Prices are **proposed launch prices** (in `src/catalog.ts`), set to be reviewed, not final decisions.
 
-*Last updated 9 Nov 2026: added the $FIRM Suite and $FIRM Wallet, @conjure live predictions and the Genesis Drop. Also flagged the conflict between the site's data-sharing split and the backend's (§4). Later the same day: added the CryptoPublicOffering™ launch (§5), the REVshare terms (§6) and distribution, hosting and the GCP free-tier policy (§7). Then: DNS for both corporate domains moved to Cloudflare, with the registrar transfer due from 7 Jan 2027 (§7, next move #13). Later still: **Infinitum tokens are Solana-only** (§5 rewritten), and the Genesis Drop status and deploy blockers are updated (§2, §7, next moves #14–#15).*
+*Last updated 9 Nov 2026: added the $FIRM Suite and $FIRM Wallet, @conjure live predictions and the Genesis Drop. Also flagged the conflict between the site's data-sharing split and the backend's (§4). Later the same day: added the CryptoPublicOffering™ launch (§5), the REVshare terms (§6) and distribution, hosting and the GCP free-tier policy (§7). Then: DNS for both corporate domains moved to Cloudflare, with the registrar transfer due from 7 Jan 2027 (§7, next move #13). Later still: **Infinitum tokens are Solana-only** (§5 rewritten), and the Genesis Drop status and deploy blockers are updated (§2, §7, next moves #14–#15). Last: added the AWS project and its Free-plan policy (§7, next moves #17–#18).*
 
 ## 1. The 13 revenue mechanisms
 
@@ -116,6 +116,12 @@ Earnings land in a USD ledger. They are held 7–14 days to cover refunds and di
     - Dynamic apps need a Russia-reachable origin or CDN, for example Gcore's free CDN tier.
     - Supabase sign-in needs a reachable proxy.
   - **Revenue gate:** Stripe doesn't serve Russia, and marketing or selling there needs a sanctions review first. Plan for **zero Russian revenue** until counsel advises. Keep military editions out of every Russia-facing page.
+- **AWS: Free plan, Always Free services only.** Infinitum has an AWS project (new AWS experience) with the selected Region **us-east-2**. On 9 Nov 2026 it was on the **Free plan** with **$99.84** of credit left, and the plan ends on **7 May 2027**. When the plan ends or the credit runs out, the project has to upgrade to paid or it closes. Local agent access uses the CLI profile `infinitum` through the AWS Agent Toolkit. Draft PR #7 is the first use: SNS notices after Stripe webhooks, and three CloudWatch custom metrics (`WebhookProcessed`, `WebhookFailed`, `CheckoutCreated`). Both stay inside Always Free (1M SNS publishes, 10 custom metrics). Rules before merging it:
+  - Create the SNS topic in us-east-2. The project can't create Regional resources in other Regions. Give the topic no SMS or email subscriptions, because those are billed.
+  - The Worker can't use `aws login`, so it needs a dedicated access key. Scope it to `sns:Publish` on that one topic and `cloudwatch:PutMetricData` limited to the namespace, store it only as a Worker secret, and rotate it.
+  - Don't add metric dimensions, because each dimension combination counts as another custom metric.
+  - Put the drop registration route (`POST /v1/drop/registrations`, PR #6) behind the same free reCAPTCHA check before the drop is announced. A token drop without bot checks invites one person registering many wallets.
+  - Whether AWS is reachable from Russia hasn't been tested. Keep AWS out of every user-facing path for the Russia mirrors until it is measured.
 
 ## 8. Highest-leverage next moves
 
@@ -135,3 +141,5 @@ Earnings land in a USD ledger. They are held 7–14 days to cover refunds and di
 14. Set `STRIPE_WEBHOOK_SECRET` (and `ADMIN_API_KEY`) on the revenue Worker with `npx wrangler secret put`, which brings the API back. Then merge #6, deploy the Worker, check `GET /v1/drop`, and only then deploy /drop on infinitumcorporation.ai, so the page never goes live against a broken API.
 15. Rewrite every public chain claim to Solana-only before the drop: firmnetwork.app (/network hero, migration path, token table, roadmap phase 02), firmwallet.app copy and the corporate /tokens page. Set pool sizes for the drop's final terms at the same time.
 16. Make every product reachable in Russia without a VPN (§7). Mirror the static sites (FABRIC, VEIL, Cumulus) to GitHub Pages as `ru.<domain>`, as already done for SCALVS. Add CORS for the mirrors on the product Workers. Choose a Russia-reachable path for Supabase sign-in. Get the sanctions review before any Russian marketing or payments.
+17. Finish PR #7 (reCAPTCHA, SNS and CloudWatch) under the AWS rules in §7, then add `verifyRecaptcha` to the drop registration route once #6 lands. Both should ship before the drop is announced.
+18. Before **7 May 2027**, decide whether AWS stays: upgrade the project to the paid plan with a budget alert, or move the SNS and CloudWatch work to Cloudflare Queues and Workers Analytics Engine, which are already in the stack.
