@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { SCHEMA_SQL } from "./schema.js";
+import { DROP_SCHEMA_SQL, SCHEMA_SQL } from "./schema.js";
 
 /** Minimal database surface shared by Postgres (production) and PGlite (tests / local dev). */
 export interface Db {
@@ -15,11 +15,12 @@ export const DB_SCHEMA = "infinitum_revenue";
 
 /**
  * Apply the schema in place (local PGlite and the Node server). On Supabase the
- * same SQL ships as supabase/migrations/*_infinitum_revenue.sql and is applied
+ * same SQL ships as supabase/migrations/*.sql and is applied
  * with `supabase db push`; the Worker never migrates at request time.
  */
 export async function migrate(db: Db) {
   await db.exec(SCHEMA_SQL);
+  await db.exec(DROP_SCHEMA_SQL);
 }
 
 /**

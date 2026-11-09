@@ -11,6 +11,7 @@ import * as contracts from "./services/contracts.js";
 import { handlePaymentEvent } from "./services/webhooks.js";
 import { revenueReport } from "./services/reports.js";
 import { conjureRoutesFromEnv, type ConjureRouteHandler } from "./conjure/conjure.mjs";
+import * as drop from "./services/drop.js";
 
 type Env = { Variables: { org: billing.Org } };
 
@@ -97,6 +98,16 @@ main{max-width:28rem;padding:2rem;border:1px solid #000}h1{font-size:1.25rem;mar
   app.post("/v1/licences/verify", async (c) => {
     const b = await body(c, z.object({ token: z.string().min(10) }));
     return c.json(await contracts.verifyLicence(ctx, b.token));
+  });
+
+  // Genesis Drop (public, no API key): infinitumcorporation.ai/drop reads the roster and registers Solana wallets.
+  app.get("/v1/drop", async (c) => c.json(await drop.dropStatus(db)));
+  app.get("/v1/drop/wallets/:wallet", async (c) => c.json(await drop.lookup(db, c.req.param("wallet"))));
+  app.post("/v1/drop/registrations", async (c) => {
+    const b = await body(c, z.object({ wallet: z.string().min(32).max(44), picks: z.array(z.enum(drop.TICKERS)).min(1).max(drop.TICKERS.length) }));
+    const ip = c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for")?.split(",")[0]?.trim();
+    const r = await drop.register(ctx, { ...b, ip });
+    return c.json(r, r.created ? 201 : 200);
   });
 
   // ------------------------------------------------------------ operator (admin key) — registered before /v1 so org auth does not intercept it

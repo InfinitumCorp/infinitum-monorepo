@@ -248,3 +248,20 @@ create table if not exists audit_log (
   created_at timestamptz not null default now()
 );
 `;
+
+/**
+ * Genesis Drop (1 Jan 2027): early-viewer registrations for the Solana token drop.
+ * Shipped as its own migration so the applied base migration stays untouched.
+ * `seq` orders the queue; a wallet's early-viewer number is its rank by seq.
+ */
+export const DROP_SCHEMA_SQL = String.raw`
+create table if not exists drop_registrations (
+  wallet text primary key,                      -- Solana address (base58, 32-byte public key)
+  seq bigint generated always as identity unique,
+  picks text[] not null,                        -- tickers the wallet opted into
+  ip_hash text,                                 -- sha256 of client IP + salt, for rate limiting only
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists drop_registrations_ip_idx on drop_registrations(ip_hash, created_at);
+`;

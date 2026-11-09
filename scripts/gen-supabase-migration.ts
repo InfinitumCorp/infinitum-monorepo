@@ -1,7 +1,9 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import { SUPABASE_MIGRATION_FILE, supabaseMigrationSql } from "../src/supabase-migration.js";
+import { supabaseMigrations } from "../src/supabase-migration.js";
 
-mkdirSync(dirname(SUPABASE_MIGRATION_FILE), { recursive: true });
-writeFileSync(SUPABASE_MIGRATION_FILE, supabaseMigrationSql());
-console.log(`wrote ${SUPABASE_MIGRATION_FILE}`);
+for (const { file, sql } of supabaseMigrations()) {
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, sql);
+  console.log(`wrote ${file}`);
+}
