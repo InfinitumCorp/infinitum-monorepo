@@ -2,14 +2,11 @@
  * Minimal Architect Podium: a single HTML page that lets a user
  * submit a Score intent and see the performance result.
  * In production this would be a real UI; this is a self-contained scaffold.
- *
- * Brand: packages/brand/brand.css is inlined, so the page uses the same
- * Helvetica Neue type, white palette and :\ARCHITECT\™ wordmark as infinitum-corporation.vercel.app.
+ * Uses the shared app shell (packages/ui/app-shell.css): Helvetica Neue,
+ * white palette, and the :\ARCHITECT\™ wordmark.
  */
-
-import { readFileSync } from "node:fs";
-
-const brandCss = readFileSync(new URL("../../../packages/brand/brand.css", import.meta.url), "utf8");
+/** The shared app shell stylesheet, served at /app-shell.css. */
+export { appShellCss } from "./app-shell-css.ts";
 
 export const podiumHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -17,39 +14,45 @@ export const podiumHtml = `<!DOCTYPE html>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>:\\ARCHITECT\\™ Podium</title>
+  <link rel="stylesheet" href="/app-shell.css" />
   <style>
-${brandCss}
-    main { max-width: 720px; margin: 0 auto; padding: 64px 24px; }
-    .wordmark { margin: 0; font-size: 34px; }
-    p { color: var(--muted); }
-    textarea { width: 100%; height: 8rem; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); outline: none; resize: vertical; }
-    textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(36,84,221,.12); }
-    .btn { display: inline-flex; align-items: center; height: 40px; padding: 0 18px; margin-top: 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); text-decoration: none; cursor: pointer; font-weight: 500; }
-    .btn.primary { background: var(--ink); border-color: var(--ink); color: var(--paper); }
-    #social { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
-    #social .btn { margin-top: 0; }
-    pre { background: #f7f8f9; border-radius: 12px; padding: 16px; overflow: auto; font-size: 13px; }
-    pre:empty { display: none; }
+    #intent { min-height: 8rem; }
+    #out { margin: 24px 0 0; padding: 16px; border: 1px solid var(--line); white-space: pre-wrap; overflow-x: auto; font-size: var(--text-sm); }
+    #out:empty { display: none; }
+    #social:empty { display: none; }
+    #social { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 24px; }
   </style>
 </head>
 <body>
-  <main>
-  <h1 class="wordmark">:\\ARCHITECT\\<sup class="tm">™</sup></h1>
-  <div id="social"></div>
-  <p>Write a Score intent (plain text). The executor will plan and simulate.</p>
-  <textarea id="intent" placeholder="Research the top 3 competitors of Acme and summarize"></textarea><br>
-  <button class="btn primary" id="run">Perform</button>
-  <pre id="out"></pre>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="app-bar">
+    <a class="app-wordmark" href="/">:\\ARCHITECT\\<sup class="tm">™</sup></a>
+    <nav class="app-nav" aria-label="Main">
+      <a href="/" aria-current="page">Podium</a>
+    </nav>
+  </header>
+  <main id="main" class="app-main">
+    <div class="app-head">
+      <div>
+        <h1>Podium</h1>
+        <p>Write a Score intent in plain text. The executor will plan and simulate.</p>
+      </div>
+    </div>
+    <div id="social"></div>
+    <label class="field" for="intent"><span>Score intent</span>
+      <textarea id="intent" class="input" placeholder="Research the top 3 competitors of Acme and summarize"></textarea>
+    </label>
+    <button id="run" class="btn primary" type="button">Perform</button>
+    <pre id="out"></pre>
   </main>
   <script>
-
     // Social sign-in (shared Cumulus://ID™). Buttons appear when providers are configured on the CID origin.
     const CID_ORIGIN = window.CID_ORIGIN || "http://localhost:3000";
     fetch(CID_ORIGIN + "/api/auth/providers").then(r => r.json()).then(providers => {
       const el = document.getElementById("social");
       if (!providers.length) return;
-      el.innerHTML = "<strong>Sign in:</strong> " + providers.map(p =>
-        \`<a class="btn" href="\${CID_ORIGIN}/api/auth/oauth/\${p.id}/start">Continue with \${p.label}</a>\`
+      el.innerHTML = "<strong>Sign in:</strong>" + providers.map(p =>
+        \`<a class="btn small" href="\${CID_ORIGIN}/api/auth/oauth/\${p.id}/start">Continue with \${p.label}</a>\`
       ).join("");
     }).catch(() => {});
 

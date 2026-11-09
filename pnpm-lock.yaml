@@ -617,6 +617,8 @@ importers:
         specifier: ^5.9.0
         version: 5.9.3
 
+  packages/ui: {}
+
 packages:
 
   '@adraffy/ens-normalize@1.11.1':
