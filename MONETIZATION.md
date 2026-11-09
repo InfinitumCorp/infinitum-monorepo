@@ -103,6 +103,19 @@ Earnings land in a USD ledger. They are held 7–14 days to cover refunds and di
   - The Gemini API free tier, for prototypes only
 
   Keep customer data off the free Gemini tier, because Google may use free-tier inputs. Don't move the billing API off Workers/Supabase for the sake of GCP. GPU, Vertex AI after the trial and Marketplace billing are paid, so the Cumulus GPU and inference meters have no GCP capacity behind them. Back them with another provider or keep them off.
+- **Russia: the apps must work there without a VPN, but most of the stack is blocked.** These results were measured on 9 Nov 2026 on a phone on Russian home Wi-Fi with no VPN.
+  - **Blocked or throttled:**
+    - Cloudflare-proxied sites: most time out. scalvs.app's HTML loads, but its JavaScript stalls for about 30 s, so the page never leaves "Loading…".
+    - Vercel: times out.
+    - Supabase: times out. So any sign-in or data that goes through Supabase fails in Russia.
+    - `*.workers.dev`: SCALVS billing calls `infinitum-revenue.infinitumcorp.workers.dev`, so checkout fails there too.
+  - **Reachable in about 1 s:** GitHub Pages and Gcore CDN.
+  - **Live fix:** https://ru.scalvs.app is a free static mirror of scalvs.app on GitHub Pages (repo `InfinitumCorp/scalvs-ru`, a DNS-only CNAME, HTTPS enforced). It runs in its labelled demo mode, because the API isn't mirrored. Live AI there needs CORS for `ru.scalvs.app` on the `scalvs-ai` Worker.
+  - **Pattern for the other products:**
+    - Static front ends go on GitHub Pages at `ru.<domain>`, at $0.
+    - Dynamic apps need a Russia-reachable origin or CDN, for example Gcore's free CDN tier.
+    - Supabase sign-in needs a reachable proxy.
+  - **Revenue gate:** Stripe doesn't serve Russia, and marketing or selling there needs a sanctions review first. Plan for **zero Russian revenue** until counsel advises. Keep military editions out of every Russia-facing page.
 
 ## 8. Highest-leverage next moves
 
@@ -121,3 +134,4 @@ Earnings land in a USD ledger. They are held 7–14 days to cover refunds and di
 13. On or after 7 Jan 2027, transfer infinitumcorporation.ai and infinitumdefense.com to Cloudflare Registrar (unlock and get auth codes in Vercel, then pay in Cloudflare). That puts DNS, registration and the Workers stack in one place, and renewals at cost.
 14. Set `STRIPE_WEBHOOK_SECRET` (and `ADMIN_API_KEY`) on the revenue Worker with `npx wrangler secret put`, which brings the API back. Then merge #6, deploy the Worker, check `GET /v1/drop`, and only then deploy /drop on infinitumcorporation.ai, so the page never goes live against a broken API.
 15. Rewrite every public chain claim to Solana-only before the drop: firmnetwork.app (/network hero, migration path, token table, roadmap phase 02), firmwallet.app copy and the corporate /tokens page. Set pool sizes for the drop's final terms at the same time.
+16. Make every product reachable in Russia without a VPN (§7). Mirror the static sites (FABRIC, VEIL, Cumulus) to GitHub Pages as `ru.<domain>`, as already done for SCALVS. Add CORS for the mirrors on the product Workers. Choose a Russia-reachable path for Supabase sign-in. Get the sanctions review before any Russian marketing or payments.
