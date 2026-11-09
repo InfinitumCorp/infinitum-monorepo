@@ -78,7 +78,7 @@ const social = socialFromEnv();
 
 // Every CID that signs up through +SPCTR gets the full Cumulus account: Mail, Cloud and a FIRM Wallet.
 const suite = createCumulus({
-  labyrinth: labyrinthFromEnvironment(process.env, join(dataDir, "labyrinth.json")),
+  labyrinth: labyrinthFromEnvironment(process.env, process.env.LBRNTH_SNAPSHOT_FILE ?? join(dataDir, "labyrinth.json")),
   ledger, signer, rpId, origins: [origin], stores: cumulusStores, social: { providers: social },
   mailOrigin: process.env.CUMULUS_MAIL_ORIGIN ?? cumulus.mailOrigin,
   masterKey: loadOrCreateMasterKey(dataDir),
@@ -107,9 +107,21 @@ const app = createApp({
   },
 });
 
-app.server().listen(port, () => {
+const server = app.server();
+server.listen(port, () => {
   console.log(`+SPCTR running at ${origin}  (ledger: ${verified.length} verified entries, AI: ${ai.router?.connected ? `open models via ${ai.router.providers.join(" → ")}` : "not connected"}, METATRON: ${process.env.USE_METATRON === "1" ? "on" : "off"}, sign-in: passkey${Object.keys(social).map((p) => ", " + p).join("")})`);
 });
 
 // Resume automation steps whose wait is over.
 setInterval(() => void app.runDueAutomations().catch((err) => console.error("automations:", err)), 60_000).unref();
+
+// Finish active requests before a container restart or operator stop.
+let stopping = false;
+function shutdown() {
+  if (stopping) return;
+  stopping = true;
+  server.close(() => process.exit(0));
+  setTimeout(() => { server.closeAllConnections(); process.exit(1); }, 25_000).unref();
+}
+process.once("SIGTERM", shutdown);
+process.once("SIGINT", shutdown);
