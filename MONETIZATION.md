@@ -3,7 +3,7 @@
 Every revenue stream across the portfolio on infinitumcorporation.ai (infinitum-corporation.vercel.app now redirects there), and where the backend implements it.
 Prices are **proposed launch prices** (in `src/catalog.ts`), set to be reviewed, not final decisions.
 
-*Last updated 9 Nov 2026: added the $FIRM Suite and $FIRM Wallet, @conjure live predictions and the Genesis Drop. Also flagged the conflict between the site's data-sharing split and the backend's (§4). Later the same day: added the CryptoPublicOffering™ launch (§5), the REVshare terms (§6) and distribution, hosting and the GCP free-tier policy (§7).*
+*Last updated 9 Nov 2026: added the $FIRM Suite and $FIRM Wallet, @conjure live predictions and the Genesis Drop. Also flagged the conflict between the site's data-sharing split and the backend's (§4). Later the same day: added the CryptoPublicOffering™ launch (§5), the REVshare terms (§6) and distribution, hosting and the GCP free-tier policy (§7). Then: DNS for both corporate domains moved to Cloudflare, with the registrar transfer due from 7 Jan 2027 (§7, next move #13).*
 
 ## 1. The 13 revenue mechanisms
 
@@ -93,7 +93,8 @@ Earnings land in a USD ledger. They are held 7–14 days to cover refunds and di
 
 - **Direct downloads.** Every product is listed at infinitumcorporation.ai/downloads with its website. `downloads/products.json` is the single source of truth. `node _tools/build-downloads.mjs` regenerates the page and the permanent `/download/<product>/<platform>` links. Until a product is live, its link goes to the product's website. To launch one, set `status: "live"`, add the signed installer URLs, rebuild and deploy. Then the same links serve the installer. Today all 11 products are "coming soon".
 - **Bundles.** A plan's `bundle` field grants plans in other products (for example `firm_suite` → `cumulus_drive_free` + `firmament_dev`). The org's own paid subscription always wins over a bundled grant, so upgrades replace the bundled plan cleanly. Entitlements report `grantedBy` so the apps can show where a plan came from.
-- **Hosting.** The revenue API runs on Cloudflare Workers with Supabase Postgres and Stripe. The Firmament sites run on Cloudflare Workers + KV. The corporate site is on Vercel. All of these sit on free or low tiers while we're pre-revenue.
+- **Hosting.** The revenue API runs on Cloudflare Workers with Supabase Postgres and Stripe. The Firmament sites run on Cloudflare Workers + KV. The corporate site (infinitumcorporation.ai) and the defense site (infinitumdefense.com) are still served by Vercel. All of these sit on free or low tiers while we're pre-revenue.
+- **DNS and domains.** On 8 Nov 2026, DNS for infinitumcorporation.ai and infinitumdefense.com moved from Vercel DNS to Cloudflare (free plan, nameservers `cecelia` / `ishaan.ns.cloudflare.com`). The records are DNS-only A records for the apex and `*`, pointing at Vercel, so Vercel keeps serving both sites and issuing their certificates. Manage DNS for these two domains in Cloudflare from now on: edits in Vercel's DNS page no longer take effect. Both domains are still *registered* through Vercel (Name.com). The registrar transfer to Cloudflare Registrar (at-cost renewals) is blocked by the 60-day new-registration lock until about **7 Jan 2027**.
 - **Google Cloud: free tiers only.** Use GCP wherever a free tier fits, and spend nothing there yet. Good fits:
   - BigQuery sandbox for revenue analytics (export the ledger, not raw PII)
   - Cloud Run and Pub/Sub for background jobs and event fan-out
@@ -117,3 +118,4 @@ Earnings land in a USD ledger. They are held 7–14 days to cover refunds and di
 10. Get counsel's sign-off on the CPO structure and site copy (§5) before taking any funds, then set the launch date (`LAUNCH_AT`).
 11. Grow the CPO waitlist by tying REVshare referral codes (§6) to waitlist sign-ups, so early supporters become referral partners.
 12. Ship the first live installer through `products.json` (likely the $FIRM Suite or VEIL) to prove the direct-download pipeline end to end.
+13. On or after 7 Jan 2027, transfer infinitumcorporation.ai and infinitumdefense.com to Cloudflare Registrar (unlock and get auth codes in Vercel, then pay in Cloudflare). That puts DNS, registration and the Workers stack in one place, and renewals at cost.
