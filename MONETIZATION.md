@@ -1,9 +1,9 @@
 # Infinitum monetization map
 
-Every revenue stream across the portfolio on infinitum-corporation.vercel.app, and where the backend implements it.
+Every revenue stream across the portfolio on infinitumcorporation.ai (infinitum-corporation.vercel.app now redirects there), and where the backend implements it.
 Prices are **proposed launch prices** (in `src/catalog.ts`), set to be reviewed, not final decisions.
 
-*Last updated 9 Nov 2026: added the $FIRM Suite and $FIRM Wallet, @conjure live predictions and the Genesis Drop. Also flagged the conflict between the site's data-sharing split and the backend's (§4).*
+*Last updated 9 Nov 2026: added the $FIRM Suite and $FIRM Wallet, @conjure live predictions and the Genesis Drop. Also flagged the conflict between the site's data-sharing split and the backend's (§4). Later the same day: added the CryptoPublicOffering™ launch (§5), the REVshare terms (§6) and distribution, hosting and the GCP free-tier policy (§7).*
 
 ## 1. The 13 revenue mechanisms
 
@@ -63,7 +63,47 @@ The site's figure is a public promise, so pick one number before any data is sol
 
 Either way, update this table. It also matters whether the 85% is paid in USD (the backend's ledger) or in tokens (the site). Tokens fall under §3.
 
-## 5. Highest-leverage next moves
+## 5. Launch: the CryptoPublicOffering™ (CPO)
+
+The $FIRM™ raise is framed as a **CryptoPublicOffering™**: IPO-style structure (a public book, a fixed allocation window, a published roadmap), with the energy of a token drop ("get in early").
+
+- **Where:** firmnetwork.app ($Firmament Network™) takes the waitlist: email plus an optional Solana wallet. firmwallet.app ($FIRM Wallet™) takes early access for the wallet and the $FIRM Suite. They are two separate sites, each about its own product, on one Cloudflare Worker (`InfinitumCorp/firmament-launch`), with a separate KV waitlist for each.
+- **Chain plan, as worded on the site:** "Raised on Solana. Home on Ethereum." The FundRaise runs on Solana for speed and reach. Afterwards, $FIRM™ moves to its original home on **Ethereum**, bridged to **Base** and **Solana**, so Solana holders keep a native path. CPO holders carry their $FIRM™ across. The site promises that the exact ratio, timing and steps will be published before the CPO window opens, so they must be decided before then.
+- **Any-token swap:** $FIRM™ and every product token can be swapped for any token on Solana, Ethereum or Base, through the wallet's DEX aggregation (Jupiter, Uniswap). Infinitum charges no swap fee today (§3).
+- **Countdown:** `LAUNCH_AT = null` in the network page keeps it "coming soon". Set it only once the raise date is final.
+- **Revenue role:** the CPO is a **capital** event, not a revenue line. It funds the build-out. Recurring revenue still comes from §1–§2.
+- **Gate (same as §3, but sharper):** a public token sale marketed "like an IPO" is about as close to a securities offering as wording can get. Before money is taken, counsel must clear the sale structure (Reg D/Reg S/Reg CF or a non-US-only offering), KYC/AML, geo-blocking of restricted jurisdictions, and the site copy itself. The sites collect interest only. They take no funds and promise no returns, and each carries a risk disclaimer. Keep it that way until sign-off. This shares a deadline with next move #7.
+
+## 6. REVshare: how users and partners earn
+
+One table, matching firmnetwork.app's REVshare section and `MARKETPLACE_RULES` / referral settings in `src/catalog.ts`:
+
+| Program | Contributor / partner share | Platform | Paid as |
+|---|---|---|---|
+| [HRVST] data packets | 70% | 30% | USD by bank (Stripe Connect) |
+| FABRIC aggregates | 70% (site says 85%, see §4) | 30% | USD |
+| Cumulus Data Exchange | 80% | 20% | USD |
+| SCALVS agent templates | 80% | 20% | USD |
+| [HRVST] / Cumulus Missions | bounty to contributor | 15–20% fee | USD |
+| Partner referrals | 20% of referred invoices for 12 months | 80% | USD |
+
+Earnings land in a USD ledger. They are held 7–14 days to cover refunds and disputes (refunds and lost disputes claw back automatically), then paid by bank. **Token payouts come later, if at all.** That needs `TOKEN_PAYOUTS_ENABLED=true` and counsel's sign-off (§3). Until then the site says payouts are USD now, tokens later.
+
+## 7. Distribution, hosting and infrastructure cost
+
+- **Direct downloads.** Every product is listed at infinitumcorporation.ai/downloads with its website. `downloads/products.json` is the single source of truth. `node _tools/build-downloads.mjs` regenerates the page and the permanent `/download/<product>/<platform>` links. Until a product is live, its link goes to the product's website. To launch one, set `status: "live"`, add the signed installer URLs, rebuild and deploy. Then the same links serve the installer. Today all 11 products are "coming soon".
+- **Bundles.** A plan's `bundle` field grants plans in other products (for example `firm_suite` → `cumulus_drive_free` + `firmament_dev`). The org's own paid subscription always wins over a bundled grant, so upgrades replace the bundled plan cleanly. Entitlements report `grantedBy` so the apps can show where a plan came from.
+- **Hosting.** The revenue API runs on Cloudflare Workers with Supabase Postgres and Stripe. The Firmament sites run on Cloudflare Workers + KV. The corporate site is on Vercel. All of these sit on free or low tiers while we're pre-revenue.
+- **Google Cloud: free tiers only.** Use GCP wherever a free tier fits, and spend nothing there yet. Good fits:
+  - BigQuery sandbox for revenue analytics (export the ledger, not raw PII)
+  - Cloud Run and Pub/Sub for background jobs and event fan-out
+  - The e2-micro VM
+  - Small Cloud Storage
+  - The Gemini API free tier, for prototypes only
+
+  Keep customer data off the free Gemini tier, because Google may use free-tier inputs. Don't move the billing API off Workers/Supabase for the sake of GCP. GPU, Vertex AI after the trial and Marketplace billing are paid, so the Cumulus GPU and inference meters have no GCP capacity behind them. Back them with another provider or keep them off.
+
+## 8. Highest-leverage next moves
 
 1. Ship METATRON¹⁰⁰ as the hero bundle. It sells the whole ecosystem in one subscription.
 2. Use VEIL (free) + referral codes as the top-of-funnel; measure conversion to SCALVS / CNDCTR Pro.
@@ -74,3 +114,6 @@ Either way, update this table. It also matters whether the 85% is paid in USD (t
 7. **Settle the token programme with counsel before 31 Dec 2026.** The Genesis Drop snapshot is that night, and the site's token rewards, the wallet's product-token rewards and the 85% data share all depend on the answer.
 8. Commission an external security audit of the $FIRM Wallet before switching its default to mainnet. Until then it stays a testnet showcase.
 9. Resolve the data-sharing split in §4 before the exchange opens.
+10. Get counsel's sign-off on the CPO structure and site copy (§5) before taking any funds, then set the launch date (`LAUNCH_AT`).
+11. Grow the CPO waitlist by tying REVshare referral codes (§6) to waitlist sign-ups, so early supporters become referral partners.
+12. Ship the first live installer through `products.json` (likely the $FIRM Suite or VEIL) to prove the direct-download pipeline end to end.
