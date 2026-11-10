@@ -14,5 +14,10 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 }
 
 dependencies {
+    implementation("org.json:json:20240303")
     testImplementation(libs.junit)
+}
+
+tasks.withType<Test>().configureEach {
+    systemProperty("throne.catalog", rootProject.file("catalog/products.json").absolutePath)
 }

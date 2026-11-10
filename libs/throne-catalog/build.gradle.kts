@@ -1,0 +1,30 @@
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+}
+
+android {
+    namespace = "com.infinitum.throne.catalog"
+    compileSdk = 35
+
+    defaultConfig {
+        minSdk = 26
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    sourceSets.named("main") {
+        assets.srcDir(rootProject.file("catalog"))
+    }
+}
+
+dependencies {
+    implementation(project(":libs:throne-core"))
+}

@@ -1,0 +1,238 @@
+{
+  "products": [
+    {
+      "id": "conjure",
+      "name": "Conjure™",
+      "summary": "Live prediction",
+      "url": null,
+      "packages": ["com.conjure.app"],
+      "edition": "all"
+    },
+    {
+      "id": "fabric",
+      "name": "FabriC++",
+      "summary": "Matrix end-to-end messaging",
+      "url": "https://infinitumfabric.app",
+      "packages": ["com.infinitum.fabric"],
+      "edition": "all"
+    },
+    {
+      "id": "scalvs",
+      "name": "SCALVS.ai",
+      "summary": "AI workforce",
+      "url": "https://scalvs.app",
+      "packages": ["app.scalvs"],
+      "edition": "all"
+    },
+    {
+      "id": "conductor",
+      "name": "/CNDCTR/ Conductor",
+      "summary": "cndctr.app currently redirects to Architect, so this build does not open it as Conductor.",
+      "url": null,
+      "packages": [],
+      "edition": "all"
+    },
+    {
+      "id": "architect",
+      "name": "Architect",
+      "summary": "AI execution workspace",
+      "url": "https://rchtch.app",
+      "packages": ["com.infinitum.architect"],
+      "edition": "all"
+    },
+    {
+      "id": "firmament",
+      "name": "Firmament Network™",
+      "summary": "Firmament Network",
+      "url": "https://firmnetwork.app",
+      "packages": [],
+      "edition": "all"
+    },
+    {
+      "id": "firm-wallet",
+      "name": "FIRM WALLET",
+      "summary": "Self-custody wallet",
+      "url": "https://firmwallet.app",
+      "packages": [],
+      "edition": "all"
+    },
+    {
+      "id": "cumulus-cloud",
+      "name": "Cumulus://Cloud",
+      "summary": "Cumulus cloud suite",
+      "url": "https://cumuluscloud.app",
+      "hosts": ["cumuluscloud.app", "drive.cumuluscloud.app"],
+      "packages": [],
+      "edition": "all"
+    },
+    {
+      "id": "cumulus-mail",
+      "name": "Cumulus://Mail",
+      "summary": "Private mail",
+      "url": "https://mail.cumuluscloud.app",
+      "packages": ["app.cumuluscloud.mail"],
+      "edition": "all"
+    },
+    {
+      "id": "cumulus-id",
+      "name": "Cumulus://ID",
+      "summary": "The live page at this host is titled +SPCTR™.",
+      "url": "https://id.cumuluscloud.app",
+      "packages": ["id.cumuluscloud.app"],
+      "edition": "all"
+    },
+    {
+      "id": "veil-vpn",
+      "name": "VEIL VPN",
+      "summary": "Always-on VPN",
+      "url": "https://infinitumveilvpn.app",
+      "packages": ["com.infinitum.veilvpn"],
+      "edition": "all"
+    },
+    {
+      "id": "veil-browser",
+      "name": "VEIL browser",
+      "summary": "VEIL browser",
+      "url": "https://infinitumveil.app",
+      "packages": ["app.infinitum.veil.browser"],
+      "edition": "all"
+    },
+    {
+      "id": "eidetic",
+      "name": "ei·det·ic™",
+      "summary": "Camera app com.infinitum.eidetic.cam is built separately.",
+      "url": "https://infinitumcorporation.ai/products/eidetic",
+      "hosts": ["infinitumcorporation.ai"],
+      "packages": ["com.infinitum.eidetic.cam"],
+      "edition": "all"
+    },
+    {
+      "id": "hrvst",
+      "name": "[HRVST]",
+      "summary": "Camera app com.infinitum.hrvst.cam is built separately.",
+      "url": "https://infinitumcorporation.ai/products/hrvst",
+      "hosts": ["infinitumcorporation.ai"],
+      "packages": ["com.infinitum.hrvst.cam"],
+      "edition": "all"
+    },
+    {
+      "id": "zerkalo",
+      "name": "Zerkalo",
+      "summary": "No public site was found.",
+      "url": null,
+      "packages": [],
+      "edition": "all"
+    },
+    {
+      "id": "flower",
+      "name": "Flower™",
+      "summary": "Flower",
+      "url": "https://infinitumcorporation.ai/products/flower",
+      "hosts": ["infinitumcorporation.ai"],
+      "packages": [],
+      "edition": "all"
+    },
+    {
+      "id": "pollen",
+      "name": "POLLEN™",
+      "summary": "POLLEN",
+      "url": "https://infinitumcorporation.ai/products/pollen",
+      "hosts": ["infinitumcorporation.ai"],
+      "packages": [],
+      "edition": "all"
+    },
+    {
+      "id": "academy",
+      "name": "Infinitum Academy",
+      "summary": "Academy on Whop",
+      "url": "https://infinitum-academy.whop.site",
+      "packages": [],
+      "edition": "all"
+    },
+    {
+      "id": "corporation",
+      "name": "Infinitum Corporation",
+      "summary": "Company site",
+      "url": "https://infinitumcorporation.ai",
+      "hosts": ["infinitumcorporation.ai"],
+      "packages": [],
+      "edition": "all"
+    },
+    {
+      "id": "defense",
+      "name": "Infinitum Defense",
+      "summary": "Executive protection and security",
+      "url": "https://infinitumdefense.com",
+      "packages": [],
+      "edition": "all"
+    },
+    {
+      "id": "throne-guard",
+      "name": "THRONE][OS™ Guard",
+      "summary": "Local device audit",
+      "url": null,
+      "packages": ["com.infinitum.throne.guard"],
+      "edition": "all"
+    },
+    {
+      "id": "throne-vault",
+      "name": "THRONE][OS™ Vault",
+      "summary": "Local encrypted notes and ciphertext",
+      "url": null,
+      "packages": ["com.infinitum.throne.vault"],
+      "edition": "all"
+    },
+    {
+      "id": "aether",
+      "name": "ÆTHER MIL",
+      "summary": "Field communications. ^KETER only.",
+      "url": "https://infinitumaether.app",
+      "packages": ["com.infinitum.aether"],
+      "edition": "keter"
+    },
+    {
+      "id": "onemind",
+      "name": "1MIND",
+      "summary": "Internal command platform. No public site was found.",
+      "url": null,
+      "packages": [],
+      "edition": "keter"
+    },
+    {
+      "id": "odin",
+      "name": "ODIN°",
+      "summary": "Military command suite. ^KETER only.",
+      "url": "https://infinitumcorporation.ai/products/odin",
+      "hosts": ["infinitumcorporation.ai"],
+      "packages": [],
+      "edition": "keter"
+    },
+    {
+      "id": "odin-daemon",
+      "name": "ODIN DAEMON",
+      "summary": "The public page is titled DAEMON™.",
+      "url": "https://infinitumcorporation.ai/products/daemon",
+      "hosts": ["infinitumcorporation.ai"],
+      "packages": [],
+      "edition": "keter"
+    },
+    {
+      "id": "argus",
+      "name": ">_ARGUS™ Military Edition",
+      "summary": "Observe layer. ^KETER only.",
+      "url": "https://infinitumcorporation.ai/products/argus",
+      "hosts": ["infinitumcorporation.ai"],
+      "packages": [],
+      "edition": "keter"
+    },
+    {
+      "id": "eon",
+      "name": "E(O)N™ MIL",
+      "summary": "Electronic warfare platform. ^KETER only.",
+      "url": "https://infinitumcorporation.ai/products/eon",
+      "hosts": ["infinitumcorporation.ai"],
+      "packages": [],
+      "edition": "keter"
+    }
+  ]
+}

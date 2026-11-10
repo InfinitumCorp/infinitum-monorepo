@@ -53,6 +53,7 @@ android {
 
 dependencies {
     implementation(project(":libs:throne-core"))
+    implementation(project(":libs:throne-catalog"))
     implementation(project(":libs:throne-ui"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
