@@ -14,9 +14,9 @@ The product name is **THRONE][OS™**. The KM4 layer uses the white Infinitum fi
 | THRONE][OS™ Guard | `com.infinitum.throne.guard` | Local audit and settings links. One optional, user-started Private DNS reachability check. |
 | THRONE][OS™ Vault | `com.infinitum.throne.vault` | Encrypts text on the phone and can hand ciphertext to Google Messages. No network permission. |
 
-Editions are build flavors. **MASTER** shows ÆTHER MIL (`com.infinitum.aether`) on INFINITUM. **SENTINEL** hides that package on both pages. A bad edition flag fails closed to SENTINEL. Debug APKs are signed with the Android debug key. They are not MASTER signing keys, and those keys are not in this repository.
+Editions are build flavors. **^KETER** shows ÆTHER MIL (`com.infinitum.aether`) on INFINITUM. **ARCH//ANGEL** hides that package on both pages. A bad edition flag fails closed to ARCH//ANGEL. Debug APKs are signed with the Android debug key. They are not ^KETER signing keys, and those keys are not in this repository.
 
-The INFINITUM page, in order, when the package is installed: VEIL VPN, Cumulus Mail, SCALVS, FabriC++, ÆTHER MIL (MASTER only), Architect, Conjure, VEIL Browser, `com.infinitum.eidetic.cam`, `com.infinitum.hrvst.cam`, Cumulus ID (`id.cumuluscloud.app`), Guard, and Vault. Everything else launchable is OTHERS. The launcher hides itself.
+The INFINITUM page, in order, when the package is installed: VEIL VPN, Cumulus Mail, SCALVS, FabriC++, ÆTHER MIL (^KETER only), Architect, Conjure, VEIL Browser, `com.infinitum.eidetic.cam`, `com.infinitum.hrvst.cam`, Cumulus ID (`id.cumuluscloud.app`), Guard, and Vault. Everything else launchable is OTHERS. The launcher hides itself.
 
 Icons use the adaptive-icon monochrome layer on Android 13 and later when the app supplies one. Otherwise the glyph is a desaturate-and-threshold fallback. Full-bleed color icons can become coarse silhouettes.
 
@@ -31,11 +31,11 @@ export ANDROID_HOME="$HOME/Android/Sdk"
 
 Debug APKs:
 
-- `apps/throne-launcher/build/outputs/apk/master/debug/`
-- `apps/throne-guard/build/outputs/apk/master/debug/`
-- `apps/throne-vault-notes/build/outputs/apk/master/debug/`
+- `apps/throne-launcher/build/outputs/apk/keter/debug/`
+- `apps/throne-guard/build/outputs/apk/keter/debug/`
+- `apps/throne-vault-notes/build/outputs/apk/keter/debug/`
 
-The `sentinel` flavor writes the same layout with `sentinel` in the path. GitHub Actions (`.github/workflows/android-debug.yml`) runs the unit tests, assembles the debug APKs, and uploads them. If the repository variable `CI_RUNNER` is set, the job uses that runner label (for example `infinitum-ci`). If it is empty, the job uses `ubuntu-latest`.
+^KETER APK names are `throne-launcher-keter-debug.apk`, `throne-guard-keter-debug.apk`, and `throne-vault-notes-keter-debug.apk`. The `archangel` flavor writes the same layout with `archangel` in the path: `throne-launcher-archangel-debug.apk`, `throne-guard-archangel-debug.apk`, and `throne-vault-notes-archangel-debug.apk`. GitHub Actions (`.github/workflows/android-debug.yml`) runs the unit tests, assembles the debug APKs, and uploads `throne-keter-debug-apks` and `throne-archangel-debug-apks`. If the repository variable `CI_RUNNER` is set, the job uses that runner label (for example `infinitum-ci`). If it is empty, the job uses `ubuntu-latest`.
 
 ## Install
 
@@ -45,7 +45,7 @@ On Windows, with one phone in `adb devices` and USB debugging on:
 powershell -ExecutionPolicy Bypass -File .\scripts\km4-apply.ps1
 ```
 
-`-Edition sentinel` installs the SENTINEL debug APKs. The script installs the three debug APKs with `adb install -r`, tries to grant the Home role, and opens the Home picker if that grant fails. It prints the remaining manual steps.
+`-Edition archangel` installs the ARCH//ANGEL debug APKs. The default is ^KETER, for William's KM4. The script installs the three debug APKs with `adb install -r`, tries to grant the Home role, and opens the Home picker if that grant fails. It prints the remaining manual steps.
 
 It does not wipe the device, unlock the bootloader, root the phone, flash partitions, or remove packages. A signature mismatch on reinstall is reported and left alone.
 
@@ -67,7 +67,7 @@ It does not wipe the device, unlock the bootloader, root the phone, flash partit
 | Launcher cannot open sockets | Enforced. No network permission. |
 | Vault cannot open sockets | Enforced. No network permission. |
 | No widget host, ad app, or analytics SDK | Enforced by what is compiled. |
-| SENTINEL omits ÆTHER MIL from the home grid | Enforced at build time. |
+| ARCH//ANGEL omits ÆTHER MIL from the home grid | Enforced at build time. |
 | App backup of these three packages | `android:allowBackup="false"`. |
 | Vault and Guard block screenshots | `FLAG_SECURE`. |
 | Private DNS | Advisory. The guide and the optional TCP/853 check do not change the setting. |

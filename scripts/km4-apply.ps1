@@ -4,8 +4,8 @@
 
 [CmdletBinding()]
 param(
-    [ValidateSet("master", "sentinel")]
-    [string]$Edition = "master",
+    [ValidateSet("keter", "archangel")]
+    [string]$Edition = "keter",
     [string]$Serial,
     [string]$LauncherApk,
     [string]$GuardApk,

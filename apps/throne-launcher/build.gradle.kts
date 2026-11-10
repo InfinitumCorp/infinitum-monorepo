@@ -38,15 +38,15 @@ android {
 
     flavorDimensions += "edition"
     productFlavors {
-        create("master") {
+        create("keter") {
             dimension = "edition"
-            versionNameSuffix = "-master"
-            buildConfigField("String", "EDITION", "\"MASTER\"")
+            versionNameSuffix = "-keter"
+            buildConfigField("String", "EDITION", "\"^KETER\"")
         }
-        create("sentinel") {
+        create("archangel") {
             dimension = "edition"
-            versionNameSuffix = "-sentinel"
-            buildConfigField("String", "EDITION", "\"SENTINEL\"")
+            versionNameSuffix = "-archangel"
+            buildConfigField("String", "EDITION", "\"ARCH//ANGEL\"")
         }
     }
 }

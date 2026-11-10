@@ -2,7 +2,7 @@
 
 **Infinitum Corporation®**
 
-> **CONFIDENTIAL — MASTER edition.** THRONE][OS™ MASTER is for William Aaron Turner only. Nobody else receives the MASTER signing keys, policy profile, wallpaper set, preinstalled military apps, or MASTER builds.
+> **CONFIDENTIAL — ^KETER edition.** THRONE][OS™ ^KETER is for William Aaron Turner only. Nobody else receives the ^KETER signing keys, policy profile, wallpaper set, preinstalled military apps, or ^KETER builds.
 
 A private design for THRONE][OS™, the software side of a THRONE PHONE™, for William Aaron Turner. It is honest about what a TECNO KM4 can do and what only a Pixel running GrapheneOS can do.
 
@@ -28,7 +28,7 @@ Design as of 10 Nov 2026, Europe/Moscow. This document is the Markdown form of t
 
 The KM4 cannot become a certified military operating system.
 
-THRONE][OS™ MASTER on this TECNO is a branded launcher, a hardening agent, always-on VEIL VPN, and Infinitum’s own apps on top of locked HiOS 15. That is real hardening, not theater, and it is also not NIAP, FIPS, or DISA certification. The build nobody else should have, with OS-level exploit mitigations and a hardware root of trust that has actually been validated, belongs on an unlockable Pixel running GrapheneOS.
+THRONE][OS™ ^KETER on this TECNO is a branded launcher, a hardening agent, always-on VEIL VPN, and Infinitum’s own apps on top of locked HiOS 15. That is real hardening, not theater, and it is also not NIAP, FIPS, or DISA certification. The build nobody else should have, with OS-level exploit mitigations and a hardware root of trust that has actually been validated, belongs on an unlockable Pixel running GrapheneOS.
 
 William Aaron Turner, 10 Nov 2026:
 
@@ -42,10 +42,10 @@ The public #THRONE™ line on infinitumcorporation.ai is already a family of AI 
 
 | | |
 | --- | --- |
-| Owner | William Aaron Turner, sole holder of the MASTER build |
+| Owner | William Aaron Turner, sole holder of the ^KETER build |
 | Company | Infinitum Corporation® |
 | Marks | THRONE][OS™, THRONE PHONE™, related to #THRONE™ / Throne OS™ |
-| Editions | MASTER (William only, confidential) and SENTINEL (security-minded edition for others) |
+| Editions | ^KETER (William only, confidential) and ARCH//ANGEL (security-minded edition for others) |
 | Date | Design as of 10 Nov 2026, Europe/Moscow |
 | Site | https://infinitumcorporation.ai/ |
 
@@ -74,9 +74,9 @@ Unlocking, if a method even works on this unit, wipes userdata, trips the verifi
 | FIPS 140-3 | Validation of a specific cryptographic module, not of an app or a skin. Pixel Android 15 lists Android BoringCrypto as CMVP certificate 5244, with Titan M2 / Trusty also under CAVP and related evaluations. | No known FIPS module listing for this Unisoc or for HiOS. Apps can still use the Android Keystore / TEE. | Use the already-validated platform modules. A THRONE app that calls those modules is not itself FIPS certified. |
 | NIAP MDFPP | Protection Profile for Mobile Device Fundamentals. Pixel devices on Android 15 are listed as VID11545 against MDFPP 3.3 plus related modules (Bluetooth, WLAN, MDM agent, TLS). | No NIAP listing found for TECNO KM4 or HiOS 15. | The certified target is Google Android on Pixel, not GrapheneOS and not a custom launcher. |
 | DISA STIG, Android 15 | Configuration guidance for Google Android 15 used with CUI or below, in COPE or COBO, built from the MDFPP 3.3 STIG template. It assumes Android Enterprise work-profile or fully managed device controls, including Common Criteria Mode on Pixel. | Some individual settings can be mirrored with a device owner. The phone cannot be called STIG-compliant. | Many STIG items are achievable on stock Pixel Android Enterprise. GrapheneOS is a different OS and is not the STIG target. |
-| GrapheneOS hardening | hardened_malloc, hardened libc, hardware MTE on Pixel 8 and later, sandboxed Google Play, duress PIN, scrambled PIN, per-app network and sensor permissions, USB-C port control, auto-reboot, improved verified boot with a relocked custom root of trust. | Not portable to TECNO. GrapheneOS supports Pixel 6 through Pixel 10a only. | This is the closest public production system to the MASTER brief. It is still not a government certification. |
+| GrapheneOS hardening | hardened_malloc, hardened libc, hardware MTE on Pixel 8 and later, sandboxed Google Play, duress PIN, scrambled PIN, per-app network and sensor permissions, USB-C port control, auto-reboot, improved verified boot with a relocked custom root of trust. | Not portable to TECNO. GrapheneOS supports Pixel 6 through Pixel 10a only. | This is the closest public production system to the ^KETER brief. It is still not a government certification. |
 
-MASTER should be described as maximum hardening for a single owner, informed by those standards, not as a certified military product. SENTINEL should be described as security-minded. Both lines stay out of export-control and accreditation claims until counsel and a lab say otherwise.
+^KETER should be described as maximum hardening for a single owner, informed by those standards, not as a certified military product. ARCH//ANGEL should be described as security-minded. Both lines stay out of export-control and accreditation claims until counsel and a lab say otherwise.
 
 ## Three build paths
 
@@ -86,15 +86,15 @@ There are three technically real ways to put THRONE][OS™ on a phone. They are 
 
 A THRONE][OS™ launcher replaces the HiOS home screen with an INFINITUM screen and an Others screen. A THRONE Agent app applies whatever Android will allow without rewriting the OS: always-on VPN through VEIL, Private DNS, a restricted profile of settings, leftover Transsion package disables, optional device-owner policies, and quick launch into VEIL, Cumulus, and ÆTHER MIL. The bootloader stays locked, so OEM verified boot stays intact. This is the only path that is safe to start on the KM4 without wiping it.
 
-Full device-owner power (`adb shell dpm set-device-owner` against a DevicePolicyManager receiver) is stronger: USB data off, camera policy, password quality, screen capture off, application hiding, always-on VPN lock, remote wipe. Android will accept that command only on an unprovisioned device with no accounts. William’s KM4 already has accounts, so true device-owner mode means a factory reset, then installing the Agent, then setting device owner, then signing back into Google and the rest. That is a deliberate MASTER step, not a background tweak.
+Full device-owner power (`adb shell dpm set-device-owner` against a DevicePolicyManager receiver) is stronger: USB data off, camera policy, password quality, screen capture off, application hiding, always-on VPN lock, remote wipe. Android will accept that command only on an unprovisioned device with no accounts. William’s KM4 already has accounts, so true device-owner mode means a factory reset, then installing the Agent, then setting device owner, then signing back into Google and the rest. That is a deliberate ^KETER step, not a background tweak.
 
 ### Path B. Custom ROM or Treble GSI
 
-Project Treble generic system images, or a from-source HiOS replacement, require an unlocked bootloader and working Unisoc device trees, vendor blobs, and radio firmware. Official OEM unlocking on Transsion Unisoc devices is widely reported as unavailable at the SoC level. Unofficial unlock and flash tools exist; an XDA report on a KM4 that was unlocked that way describes a failed super-partition rewrite and a “NO VALID OS FOUND” brick. Even a successful GSI would drop HiOS radio integration, lose a clean verified-boot lock, and still would not provide GrapheneOS mitigations or Pixel’s Titan secure element. Path B is research, not the MASTER daily driver.
+Project Treble generic system images, or a from-source HiOS replacement, require an unlocked bootloader and working Unisoc device trees, vendor blobs, and radio firmware. Official OEM unlocking on Transsion Unisoc devices is widely reported as unavailable at the SoC level. Unofficial unlock and flash tools exist; an XDA report on a KM4 that was unlocked that way describes a failed super-partition rewrite and a “NO VALID OS FOUND” brick. Even a successful GSI would drop HiOS radio integration, lose a clean verified-boot lock, and still would not provide GrapheneOS mitigations or Pixel’s Titan secure element. Path B is research, not the ^KETER daily driver.
 
 ### Path C. Pixel plus GrapheneOS
 
-GrapheneOS official production support, as of this design, covers Pixel 6 through Pixel 10a, including Pixel 10, 10 Pro, 10 Pro XL, 10 Pro Fold, and 10a. Current-generation advice is Pixel 8 and later: seven years of updates from launch, hardware memory tagging, pointer authentication, and branch target identification. Buy an unlockable, non-carrier-locked device. After install, the bootloader is relocked against GrapheneOS keys, so verified boot is stronger than an unlocked experiment and different from stock Google Android. This is the recommended hardware for the true MASTER build. SENTINEL can stay on ordinary Android phones via Path A.
+GrapheneOS official production support, as of this design, covers Pixel 6 through Pixel 10a, including Pixel 10, 10 Pro, 10 Pro XL, 10 Pro Fold, and 10a. Current-generation advice is Pixel 8 and later: seven years of updates from launch, hardware memory tagging, pointer authentication, and branch target identification. Buy an unlockable, non-carrier-locked device. After install, the bootloader is relocked against GrapheneOS keys, so verified boot is stronger than an unlocked experiment and different from stock Google Android. This is the recommended hardware for the true ^KETER build. ARCH//ANGEL can stay on ordinary Android phones via Path A.
 
 Stay on the KM4 for now:
 
@@ -103,16 +103,16 @@ Stay on the KM4 for now:
 - Google apps William wants to keep today continue to work as they do now
 - Launcher, Agent, VEIL, and branding can ship while a Pixel is sourced
 
-Move MASTER to a Pixel:
+Move ^KETER to a Pixel:
 
 - Requires buying an unlockable Pixel 8a or newer (Pixel 9a or 10-series if purchasing new)
 - Install and relock take a dedicated session; eSIM and carrier quirks need a check
 - Sandboxed Google Play keeps Gmail and Play, but some privileged Play features go away
-- The KM4 can remain a SENTINEL or travel handset rather than the MASTER device
+- The KM4 can remain an ARCH//ANGEL or travel handset rather than the ^KETER device
 
 ## Two editions
 
-MASTER is William’s personal build. It is confidential. Nobody else receives its signing keys, policy profile, wallpaper set, or preinstalled military apps. SENTINEL is the proposed name for the security-minded edition other people could eventually run. CITADEL is the fallback name if SENTINEL feels too close to a watchdog product.
+^KETER is William’s personal build, including the KM4 he has now. It is confidential. Nobody else receives its signing keys, policy profile, wallpaper set, or preinstalled military apps. ARCH//ANGEL is the public edition other people can run. It keeps the hardened defaults and leaves the military apps out.
 
 The comparison tables live in [EDITIONS.md](EDITIONS.md).
 
@@ -168,8 +168,8 @@ Military editions on the public site are reserved for authorized defense users, 
 | What it is | Hardened field communications and mesh networking; the communications layer of ODIN°™. Secure voice, text and data, with no commercial edition. |
 | Sources | Already installed on the KM4; product page https://infinitumcorporation.ai/products/aether (title ÆTHER MIL™, system table lists ÆTHER Mobile MIL™ as the organization-controlled Android application); private repo InfinitumCorp/aether README and `android/app/build.gradle.kts` (`applicationId = com.infinitum.aether`); public site https://infinitumaether.app |
 | What the repo says works today | TEE-backed (StrongBox when present) identity in ÆTHER Vault™, single-hop ÆTHER Mesh™, ÆTHER Talk™ text with a hybrid post-quantum Noise session, device certificates, safety numbers, Key Drop, burner numbers, `FLAG_SECURE` in release, no app-data backup. Verified on a TECNO KM4 (Android 15, arm64): all 5 on-device checks passed with TEE-backed keys. |
-| MASTER | Preinstalled, pinned on the INFINITUM screen, allowed to run in the background (HiOS otherwise freezes it) |
-| SENTINEL | Do not preinstall. The civilian counterpart is FabriC++™ |
+| ^KETER | Preinstalled, pinned on the INFINITUM screen, allowed to run in the background (HiOS otherwise freezes it) |
+| ARCH//ANGEL | Do not preinstall. The civilian counterpart is FabriC++™ |
 
 ### Related MIL products, not confirmed as phone apps
 
@@ -189,21 +189,21 @@ Military editions on the public site are reserved for authorized defense users, 
 | VEIL VPN | `com.infinitum.veilvpn` | Always-on VPN and kill switch on both editions |
 | VEIL Browser | `app.infinitum.veil.browser` | Default browser on both editions |
 | Cumulus Mail | `app.cumuluscloud.mail` | Private mail on both editions |
-| Sign in with Cumulus://ID | `id.cumuluscloud.app` | Identity on both editions; MIL credential branding stays off SENTINEL |
+| Sign in with Cumulus://ID | `id.cumuluscloud.app` | Identity on both editions; MIL credential branding stays off ARCH//ANGEL |
 | FabriC++ | `com.infinitum.fabric` | Civilian E2E messaging, voice and video; the non-military counterpart to ÆTHER MIL |
 | Architect | `com.infinitum.architect` | AI execution workspace on both editions |
 | SCALVS | `app.scalvs` | AI workforce client on both editions |
 | Conjure | `com.conjure.app` | Live prediction client on both editions |
-| ÆTHER MIL | `com.infinitum.aether` | MASTER only |
+| ÆTHER MIL | `com.infinitum.aether` | ^KETER only |
 
 GitHub counterparts used for descriptions: InfinitumCorp/veil-vpn, InfinitumCorp/veil-phase1 (VEIL Browser), InfinitumCorp/cumulus-mail, InfinitumCorp/fabric (Android and iPhone Matrix messaging), InfinitumCorp/architect, InfinitumCorp/scalvs-ai, InfinitumCorp/Conjure, InfinitumCorp/aether.
 
 ## Architecture
 
-THRONE][OS™ is three pieces on top of a base OS William already has, or on GrapheneOS if MASTER moves. No path rewrites the Unisoc boot chain in version one.
+THRONE][OS™ is three pieces on top of a base OS William already has, or on GrapheneOS if ^KETER moves. No path rewrites the Unisoc boot chain in version one.
 
 ```
-William Aaron Turner (sole MASTER owner)
+William Aaron Turner (sole ^KETER owner)
         |                         |
         v                         v
 THRONE][OS™ launcher          THRONE Agent
@@ -219,15 +219,15 @@ THRONE][OS™ launcher          THRONE Agent
  Conjure
         |
         v
- ÆTHER MIL (MASTER only)
+ ÆTHER MIL (^KETER only)
  All app traffic through VEIL
 ```
 
-**Launcher.** Replaces only the home screen. Screen one, INFINITUM, holds VEIL VPN, VEIL Browser, Cumulus Mail, Cumulus://ID, Fabric, Architect, SCALVS, Conjure, and on MASTER, ÆTHER MIL. Screen two, Others, holds Phone, Messages, Camera, Clock, Calculator, Settings, Google apps William is keeping, plus X, Telegram, MAX, Outlook, Happ, and Miracast. Quick tiles arm VEIL and open Cumulus.
+**Launcher.** Replaces only the home screen. Screen one, INFINITUM, holds VEIL VPN, VEIL Browser, Cumulus Mail, Cumulus://ID, Fabric, Architect, SCALVS, Conjure, and on ^KETER, ÆTHER MIL. Screen two, Others, holds Phone, Messages, Camera, Clock, Calculator, Settings, Google apps William is keeping, plus X, Telegram, MAX, Outlook, Happ, and Miracast. Quick tiles arm VEIL and open Cumulus.
 
 **Agent.** A first-party device policy controller. Without device owner it still drives Private DNS, VPN checks, unused-app reboot prompts, and package disables. With device owner it can lock USB data, password quality, screen capture, camera policy, application hiding, always-on VPN, and wipe.
 
-**VEIL.** The network enforcement point on both editions. Always-on VPN plus Android’s VPN lockdown so apps cannot bypass the tunnel when VEIL drops. Happ remains installed because William asked to keep it; MASTER should still prefer VEIL as the system VPN so two tunnels do not fight.
+**VEIL.** The network enforcement point on both editions. Always-on VPN plus Android’s VPN lockdown so apps cannot bypass the tunnel when VEIL drops. Happ remains installed because William asked to keep it; ^KETER should still prefer VEIL as the system VPN so two tunnels do not fight.
 
 ## Brand and logo concepts
 
@@ -237,23 +237,23 @@ Production chrome for the KM4 layer, set by William: a white field (`#FFFFFF`), 
 
 | Concept | Mark | Type | Palette |
 | --- | --- | --- | --- |
-| Lattice throne | The existing diamond lattice seated on a short gold plinth, as if the mark were a throne seen from the front. No extra crown, no eagles. | The angular INFINITUM letters unused here. Caption in tracked caps: THRONE][OS™ under the plinth, CORPORATION dropped. | White or gold lattice and plinth on void black. Ivory for light mode. Red pinstripe only on the MASTER splash. |
-| Double slash | Two parallel gold bars, slightly raked, cut through the lattice like a portcullis or a rank stripe. The bars are the // in the name. | THRONE in the existing angular face, then //OS in a narrower cut of the same face, white or gold on black. | Black field, white Infinitum mark and word, optional gold // bars, ivory secondary text. Red reserved for MASTER builds and duress/wipe screens. |
-| Sealed lattice | The lattice inside a thin circular seal, broken at the lower right by a small registration notch so it does not look like a generic police badge. | Around the ring: INFINITUM CORPORATION above, THRONE][OS™ below. MASTER seals add a serial field; SENTINEL seals do not. | White lattice on black for both editions. MASTER inner ring in red. SENTINEL inner ring in ivory or gold only. |
+| Lattice throne | The existing diamond lattice seated on a short gold plinth, as if the mark were a throne seen from the front. No extra crown, no eagles. | The angular INFINITUM letters unused here. Caption in tracked caps: THRONE][OS™ under the plinth, CORPORATION dropped. | White or gold lattice and plinth on void black. Ivory for light mode. Red pinstripe only on the ^KETER splash. |
+| Double slash | Two parallel gold bars, slightly raked, cut through the lattice like a portcullis or a rank stripe. The bars are the // in the name. | THRONE in the existing angular face, then //OS in a narrower cut of the same face, white or gold on black. | Black field, white Infinitum mark and word, optional gold // bars, ivory secondary text. Red reserved for ^KETER builds and duress/wipe screens. |
+| Sealed lattice | The lattice inside a thin circular seal, broken at the lower right by a small registration notch so it does not look like a generic police badge. | Around the ring: INFINITUM CORPORATION above, THRONE][OS™ below. ^KETER seals add a serial field; ARCH//ANGEL seals do not. | White lattice on black for both editions. ^KETER inner ring in red. ARCH//ANGEL inner ring in ivory or gold only. |
 | Command wordmark | No new pictogram. The current horizontal lockup (lattice plus INFINITUM CORPORATION) with a second line, THRONE][OS™, set in the same angular face and optical size as CORPORATION. | Best for the boot splash, settings About screen, and printed one-pagers. Pairs with any of the three marks above as the app icon. | Clean white wordmark on black for the splash and chrome. Optional gold on black for a lockscreen that matches the present wallpaper. |
 
-Recommended pairing: Double slash as the launcher icon, command wordmark on the splash and About screen, sealed lattice only if William wants a MASTER-specific crest that SENTINEL is not allowed to draw. Do not invent a new letter style. The current Infinitum face is already distinctive.
+Recommended pairing: Double slash as the launcher icon, command wordmark on the splash and About screen, sealed lattice only if William wants a ^KETER-specific crest that ARCH//ANGEL is not allowed to draw. Do not invent a new letter style. The current Infinitum face is already distinctive.
 
 ## Phased build plan
 
 Nothing in this plan flashes firmware, contacts a vendor, or changes another repository. Each phase waits on William’s say-so. Cyber work stays on Infinitum’s own apps and on Android public APIs.
 
-1. **Phase 0. Design freeze.** This document. Confirm edition names, the Pixel question, and whether a factory reset for device owner is acceptable on MASTER.
-2. **Phase 1. Launcher on the KM4.** Ship THRONE][OS™ as an Android launcher: INFINITUM and Others screens, white field, black monochrome glyphs, ÆTHER MIL pinned only on MASTER. No wipe. HiOS stays underneath. The source for this phase, the guard, and the vault is in [KM4-LAYER.md](KM4-LAYER.md).
+1. **Phase 0. Design freeze.** This document. Confirm edition names, the Pixel question, and whether a factory reset for device owner is acceptable on ^KETER.
+2. **Phase 1. Launcher on the KM4.** Ship THRONE][OS™ as an Android launcher: INFINITUM and Others screens, white field, black monochrome glyphs, ÆTHER MIL pinned only on ^KETER. No wipe. HiOS stays underneath. The source for this phase, the guard, and the vault is in [KM4-LAYER.md](KM4-LAYER.md).
 3. **Phase 2. Agent without device owner.** Private DNS, VEIL always-on checks, disable leftover Transsion analytics packages, reboot reminder, status dashboard. Works on the phone as it stands today.
-4. **Phase 3. Optional MASTER device owner.** A planned factory reset, no accounts, install the Agent, `dpm set-device-owner`, then restore Google and Infinitum apps. Enables USB lockdown, capture blocks, password quality, hidden packages, and a policy-level wipe. Skip this until William explicitly accepts the wipe.
-5. **Phase 4. MASTER on Pixel and GrapheneOS.** Source an unlockable Pixel 8a or newer. Install GrapheneOS, relock, enable sandboxed Play if Google apps stay, install the Infinitum suite and ÆTHER MIL, apply the MASTER policy profile. This is the build that can honestly carry the stronger hardening claims.
-6. **Phase 5. SENTINEL package.** The same launcher and Agent without ÆTHER MIL, without duress wipe by default, and without MASTER signing keys. Only after William decides SENTINEL should exist outside his own phone.
+4. **Phase 3. Optional ^KETER device owner.** A planned factory reset, no accounts, install the Agent, `dpm set-device-owner`, then restore Google and Infinitum apps. Enables USB lockdown, capture blocks, password quality, hidden packages, and a policy-level wipe. Skip this until William explicitly accepts the wipe.
+5. **Phase 4. ^KETER on Pixel and GrapheneOS.** Source an unlockable Pixel 8a or newer. Install GrapheneOS, relock, enable sandboxed Play if Google apps stay, install the Infinitum suite and ÆTHER MIL, apply the ^KETER policy profile. This is the build that can honestly carry the stronger hardening claims.
+6. **Phase 5. ARCH//ANGEL package.** The public edition: the same launcher and Agent without ÆTHER MIL, without duress wipe by default, and without ^KETER signing keys.
 
 ## Open decisions
 

@@ -82,7 +82,7 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
             .padding(horizontal = 24.dp),
     ) {
         Spacer(Modifier.height(12.dp))
-        Wordmark(edition = state.edition.name, kicker = "")
+        Wordmark(edition = state.edition.label, kicker = "")
         Spacer(Modifier.height(22.dp))
         val focus = LocalFocusManager.current
         OutlinedTextField(

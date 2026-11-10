@@ -1,8 +1,16 @@
 package com.infinitum.throne.core.home
 
 enum class Edition {
-    MASTER,
-    SENTINEL,
+    KETER,
+    ARCHANGEL,
+    ;
+
+    /** Exact product styling. Gradle flavor ids are keter and archangel. */
+    val label: String
+        get() = when (this) {
+            KETER -> "^KETER"
+            ARCHANGEL -> "ARCH//ANGEL"
+        }
 }
 
 enum class HomePage {
@@ -34,18 +42,18 @@ object EditionPolicy {
         "com.infinitum.throne.vault",
     )
 
-    /** Confirmed military package. SENTINEL hides these on both pages. */
+    /** Confirmed military package. ARCH//ANGEL hides these on both pages. */
     val milPackages: Set<String> = setOf("com.infinitum.aether")
 
-    fun parse(raw: String): Edition = when (raw.trim().uppercase()) {
-        "MASTER" -> Edition.MASTER
-        else -> Edition.SENTINEL
+    fun parse(raw: String): Edition {
+        val key = raw.trim().uppercase().removePrefix("^").replace("//", "").replace("-", "").replace(" ", "")
+        return if (key == "KETER") Edition.KETER else Edition.ARCHANGEL
     }
 
     fun isMil(packageName: String): Boolean = packageName in milPackages
 
     fun visible(packageName: String, edition: Edition): Boolean {
-        return !(edition == Edition.SENTINEL && isMil(packageName))
+        return !(edition == Edition.ARCHANGEL && isMil(packageName))
     }
 }
 

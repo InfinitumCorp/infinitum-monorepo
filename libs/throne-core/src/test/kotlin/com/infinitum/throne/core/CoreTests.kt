@@ -147,7 +147,7 @@ class NotebookTest {
 
 class HomeRulesTest {
     @Test
-    fun sentinelHidesAetherAndKeepsOrder() {
+    fun archangelHidesAetherAndKeepsOrder() {
         val apps = listOf(
             Launchable("com.android.settings", "Settings", "Settings"),
             Launchable("com.infinitum.aether", "Main", "ÆTHER MIL"),
@@ -156,19 +156,25 @@ class HomeRulesTest {
             Launchable(EditionPolicy.LAUNCHER_PACKAGE, "Main", "Launcher"),
             Launchable("com.infinitum.throne.vault", "Main", "Vault"),
         )
-        val sentinel = HomeCatalog.arrange(apps, Edition.SENTINEL, EditionPolicy.LAUNCHER_PACKAGE)
-        assertEquals(listOf("com.infinitum.veilvpn", "com.conjure.app", "com.infinitum.throne.vault"), sentinel.infinitum.map { it.packageName })
-        assertEquals(listOf("com.android.settings"), sentinel.others.map { it.packageName })
-        assertTrue(sentinel.infinitum.none { it.packageName == "com.infinitum.aether" })
-        assertTrue(sentinel.others.none { it.packageName == "com.infinitum.aether" })
-        val master = HomeCatalog.arrange(apps, Edition.MASTER, EditionPolicy.LAUNCHER_PACKAGE)
-        assertEquals("com.infinitum.aether", master.infinitum[1].packageName)
+        val archangel = HomeCatalog.arrange(apps, Edition.ARCHANGEL, EditionPolicy.LAUNCHER_PACKAGE)
+        assertEquals(listOf("com.infinitum.veilvpn", "com.conjure.app", "com.infinitum.throne.vault"), archangel.infinitum.map { it.packageName })
+        assertEquals(listOf("com.android.settings"), archangel.others.map { it.packageName })
+        assertTrue(archangel.infinitum.none { it.packageName == "com.infinitum.aether" })
+        assertTrue(archangel.others.none { it.packageName == "com.infinitum.aether" })
+        val keter = HomeCatalog.arrange(apps, Edition.KETER, EditionPolicy.LAUNCHER_PACKAGE)
+        assertEquals("com.infinitum.aether", keter.infinitum[1].packageName)
     }
 
     @Test
     fun unknownEditionFailsClosed() {
-        assertEquals(Edition.SENTINEL, EditionPolicy.parse("nope"))
-        assertEquals(Edition.MASTER, EditionPolicy.parse(" master "))
+        assertEquals(Edition.ARCHANGEL, EditionPolicy.parse("nope"))
+        assertEquals(Edition.ARCHANGEL, EditionPolicy.parse("ARCH//ANGEL"))
+        assertEquals(Edition.ARCHANGEL, EditionPolicy.parse("archangel"))
+        assertEquals("ARCH//ANGEL", Edition.ARCHANGEL.label)
+        assertEquals("^KETER", Edition.KETER.label)
+        assertEquals(Edition.KETER, EditionPolicy.parse("^KETER"))
+        assertEquals(Edition.KETER, EditionPolicy.parse("keter"))
+        assertEquals(Edition.ARCHANGEL, EditionPolicy.parse(" master "))
     }
 
     @Test

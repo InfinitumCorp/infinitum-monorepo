@@ -35,12 +35,22 @@ jobs:
       - name: Unit tests and debug APKs
         run: ./gradlew test assembleDebug --stacktrace --no-daemon
 
-      - name: Upload debug APKs
+      - name: Upload ^KETER debug APKs
         uses: actions/upload-artifact@v4
         with:
-          name: throne-debug-apks
+          name: throne-keter-debug-apks
           if-no-files-found: error
           path: |
-            apps/throne-launcher/build/outputs/apk/**/*.apk
-            apps/throne-guard/build/outputs/apk/**/*.apk
-            apps/throne-vault-notes/build/outputs/apk/**/*.apk
+            apps/throne-launcher/build/outputs/apk/keter/debug/*.apk
+            apps/throne-guard/build/outputs/apk/keter/debug/*.apk
+            apps/throne-vault-notes/build/outputs/apk/keter/debug/*.apk
+
+      - name: Upload ARCHANGEL debug APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: throne-archangel-debug-apks
+          if-no-files-found: error
+          path: |
+            apps/throne-launcher/build/outputs/apk/archangel/debug/*.apk
+            apps/throne-guard/build/outputs/apk/archangel/debug/*.apk
+            apps/throne-vault-notes/build/outputs/apk/archangel/debug/*.apk

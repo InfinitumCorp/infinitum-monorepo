@@ -78,7 +78,7 @@ private fun Dashboard(viewModel: GuardViewModel) {
     ) {
         item {
             Spacer(Modifier.height(8.dp))
-            Wordmark(edition = viewModel.edition.name, kicker = "Guard")
+            Wordmark(edition = viewModel.edition.label, kicker = "Guard")
             Text(
                 text = "Local audit. Nothing on this screen is enforced. Links open Android settings so you can change them.",
                 style = MaterialTheme.typography.bodyMedium,
@@ -227,7 +227,7 @@ private fun DnsGuide(viewModel: GuardViewModel) {
             .padding(horizontal = 24.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Wordmark(edition = viewModel.edition.name, kicker = "Private DNS")
+        Wordmark(edition = viewModel.edition.label, kicker = "Private DNS")
         Text(
             "Android does not let this app set Private DNS. You type the hostname. Nothing is contacted until you tap a check.",
             style = MaterialTheme.typography.bodyMedium,
