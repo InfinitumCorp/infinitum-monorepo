@@ -6,6 +6,9 @@ import android.content.pm.PackageManager
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.infinitum.throne.core.catalog.ProductCatalog
+import com.infinitum.throne.core.catalog.ShelfArranger
+import com.infinitum.throne.core.catalog.ShelfKind
 import com.infinitum.throne.core.home.Edition
 import com.infinitum.throne.core.home.EditionPolicy
 import com.infinitum.throne.core.home.HomeCatalog
@@ -15,15 +18,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+enum class EntryKind { NATIVE, WEB, PLACEHOLDER }
+
 data class AppEntry(
-    val packageName: String,
-    val className: String,
+    val key: String,
     val label: String,
     val page: HomePage,
     val icon: ImageBitmap?,
-) {
-    val key: String = "$packageName/$className"
-}
+    val kind: EntryKind,
+    val packageName: String?,
+    val className: String?,
+    val productId: String?,
+)
 
 data class LauncherUiState(
     val edition: Edition,
@@ -72,15 +78,75 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
             }
             Launchable(packageName, className, label)
         }
-        val arranged = HomeCatalog.arrange(
+        val products = loadCatalog()
+        if (products.isEmpty()) {
+            val arranged = HomeCatalog.arrange(
+                apps = launchables,
+                edition = state.value.edition,
+                selfPackage = EditionPolicy.LAUNCHER_PACKAGE,
+            )
+            fun entries(apps: List<Launchable>, page: HomePage) = apps.map { app ->
+                val key = "${app.packageName}/${app.className}"
+                AppEntry(
+                    key = key,
+                    label = app.label,
+                    page = page,
+                    icon = glyphs[key],
+                    kind = EntryKind.NATIVE,
+                    packageName = app.packageName,
+                    className = app.className,
+                    productId = null,
+                )
+            }
+            return entries(arranged.infinitum, HomePage.INFINITUM) to entries(arranged.others, HomePage.OTHERS)
+        }
+        val shelf = ShelfArranger.arrange(
+            products = products,
             apps = launchables,
             edition = state.value.edition,
             selfPackage = EditionPolicy.LAUNCHER_PACKAGE,
         )
-        fun entries(apps: List<Launchable>, page: HomePage) = apps.map { app ->
-            val key = "${app.packageName}/${app.className}"
-            AppEntry(app.packageName, app.className, app.label, page, glyphs[key])
+        val infinitum = shelf.infinitum.map { item ->
+            val nativeKey = if (item.packageName != null && item.className != null) {
+                "${item.packageName}/${item.className}"
+            } else {
+                null
+            }
+            AppEntry(
+                key = "product:${item.productId}",
+                label = item.name,
+                page = HomePage.INFINITUM,
+                icon = nativeKey?.let { glyphs[it] } ?: IconGlyphs.monogram(item.name),
+                kind = when (item.kind) {
+                    ShelfKind.NATIVE -> EntryKind.NATIVE
+                    ShelfKind.WEB -> EntryKind.WEB
+                    ShelfKind.PLACEHOLDER -> EntryKind.PLACEHOLDER
+                },
+                packageName = item.packageName,
+                className = item.className,
+                productId = item.productId,
+            )
         }
-        return entries(arranged.infinitum, HomePage.INFINITUM) to entries(arranged.others, HomePage.OTHERS)
+        val others = shelf.others.map { app ->
+            val key = "${app.packageName}/${app.className}"
+            AppEntry(
+                key = key,
+                label = app.label,
+                page = HomePage.OTHERS,
+                icon = glyphs[key],
+                kind = EntryKind.NATIVE,
+                packageName = app.packageName,
+                className = app.className,
+                productId = null,
+            )
+        }
+        return infinitum to others
+    }
+
+    private fun loadCatalog() = try {
+        val json = getApplication<Application>().assets.open("products.json").bufferedReader().use { it.readText() }
+        ProductCatalog.parse(json)
+    } catch (_: Exception) {
+        emptyList()
     }
 }

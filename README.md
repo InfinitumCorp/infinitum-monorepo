@@ -40,6 +40,6 @@ Infinitum Corporation® visual direction for THRONE][OS™, matching the other I
 
 ## Status
 
-The KM4 layer is source in this repository: `apps/throne-launcher`, `apps/throne-guard`, and `apps/throne-vault-notes`. It has not been flashed. There are no signing keys and no certification claims. Build and install steps are in [docs/KM4-LAYER.md](docs/KM4-LAYER.md).
+The KM4 layer is source in this repository: `apps/throne-launcher`, `apps/throne-guard`, `apps/throne-vault-notes`, and `apps/throne-suite`. The suite catalog is `apps/throne-suite/src/main/assets/products.json`. It has not been flashed. There are no signing keys and no certification claims. Build and install steps are in [docs/KM4-LAYER.md](docs/KM4-LAYER.md).
 
 Site: https://infinitumcorporation.ai/

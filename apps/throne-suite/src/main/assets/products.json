@@ -1,0 +1,239 @@
+{
+  "products": [
+    {
+      "id": "conjure",
+      "name": "Conjure™",
+      "summary": "Live prediction. No public product page responded, so this build does not open a site.",
+      "url": null,
+      "packages": ["com.conjure.app"],
+      "cumulusId": false,
+      "edition": "all"
+    },
+    {
+      "id": "fabric",
+      "name": "FabriC++",
+      "summary": "Encrypted messaging. The public Android preview is app.infinitumfabric.client.",
+      "url": "https://infinitumfabric.app",
+      "packages": ["app.infinitumfabric.client", "com.infinitum.fabric"],
+      "cumulusId": true,
+      "edition": "all"
+    },
+    {
+      "id": "scalvs",
+      "name": "SCALVS.ai",
+      "summary": "AI workforce. The public site is the client. No public Android package was published.",
+      "url": "https://scalvs.app",
+      "packages": ["app.scalvs"],
+      "cumulusId": true,
+      "edition": "all"
+    },
+    {
+      "id": "conductor",
+      "name": "/CNDCTR/ Conductor",
+      "summary": "cndctr.app redirects to Architect at rchtch.app, so it is not opened as Conductor.",
+      "url": null,
+      "packages": [],
+      "cumulusId": false,
+      "edition": "all"
+    },
+    {
+      "id": "architect",
+      "name": "Architect",
+      "summary": "AI execution workspace. The public Android preview is com.infinitum.architect.",
+      "url": "https://rchtch.app",
+      "packages": ["com.infinitum.architect"],
+      "cumulusId": true,
+      "edition": "all"
+    },
+    {
+      "id": "firmament",
+      "name": "Firmament Network™",
+      "summary": "Trust layer recorded under the apps. No separate Android package was published.",
+      "url": "https://firmnetwork.app",
+      "packages": [],
+      "cumulusId": true,
+      "edition": "all"
+    },
+    {
+      "id": "firm-wallet",
+      "name": "FIRM WALLET",
+      "summary": "Self-custody wallet. The public site is live. No Android package was published.",
+      "url": "https://firmwallet.app",
+      "packages": [],
+      "cumulusId": true,
+      "edition": "all"
+    },
+    {
+      "id": "cumulus-cloud",
+      "name": "Cumulus://Cloud",
+      "summary": "Cloud suite, including Cumulus Drive.",
+      "url": "https://cumuluscloud.app",
+      "hosts": ["drive.cumuluscloud.app"],
+      "packages": [],
+      "cumulusId": true,
+      "edition": "all"
+    },
+    {
+      "id": "cumulus-mail",
+      "name": "Cumulus://Mail",
+      "summary": "Private mail. The public Android package is app.cumuluscloud.mail.",
+      "url": "https://mail.cumuluscloud.app",
+      "packages": ["app.cumuluscloud.mail"],
+      "cumulusId": true,
+      "edition": "all"
+    },
+    {
+      "id": "cumulus-id",
+      "name": "Cumulus://ID",
+      "summary": "Sign-in host. The live page at this host is titled +SPCTR™.",
+      "url": "https://id.cumuluscloud.app",
+      "packages": ["id.cumuluscloud.app"],
+      "cumulusId": true,
+      "edition": "all"
+    },
+    {
+      "id": "veil-vpn",
+      "name": "VEIL VPN",
+      "summary": "Always-on VPN. Native package com.infinitum.veilvpn. The public APK link did not answer.",
+      "url": "https://infinitumveilvpn.app",
+      "packages": ["com.infinitum.veilvpn"],
+      "cumulusId": true,
+      "edition": "all"
+    },
+    {
+      "id": "veil-browser",
+      "name": "VEIL browser",
+      "summary": "Tor-first browser. The public Android package is app.infinitum.veil.browser.",
+      "url": "https://infinitumveil.app",
+      "packages": ["app.infinitum.veil.browser"],
+      "cumulusId": true,
+      "edition": "all"
+    },
+    {
+      "id": "eidetic",
+      "name": "ei·det·ic™",
+      "summary": "Camera app com.infinitum.eidetic.cam opens when it is installed.",
+      "url": "https://infinitumcorporation.ai/products/eidetic",
+      "packages": ["com.infinitum.eidetic.cam"],
+      "cumulusId": false,
+      "edition": "all"
+    },
+    {
+      "id": "hrvst",
+      "name": "[HRVST]",
+      "summary": "Camera app com.infinitum.hrvst.cam opens when it is installed. The public download is not up yet.",
+      "url": "https://infinitumcorporation.ai/products/hrvst",
+      "packages": ["com.infinitum.hrvst.cam"],
+      "cumulusId": false,
+      "edition": "all"
+    },
+    {
+      "id": "zerkalo",
+      "name": "Zerkalo",
+      "summary": "No public site was found.",
+      "url": null,
+      "packages": [],
+      "cumulusId": false,
+      "edition": "all"
+    },
+    {
+      "id": "flower",
+      "name": "Flower",
+      "summary": "Launch and recovery for POLLEN. No Android package was published.",
+      "url": "https://infinitumcorporation.ai/products/flower",
+      "packages": [],
+      "cumulusId": false,
+      "edition": "all"
+    },
+    {
+      "id": "pollen",
+      "name": "POLLEN",
+      "summary": "Coordinated micro-aircraft coverage. No Android package was published.",
+      "url": "https://infinitumcorporation.ai/products/pollen",
+      "packages": [],
+      "cumulusId": false,
+      "edition": "all"
+    },
+    {
+      "id": "academy",
+      "name": "Infinitum Academy",
+      "summary": "Academy on Whop.",
+      "url": "https://infinitum-academy.whop.site",
+      "packages": [],
+      "cumulusId": false,
+      "edition": "all"
+    },
+    {
+      "id": "corporation",
+      "name": "Infinitum Corporation",
+      "summary": "Company site.",
+      "url": "https://infinitumcorporation.ai",
+      "packages": [],
+      "cumulusId": false,
+      "edition": "all"
+    },
+    {
+      "id": "defense",
+      "name": "Infinitum Defense",
+      "summary": "Executive protection and security. The company /defense path returns 404.",
+      "url": "https://infinitumdefense.com",
+      "packages": [],
+      "cumulusId": false,
+      "edition": "all"
+    },
+    {
+      "id": "aether",
+      "name": "ÆTHER MIL",
+      "summary": "ÆTHER / ÆTHER MIL field communications. ^KETER only.",
+      "url": "https://infinitumaether.app",
+      "packages": ["com.infinitum.aether"],
+      "cumulusId": false,
+      "edition": "keter"
+    },
+    {
+      "id": "onemind",
+      "name": "1MIND",
+      "summary": "No public site was found. ^KETER only.",
+      "url": null,
+      "packages": [],
+      "cumulusId": false,
+      "edition": "keter"
+    },
+    {
+      "id": "odin",
+      "name": "ODIN°",
+      "summary": "Military command suite. No Android package was published. ^KETER only.",
+      "url": "https://infinitumcorporation.ai/products/odin",
+      "packages": [],
+      "cumulusId": false,
+      "edition": "keter"
+    },
+    {
+      "id": "odin-daemon",
+      "name": "ODIN DAEMON",
+      "summary": "The public page is titled DAEMON™. ^KETER only.",
+      "url": "https://infinitumcorporation.ai/products/daemon",
+      "packages": [],
+      "cumulusId": false,
+      "edition": "keter"
+    },
+    {
+      "id": "argus",
+      "name": ">_ARGUS™ Military Edition",
+      "summary": "Observe layer. No Android package was published. ^KETER only.",
+      "url": "https://infinitumcorporation.ai/products/argus",
+      "packages": [],
+      "cumulusId": false,
+      "edition": "keter"
+    },
+    {
+      "id": "eon",
+      "name": "E(O)N™ MIL",
+      "summary": "Electronic warfare platform. No Android package was published. ^KETER only.",
+      "url": "https://infinitumcorporation.ai/products/eon",
+      "packages": [],
+      "cumulusId": false,
+      "edition": "keter"
+    }
+  ]
+}
