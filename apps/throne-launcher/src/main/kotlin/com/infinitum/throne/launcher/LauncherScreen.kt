@@ -4,8 +4,11 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,7 +41,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextAlign
@@ -67,6 +78,10 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
+    if (state.showAbout) {
+        AboutScreen(edition = state.edition.label, onBack = viewModel::closeAbout)
+        return
+    }
     val query = state.query.trim()
     val results = if (query.isEmpty()) {
         emptyList()
@@ -82,7 +97,7 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
             .padding(horizontal = 24.dp),
     ) {
         Spacer(Modifier.height(12.dp))
-        Wordmark(edition = state.edition.label, kicker = "")
+        Wordmark(edition = state.edition.label, kicker = "", onMarkClick = viewModel::openAbout)
         Spacer(Modifier.height(22.dp))
         val focus = LocalFocusManager.current
         OutlinedTextField(
@@ -136,12 +151,82 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
                 )
             }
         }
+        CallDock(onClick = { openDialer(context) })
+    }
+}
+
+@Composable
+private fun AboutScreen(edition: String, onBack: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(horizontal = 28.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
+    ) {
+        Image(
+            painter = painterResource(com.infinitum.throne.ui.R.drawable.infinitum_logo_stacked),
+            contentDescription = "Infinitum Corporation",
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxWidth().height(160.dp),
+        )
+        Text("THRONE][OS™", style = MaterialTheme.typography.headlineLarge)
+        Text(edition, style = MaterialTheme.typography.bodyLarge)
         Text(
-            text = "No network. No widgets. No ads. No analytics.",
+            "Debug build. Not a certified release.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = ThroneMuted,
+        )
+        Text(
+            "No network. No widgets. No ads. No analytics.",
             style = MaterialTheme.typography.bodySmall,
             color = ThroneMuted,
-            modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
         )
+        com.infinitum.throne.ui.ThroneButton(text = "Back", onClick = onBack)
+    }
+}
+
+@Composable
+private fun CallDock(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .border(1.25.dp, ThroneInk, CircleShape)
+                .semantics { contentDescription = "Call" }
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            Canvas(Modifier.size(26.dp)) {
+                val stroke = Stroke(width = 1.6.dp.toPx())
+                drawRoundRect(
+                    color = ThroneInk,
+                    topLeft = Offset(size.width * 0.28f, size.height * 0.06f),
+                    size = Size(size.width * 0.44f, size.height * 0.88f),
+                    cornerRadius = CornerRadius(5.dp.toPx(), 5.dp.toPx()),
+                    style = stroke,
+                )
+                drawCircle(
+                    color = ThroneInk,
+                    radius = 1.5.dp.toPx(),
+                    center = Offset(size.width / 2f, size.height * 0.78f),
+                )
+            }
+        }
+    }
+}
+
+private fun openDialer(context: android.content.Context) {
+    val intent = Intent(Intent.ACTION_DIAL).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        context.startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        // No dialer is installed.
     }
 }
 

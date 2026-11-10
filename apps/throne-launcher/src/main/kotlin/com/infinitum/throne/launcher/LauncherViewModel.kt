@@ -29,6 +29,7 @@ data class LauncherUiState(
     val edition: Edition,
     val query: String = "",
     val loading: Boolean = true,
+    val showAbout: Boolean = false,
     val infinitum: List<AppEntry> = emptyList(),
     val others: List<AppEntry> = emptyList(),
 )
@@ -54,6 +55,14 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         state.value = state.value.copy(query = value.take(80))
     }
 
+    fun openAbout() {
+        state.value = state.value.copy(showAbout = true)
+    }
+
+    fun closeAbout() {
+        state.value = state.value.copy(showAbout = false)
+    }
+
     @Suppress("DEPRECATION")
     private fun load(): Pair<List<AppEntry>, List<AppEntry>> {
         val pm = getApplication<Application>().packageManager
@@ -63,7 +72,8 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         val launchables = resolved.map { info ->
             val packageName = info.activityInfo.packageName
             val className = info.activityInfo.name
-            val label = info.loadLabel(pm)?.toString().orEmpty().ifBlank { packageName }
+            val rawLabel = info.loadLabel(pm)?.toString().orEmpty().ifBlank { packageName }
+            val label = SHORT_LABELS[packageName] ?: rawLabel
             val key = "$packageName/$className"
             glyphs[key] = try {
                 info.loadIcon(pm)?.let { IconGlyphs.toGlyph(it, 144) }
@@ -82,5 +92,15 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
             AppEntry(app.packageName, app.className, app.label, page, glyphs[key])
         }
         return entries(arranged.infinitum, HomePage.INFINITUM) to entries(arranged.others, HomePage.OTHERS)
+    }
+
+    private companion object {
+        val SHORT_LABELS = mapOf(
+            "com.infinitum.throne.launcher" to "THRONE",
+            "com.infinitum.throne.guard" to "Guard",
+            "com.infinitum.throne.vault" to "Vault",
+            "com.infinitum.eidetic.cam" to "EIDETIC",
+            "com.infinitum.hrvst.cam" to "HRVST",
+        )
     }
 }
