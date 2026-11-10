@@ -54,7 +54,7 @@ private fun squircle(size: Size, exponent: Float): Path {
 
 /**
  * White rounded tile. The mark sits centered, solid, and uncropped.
- * VEIL VPN is the black wordmark V | ™. Other marks stay their official shapes.
+ * FABRIC++ is the black wordmark ++ ™. VEIL VPN is the black wordmark V | ™.
  */
 @Composable
 fun HydratedTile(

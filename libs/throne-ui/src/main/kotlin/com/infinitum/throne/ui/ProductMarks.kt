@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.asImageBitmap
  */
 object ProductMarks {
     fun resId(productId: String): Int? = when (productId) {
+        "fabric" -> R.drawable.ic_mark_fabric
         "architect" -> R.drawable.ic_mark_architect
         "scalvs" -> R.drawable.ic_mark_scalvs
         "cumulus-mail" -> R.drawable.ic_mark_mail

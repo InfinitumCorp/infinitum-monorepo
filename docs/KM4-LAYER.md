@@ -28,7 +28,7 @@ Checked on 10 Nov 2026. Sibling InfinitumCorp repositories were not readable fro
 | Catalog name | Edition | Opens as | Native package | When the app is not installed |
 | --- | --- | --- | --- | --- |
 | Conjure™ | both | placeholder | `com.conjure.app` | Coming soon. No product page responded. |
-| FabriC++ | both | web shell | `app.infinitumfabric.client`, also `com.infinitum.fabric` | https://infinitumfabric.app |
+| FABRIC™ | both | web shell | `app.infinitumfabric.client`, also `com.infinitum.fabric` | https://infinitumfabric.app . The icon is the black wordmark ++ ™ on a white rounded tile. |
 | SCALVS.ai | both | web shell | `app.scalvs` | https://scalvs.app |
 | :\ARCHITECT\™ | both | web shell | `com.infinitum.architect` | https://rchtch.app . `cndctr.app` is an alias of this same site. |
 | Firmament Network™ | both | web shell | none | https://firmnetwork.app |
