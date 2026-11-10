@@ -6,7 +6,7 @@ import { SpectreCRM, emptyStore } from "../core/crm.ts";
 import { createApp } from "./app.ts";
 import { aiConfigFromEnv } from "./ai.ts";
 import { providersFromEnv } from "../core/messaging.ts";
-import { RemoteState, HttpGateway } from "./remote.ts";
+import { RemoteState, HttpGateway, type NexusGateway } from "./remote.ts";
 
 /**
  * +SPCTR on Vercel (serverless). All data lives in Supabase behind the private
@@ -24,6 +24,24 @@ import { RemoteState, HttpGateway } from "./remote.ts";
 
 process.env.USE_METATRON ??= "1";
 
+/** import.meta.url is not a URL inside a Workers bundle; static files never come from here there. */
+function publicDir(): string {
+  try {
+    return new URL("./public/", import.meta.url).pathname;
+  } catch {
+    return "/public/";
+  }
+}
+
+let gatewayOverride: NexusGateway | undefined;
+/**
+ * Keep state somewhere other than the nexus-store function (the Cloudflare Worker passes a
+ * Durable Object). Call before the first request. NEXUS_STORE_URL/KEY are then not needed.
+ */
+export function useGateway(gateway: NexusGateway) {
+  gatewayOverride = gateway;
+}
+
 function required(name: string): string {
   const v = process.env[name];
   if (!v) throw new Error(`Missing environment variable ${name}`);
@@ -37,7 +55,8 @@ function build() {
   const spectreStore = emptyStore();
   // The CID, Mail, Wallet and quota docs are shared by every hosted Infinitum product,
   // so an account made here has the same mailbox and wallet in Cumulus://Mail.
-  const state = new RemoteState(new HttpGateway(required("NEXUS_STORE_URL"), required("NEXUS_STORE_KEY")), {
+  const gateway = gatewayOverride ?? new HttpGateway(required("NEXUS_STORE_URL"), required("NEXUS_STORE_KEY"));
+  const state = new RemoteState(gateway, {
     cid: cumulusStores.cid,
     spectre: spectreStore,
     "cumulus-mail": cumulusStores.mail,
@@ -70,7 +89,7 @@ function build() {
     suite,
     crm,
     ai: aiConfigFromEnv(),
-    publicDir: new URL("./public/", import.meta.url).pathname, // static files are served by Vercel's CDN
+    publicDir: publicDir(), // static files are served by the CDN (Vercel) or Workers static assets
     secureCookies: origin.startsWith("https://"),
     origin,
     providers: providersFromEnv(),

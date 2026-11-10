@@ -87,7 +87,7 @@ export interface Account {
   orgId?: string;
   /** Link to the organization identity provider, for SSO members. */
   federated?: { issuer: string; subject: string };
-  /** Google, GitHub, Microsoft, Apple or ChatGPT accounts linked for sign-in. */
+  /** Google, GitHub, Microsoft, Apple, ChatGPT or Amazon Cognito accounts linked for sign-in. */
   identities?: LinkedIdentity[];
   createdAt: string;
   entitlements: typeof FREE_ENTITLEMENTS;
@@ -658,7 +658,7 @@ export class CidService {
 
   /** Providers with credentials configured, in display order. */
   socialProvidersEnabled(): { id: SocialProviderId; label: string }[] {
-    const order: SocialProviderId[] = ["google", "apple", "microsoft", "github", "chatgpt"];
+    const order: SocialProviderId[] = ["google", "apple", "microsoft", "github", "chatgpt", "cognito"];
     return order.filter((id) => this.socialProviders[id]).map((id) => ({ id, label: PROVIDERS[id].label }));
   }
 
