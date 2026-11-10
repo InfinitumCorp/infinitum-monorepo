@@ -13,6 +13,8 @@ The product name is **THRONE][OS™**. The KM4 layer uses the white Infinitum fi
 | THRONE][OS™ | `com.infinitum.throne.launcher` | Home screen. Pages INFINITUM and OTHERS. Black glyphs on white. No widgets, ads, analytics, or network permission. |
 | THRONE][OS™ Guard | `com.infinitum.throne.guard` | Local audit and settings links. One optional, user-started Private DNS reachability check. |
 | THRONE][OS™ Vault | `com.infinitum.throne.vault` | Encrypts text on the phone and can hand ciphertext to Google Messages. No network permission. |
+| THRONE][OS™ Eidetic | `com.infinitum.eidetic.cam` | Consent-gated camera. Frames go to a human reviewer only after a loopback policy check. |
+| THRONE][OS™ Harvest | `com.infinitum.hrvst.cam` | Camera capture stored as a Harvest Packet in an encrypted Personal Silo. No network permission. |
 
 Editions are build flavors. **^KETER** shows ÆTHER MIL (`com.infinitum.aether`) on INFINITUM. **ARCH//ANGEL** hides that package on both pages. A bad edition flag fails closed to ARCH//ANGEL. Debug APKs are signed with the Android debug key. They are not ^KETER signing keys, and those keys are not in this repository.
 
@@ -29,13 +31,15 @@ export ANDROID_HOME="$HOME/Android/Sdk"
 ./gradlew test assembleDebug
 ```
 
-Debug APKs:
+Debug APKs, flavor `keter`:
 
-- `apps/throne-launcher/build/outputs/apk/keter/debug/`
-- `apps/throne-guard/build/outputs/apk/keter/debug/`
-- `apps/throne-vault-notes/build/outputs/apk/keter/debug/`
+- `apps/throne-launcher/build/outputs/apk/keter/debug/throne-launcher-keter-debug.apk`
+- `apps/throne-guard/build/outputs/apk/keter/debug/throne-guard-keter-debug.apk`
+- `apps/throne-vault-notes/build/outputs/apk/keter/debug/throne-vault-notes-keter-debug.apk`
+- `apps/eidetic-cam/build/outputs/apk/keter/debug/eidetic-cam-keter-debug.apk`
+- `apps/hrvst-cam/build/outputs/apk/keter/debug/hrvst-cam-keter-debug.apk`
 
-^KETER APK names are `throne-launcher-keter-debug.apk`, `throne-guard-keter-debug.apk`, and `throne-vault-notes-keter-debug.apk`. The `archangel` flavor writes the same layout with `archangel` in the path: `throne-launcher-archangel-debug.apk`, `throne-guard-archangel-debug.apk`, and `throne-vault-notes-archangel-debug.apk`. GitHub Actions (`.github/workflows/android-debug.yml`) runs the unit tests, assembles the debug APKs, and uploads `throne-keter-debug-apks` and `throne-archangel-debug-apks`. If the repository variable `CI_RUNNER` is set, the job uses that runner label (for example `infinitum-ci`). If it is empty, the job uses `ubuntu-latest`.
+The `archangel` flavor writes the same five names with `archangel` in the directory and the file name. All five apps use flavor ids `keter` and `archangel` and show **^KETER** and **ARCH//ANGEL**. A bad edition flag fails closed to ARCH//ANGEL. GitHub Actions (`.github/workflows/android-debug.yml`) runs the unit tests, assembles the debug APKs, and uploads `throne-keter-debug-apks` and `throne-archangel-debug-apks`, each including the camera apps. If the repository variable `CI_RUNNER` is set, the job uses that runner label (for example `infinitum-ci`). If it is empty, the job uses `ubuntu-latest`.
 
 ## Install
 
@@ -45,7 +49,7 @@ On Windows, with one phone in `adb devices` and USB debugging on:
 powershell -ExecutionPolicy Bypass -File .\scripts\km4-apply.ps1
 ```
 
-`-Edition archangel` installs the ARCH//ANGEL debug APKs. The default is ^KETER, for William's KM4. The script installs the three debug APKs with `adb install -r`, tries to grant the Home role, and opens the Home picker if that grant fails. It prints the remaining manual steps.
+`-Edition archangel` installs the ARCH//ANGEL debug APKs. The default is ^KETER, for William's KM4. The script installs the five debug APKs with `adb install -r`, tries to grant the Home role, and opens the Home picker if that grant fails. It does not grant the camera permission. It prints the remaining manual steps.
 
 It does not wipe the device, unlock the bootloader, root the phone, flash partitions, or remove packages. A signature mismatch on reinstall is reported and left alone.
 
