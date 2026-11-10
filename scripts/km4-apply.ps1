@@ -9,13 +9,15 @@ param(
     [string]$Serial,
     [string]$LauncherApk,
     [string]$GuardApk,
-    [string]$VaultApk
+    [string]$VaultApk,
+    [string]$SuiteApk
 )
 
 $ErrorActionPreference = "Stop"
 $LauncherPackage = "com.infinitum.throne.launcher"
 $GuardPackage = "com.infinitum.throne.guard"
 $VaultPackage = "com.infinitum.throne.vault"
+$SuitePackage = "com.infinitum.throne.suite"
 
 function Resolve-Adb {
     $cmd = Get-Command adb -ErrorAction SilentlyContinue
@@ -92,8 +94,16 @@ if (-not $VaultApk) {
         Select-Object -First 1
     if (-not $found) { $VaultApk = $null } else { $VaultApk = $found.FullName }
 }
+if (-not $SuiteApk) {
+    $suiteDir = Join-Path $Root "apps\throne-suite\build\outputs\apk\$Edition\debug"
+    $found = Get-ChildItem -Path $suiteDir -Filter "*.apk" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notmatch "androidTest" } |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+    if (-not $found) { $SuiteApk = $null } else { $SuiteApk = $found.FullName }
+}
 
-if (-not $LauncherApk -or -not $GuardApk -or -not $VaultApk) {
+if (-not $LauncherApk -or -not $GuardApk -or -not $VaultApk -or -not $SuiteApk) {
     throw @"
 A debug APK is missing for edition '$Edition'.
 Build it first, from the repo root:
@@ -102,6 +112,7 @@ Expected:
   apps\throne-launcher\build\outputs\apk\$Edition\debug\*.apk
   apps\throne-guard\build\outputs\apk\$Edition\debug\*.apk
   apps\throne-vault-notes\build\outputs\apk\$Edition\debug\*.apk
+  apps\throne-suite\build\outputs\apk\$Edition\debug\*.apk
 "@
 }
 
@@ -123,6 +134,7 @@ If this is a signature mismatch, this script will not remove the installed packa
 Install-One -Path $LauncherApk -Label $LauncherPackage
 Install-One -Path $GuardApk -Label $GuardPackage
 Install-One -Path $VaultApk -Label $VaultPackage
+Install-One -Path $SuiteApk -Label $SuitePackage
 
 Write-Host ""
 Write-Host "Trying to grant the Home role to $LauncherPackage"
@@ -145,7 +157,7 @@ if (-not $roleOk -and -not $homeOk) {
 Write-Host ""
 Write-Host "Remaining manual steps. This script does not do these."
 Write-Host "1. If the Home picker is open, choose THRONE][OS. HiOS may ask once."
-Write-Host "2. Open THRONE][OS Guard from the INFINITUM page."
+Write-Host "2. Open THRONE][OS Guard from the OTHERS page. INFINITUM lists the product catalog."
 Write-Host "3. Set a PIN, pattern, or password if Guard says the screen lock is open."
 Write-Host "4. Set Private DNS yourself: Settings, Network and internet, Private DNS, Private DNS provider hostname, dns.adguard-dns.com"
 Write-Host "   Guard cannot write this setting. That hostname is a public resolver, not an Infinitum server."

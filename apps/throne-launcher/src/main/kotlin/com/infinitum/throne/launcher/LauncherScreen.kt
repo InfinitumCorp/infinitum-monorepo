@@ -58,7 +58,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.infinitum.throne.core.catalog.ProductCatalog
 import com.infinitum.throne.core.home.HomePage
+import com.infinitum.throne.ui.HydratedTile
 import com.infinitum.throne.ui.ThroneInk
 import com.infinitum.throne.ui.ThroneLine
 import com.infinitum.throne.ui.ThroneMuted
@@ -87,7 +89,8 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
         emptyList()
     } else {
         (state.infinitum + state.others).filter {
-            it.label.contains(query, ignoreCase = true) || it.packageName.contains(query, ignoreCase = true)
+            it.label.contains(query, ignoreCase = true) ||
+                it.packageName?.contains(query, ignoreCase = true) == true
         }
     }
     Column(
@@ -138,7 +141,7 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
                 val empty = if (state.loading) {
                     "Reading apps."
                 } else if (page == 0) {
-                    "Apps appear here when they are installed."
+                    "The product catalog is empty."
                 } else {
                     "No other launchable apps."
                 }
@@ -278,7 +281,16 @@ private fun AppGrid(
                     }
                     .padding(vertical = 6.dp),
             ) {
-                if (app.icon != null) {
+                if (app.page == HomePage.INFINITUM) {
+                    HydratedTile(
+                        productId = app.productId,
+                        fallback = app.icon,
+                        contentDescription = app.label,
+                        modifier = Modifier
+                            .padding(4.dp)
+                            .size(54.dp),
+                    )
+                } else if (app.icon != null) {
                     Image(app.icon, contentDescription = app.label, modifier = Modifier.size(52.dp))
                 } else {
                     Box(Modifier.size(52.dp).border(1.dp, ThroneLine))
@@ -292,6 +304,14 @@ private fun AppGrid(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 8.dp),
                 )
+                if (app.kind != EntryKind.NATIVE) {
+                    Text(
+                        text = if (app.kind == EntryKind.WEB) "SITE" else "SOON",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = ThroneMuted,
+                        maxLines = 1,
+                    )
+                }
                 if (showPage) {
                     Text(
                         text = if (app.page == HomePage.INFINITUM) "INFINITUM" else "OTHERS",
@@ -306,21 +326,38 @@ private fun AppGrid(
 }
 
 private fun openApp(context: android.content.Context, app: AppEntry) {
-    val intent = Intent(Intent.ACTION_MAIN)
-        .addCategory(Intent.CATEGORY_LAUNCHER)
-        .setClassName(app.packageName, app.className)
+    if (app.kind == EntryKind.NATIVE && app.packageName != null && app.className != null) {
+        val intent = Intent(Intent.ACTION_MAIN)
+            .addCategory(Intent.CATEGORY_LAUNCHER)
+            .setClassName(app.packageName, app.className)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            context.startActivity(intent)
+            return
+        } catch (_: ActivityNotFoundException) {
+            context.packageManager.getLaunchIntentForPackage(app.packageName)?.let {
+                context.startActivity(it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                return
+            }
+        }
+    }
+    val productId = app.productId ?: return
+    val intent = Intent()
+        .setClassName(ProductCatalog.SUITE_PACKAGE, ProductCatalog.SUITE_ACTIVITY)
+        .putExtra(ProductCatalog.EXTRA_PRODUCT_ID, productId)
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     try {
         context.startActivity(intent)
     } catch (_: ActivityNotFoundException) {
-        context.packageManager.getLaunchIntentForPackage(app.packageName)?.let(context::startActivity)
+        // The suite is installed with this layer. Without it, a site cannot open.
     }
 }
 
 private fun openInfo(context: android.content.Context, app: AppEntry) {
+    val pkg = app.packageName ?: return
     val intent = Intent(
         Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-        Uri.parse("package:${app.packageName}"),
+        Uri.parse("package:$pkg"),
     ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     context.startActivity(intent)
 }

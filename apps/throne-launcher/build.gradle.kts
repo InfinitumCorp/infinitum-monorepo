@@ -36,6 +36,10 @@ android {
         buildConfig = true
     }
 
+    sourceSets.named("main") {
+        assets.srcDir(rootProject.file("apps/throne-suite/src/main/assets"))
+    }
+
     flavorDimensions += "edition"
     productFlavors {
         create("keter") {

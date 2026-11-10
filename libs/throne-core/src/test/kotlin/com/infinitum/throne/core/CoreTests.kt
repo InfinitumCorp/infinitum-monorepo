@@ -1,5 +1,9 @@
 package com.infinitum.throne.core
 
+import com.infinitum.throne.core.catalog.CatalogFormatException
+import com.infinitum.throne.core.catalog.ProductCatalog
+import com.infinitum.throne.core.catalog.ShelfArranger
+import com.infinitum.throne.core.catalog.ShelfKind
 import com.infinitum.throne.core.audit.Audit
 import com.infinitum.throne.core.audit.AuditEngine
 import com.infinitum.throne.core.audit.DeviceSnapshot
@@ -184,6 +188,7 @@ class HomeRulesTest {
                 "com.infinitum.veilvpn",
                 "app.cumuluscloud.mail",
                 "app.scalvs",
+                "app.infinitumfabric.client",
                 "com.infinitum.fabric",
                 "com.infinitum.aether",
                 "com.infinitum.architect",
@@ -192,7 +197,7 @@ class HomeRulesTest {
                 "com.infinitum.eidetic.cam",
                 "com.infinitum.hrvst.cam",
             ),
-            EditionPolicy.infinitumOrder.take(10),
+            EditionPolicy.infinitumOrder.take(11),
         )
         assertEquals(setOf("com.infinitum.aether"), EditionPolicy.milPackages)
         assertEquals(HomePage.INFINITUM.name, "INFINITUM")
@@ -360,6 +365,97 @@ private fun healthy() = DeviceSnapshot(
     lockScreenNotificationsShown = true,
     lockScreenPrivateContentAllowed = false,
 )
+
+class ProductCatalogTest {
+    @Test
+    fun shippedCatalogMatchesCheckedUrls() {
+        val file = java.io.File(System.getProperty("throne.catalog"))
+        val products = ProductCatalog.parse(file.readText())
+        val byId = products.associateBy { it.id }
+        assertEquals(25, products.size)
+        assertEquals("https://infinitumfabric.app", byId.getValue("fabric").url)
+        assertEquals(listOf("app.infinitumfabric.client", "com.infinitum.fabric"), byId.getValue("fabric").packages)
+        assertEquals("https://rchtch.app", byId.getValue("architect").url)
+        assertEquals(listOf("com.infinitum.architect"), byId.getValue("architect").packages)
+        assertEquals(":\\ARCHITECT\\™", byId.getValue("architect").name)
+        assertTrue(byId.getValue("architect").hosts.contains("cndctr.app"))
+        assertTrue(byId.getValue("architect").hosts.contains("rchtch.app"))
+        assertFalse(byId.containsKey("conductor"))
+        assertEquals(null, byId.getValue("zerkalo").url)
+        assertEquals(null, byId.getValue("onemind").url)
+        assertEquals(null, byId.getValue("conjure").url)
+        assertEquals("https://infinitumdefense.com", byId.getValue("defense").url)
+        assertEquals("https://infinitumaether.app", byId.getValue("aether").url)
+        assertEquals(listOf("com.infinitum.veilvpn"), byId.getValue("veil-vpn").packages)
+        assertEquals(listOf("app.infinitum.veil.browser"), byId.getValue("veil-browser").packages)
+        assertEquals(listOf("app.cumuluscloud.mail"), byId.getValue("cumulus-mail").packages)
+        assertEquals(listOf("com.infinitum.eidetic.cam"), byId.getValue("eidetic").packages)
+        assertEquals(listOf("com.infinitum.hrvst.cam"), byId.getValue("hrvst").packages)
+        assertEquals("https://infinitumcorporation.ai/products/flower", byId.getValue("flower").url)
+        assertEquals("https://infinitumcorporation.ai/products/pollen", byId.getValue("pollen").url)
+        assertTrue(byId.getValue("aether").keterOnly)
+        assertTrue(byId.getValue("onemind").keterOnly)
+        assertTrue(byId.getValue("odin").keterOnly)
+        assertTrue(byId.getValue("odin-daemon").keterOnly)
+        assertTrue(byId.getValue("argus").keterOnly)
+        assertTrue(byId.getValue("eon").keterOnly)
+        assertFalse(byId.getValue("veil-vpn").keterOnly)
+        assertFalse(byId.getValue("flower").keterOnly)
+        assertTrue(byId.getValue("fabric").cumulusId)
+        assertFalse(byId.getValue("defense").cumulusId)
+        assertTrue(products.all { it.url == null || it.url!!.startsWith("https://") })
+        assertEquals(
+            listOf("cumuluscloud.app", "drive.cumuluscloud.app"),
+            byId.getValue("cumulus-cloud").hosts.sorted(),
+        )
+        val archangel = ShelfArranger.arrange(
+            products,
+            listOf(Launchable("com.infinitum.aether", "Main", "ÆTHER MIL")),
+            Edition.ARCHANGEL,
+            EditionPolicy.LAUNCHER_PACKAGE,
+        )
+        assertTrue(archangel.infinitum.none { it.productId == "aether" })
+        assertTrue(archangel.others.none { it.packageName == "com.infinitum.aether" })
+        assertEquals(19, archangel.infinitum.size)
+        val keter = ShelfArranger.arrange(
+            products,
+            listOf(Launchable("app.infinitumfabric.client", "Main", "FabriC++")),
+            Edition.KETER,
+            EditionPolicy.LAUNCHER_PACKAGE,
+        )
+        assertEquals(ShelfKind.NATIVE, keter.infinitum.first { it.productId == "fabric" }.kind)
+        assertEquals("app.infinitumfabric.client", keter.infinitum.first { it.productId == "fabric" }.packageName)
+        assertEquals(ShelfKind.WEB, keter.infinitum.first { it.productId == "architect" }.kind)
+        assertEquals(ShelfKind.PLACEHOLDER, keter.infinitum.first { it.productId == "onemind" }.kind)
+        assertTrue(keter.infinitum.any { it.productId == "aether" && it.kind == ShelfKind.WEB })
+        assertEquals(25, keter.infinitum.size)
+    }
+
+    @Test
+    fun navigationStaysOnTheProductHostAndCumulusId() {
+        val product = ProductCatalog.parse(
+            """
+            {"products":[{"id":"mail","name":"Mail","summary":"","url":"https://mail.cumuluscloud.app","packages":[],"cumulusId":true,"edition":"all"}]}
+            """.trimIndent(),
+        ).single()
+        assertTrue(ProductCatalog.allowsNavigation(product, "https://mail.cumuluscloud.app/inbox"))
+        assertTrue(ProductCatalog.allowsNavigation(product, "https://id.cumuluscloud.app/login"))
+        assertFalse(ProductCatalog.allowsNavigation(product, "http://mail.cumuluscloud.app"))
+        assertFalse(ProductCatalog.allowsNavigation(product, "https://evil.example/mail"))
+        assertFalse(ProductCatalog.allowsNavigation(product, "javascript:alert(1)"))
+        val plain = product.copy(cumulusId = false)
+        assertFalse(ProductCatalog.allowsNavigation(plain, "https://id.cumuluscloud.app/login"))
+    }
+
+    @Test
+    fun httpCatalogUrlIsRejected() {
+        assertThrows(CatalogFormatException::class.java) {
+            ProductCatalog.parse(
+                """{"products":[{"id":"x","name":"X","summary":"","url":"http://example.com","packages":[],"edition":"all"}]}""",
+            )
+        }
+    }
+}
 
 private fun argb(a: Int, r: Int, g: Int, b: Int): Int {
     return (a shl 24) or (r shl 16) or (g shl 8) or b
