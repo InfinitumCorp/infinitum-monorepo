@@ -55,7 +55,7 @@ Checked on 10 Nov 2026. Sibling InfinitumCorp repositories were not readable fro
 
 "Opens as" is the kind when that native package is not installed. An installed package opens as native instead.
 
-Home icons sit in white rounded-squircle tiles. An official catalog mark is drawn in black when one exists: VEIL VPN is the wordmark V | ™, FABRIC++ is ++™, and Architect is a single entry. Other apps use the monochrome (themed) icon layer painted black. If an app has no monochrome layer, the mark is a black threshold of the icon, not a gray photograph. A frosted dock keeps the call button centered at the bottom of every launcher screen, including both pages, search, and About. The button opens the dialer with `ACTION_DIAL` and does not request `CALL_PHONE`.
+Home icons sit in white rounded-squircle tiles. Catalog marks already in the tree stay as supplied: VEIL VPN is V | ™, FABRIC++ is ++™, Architect is a single entry, and the launcher adaptive icon is the supplied T]™ mark. The bundled face is Liberation Sans. Other installed apps use the monochrome layer painted black, or a black threshold when that layer is missing. A frosted dock keeps the call button centered at the bottom of every launcher screen, including both pages, search, and About. The button opens the dialer with `ACTION_DIAL` and does not request `CALL_PHONE`.
 
 ## Build
 
