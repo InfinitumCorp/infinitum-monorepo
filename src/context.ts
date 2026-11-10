@@ -2,7 +2,7 @@ import type { Db } from "./db.js";
 import type { PaymentProvider } from "./payments.js";
 
 export interface Config {
-  publicUrl: string;            // where Checkout returns the customer, e.g. https://infinitum-corporation.vercel.app
+  publicUrl: string;            // where Checkout returns the customer, e.g. https://infinitumcorporation.ai
   /** Hosts (and their subdomains) that product apps may ask Checkout / the portal to return to. https only. */
   returnHosts?: string[];
   adminApiKey: string;          // platform operator key for admin routes

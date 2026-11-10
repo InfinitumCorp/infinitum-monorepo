@@ -15,7 +15,7 @@
     // Fallback Checkout / portal landing pages are served by this worker.
     "PUBLIC_URL": "https://infinitum-revenue.infinitumcorp.workers.dev",
     // Product domains apps may pass as returnUrl (and that get CORS on the customer API).
-    "RETURN_HOSTS": "rchtch.app,scalvs.app,cumuluscloud.app,mttrn.app,infinitumcorp.workers.dev",
+    "RETURN_HOSTS": "rchtch.app,scalvs.app,cumuluscloud.app,mttrn.app,infinitumcorporation.ai,infinitumcorp.workers.dev",
     "STRIPE_AUTOMATIC_TAX": "false",
     "TOKEN_PAYOUTS_ENABLED": "false"
   }

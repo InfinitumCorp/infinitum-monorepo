@@ -154,14 +154,14 @@ describe("data marketplace", () => {
     expect((await call("POST", `/v1/marketplace/assets/${a.body.id}/licence`, buyer.apiKey, { use: "ad_targeting" })).body.error.code).toBe("use_not_permitted");
     const lic = await call("POST", `/v1/marketplace/assets/${a.body.id}/licence`, buyer.apiKey, { use: "retail_analytics" });
     await webhook({ kind: "checkout.completed", sessionId: "cs", purpose: "licence", ref: lic.body.licenceId, orgId: buyer.orgId, amountCents: 10000 } as any);
-    expect((await call("GET", "/v1/earnings", seller.apiKey)).body).toEqual({ availableCents: 0, pendingCents: 7000 });
+    expect((await call("GET", "/v1/earnings", seller.apiKey)).body).toEqual({ availableCents: 0, pendingCents: 8500 });
 
     const w = await call("DELETE", "/v1/consents/hrvst", seller.apiKey);
     expect(w.body.delisted).toBe(1);
     expect((await call("GET", "/v1/marketplace/hrvst/assets", buyer.apiKey)).body).toHaveLength(0);
 
     const report = await call("GET", "/v1/admin/reports/revenue", ADMIN);
-    expect(report.body.marketplace).toMatchObject({ gmv: 10000, licenceTake: 3000 });
+    expect(report.body.marketplace).toMatchObject({ gmv: 10000, licenceTake: 1500 });
   });
 
   it("runs a funded mission end to end and pays out after the hold", async () => {
@@ -280,7 +280,7 @@ describe("refunds and disputes", () => {
     await webhook({ kind: "checkout.completed", sessionId: "cs", paymentIntentId: "pi_l", purpose: "licence", ref: lic.body.licenceId, orgId: buyer.orgId, amountCents: 10000 } as any);
 
     const r = await webhook({ kind: "charge.refunded", eventId: "evt_ref1", paymentIntentId: "pi_l", amountCents: 10000 } as any);
-    expect(r.refund).toMatchObject({ applied: true, contributorReversedCents: 7000, full: true });
+    expect(r.refund).toMatchObject({ applied: true, contributorReversedCents: 8500, full: true });
     expect((await webhook({ kind: "charge.refunded", eventId: "evt_ref1", paymentIntentId: "pi_l", amountCents: 10000 } as any)).duplicate).toBe(true);
     expect((await webhook({ kind: "charge.refunded", paymentIntentId: "pi_l", amountCents: 10000 } as any)).refund.applied).toBe(false);
 

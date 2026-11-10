@@ -67,6 +67,9 @@ Auth: `Authorization: Bearer <org API key>` (from signup) or the admin key for `
 |---|---|
 | `GET /v1/catalog` | Plans, meters, hardware, marketplace terms, credit packs |
 | `POST /v1/signup` | Create an org (+ optional `referralCode`) → API key |
+| `GET /v1/drop` | Genesis Drop (public): dates, tiers with spots taken, tokens, total registered |
+| `POST /v1/drop/registrations` | Public. Register a Solana address (`wallet`, `picks`) → early-viewer number and tier; re-registering keeps the number. 5 new wallets per IP per day; closes at the snapshot |
+| `GET /v1/drop/wallets/:wallet` | Public. A registered wallet's number, tier and picks |
 | `GET /v1/me/entitlements` | Plan, features, allowance used per product, credit balance |
 | `POST /v1/subscriptions/checkout` | Checkout URL for a plan (`planId`, `quantity` for seats) |
 | `POST /v1/billing/portal` | Stripe customer portal (upgrade, cancel, payment method) |
