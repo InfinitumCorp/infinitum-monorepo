@@ -3,7 +3,6 @@ package com.infinitum.throne.launcher
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.graphics.drawable.AdaptiveIconDrawable
@@ -14,21 +13,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import com.infinitum.throne.core.home.GlyphPixels
 
 object IconGlyphs {
-    fun monogram(name: String): ImageBitmap {
-        val size = 144
-        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.BLACK
-            textAlign = Paint.Align.CENTER
-            textSize = size * 0.42f
-        }
-        val mark = name.trim().firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString() ?: "·"
-        val baseline = size / 2f - (paint.descent() + paint.ascent()) / 2f
-        canvas.drawText(mark, size / 2f, baseline, paint)
-        return bitmap.asImageBitmap()
-    }
-
     fun toGlyph(drawable: Drawable, sizePx: Int): ImageBitmap {
         val mono = monochrome(drawable)
         if (mono != null) {

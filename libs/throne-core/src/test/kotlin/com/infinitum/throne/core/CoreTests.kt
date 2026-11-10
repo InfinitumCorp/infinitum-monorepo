@@ -14,10 +14,6 @@ import com.infinitum.throne.core.crypto.VaultNote
 import com.infinitum.throne.core.crypto.VaultNotebook
 import com.infinitum.throne.core.crypto.hkdfSha256
 import com.infinitum.throne.core.crypto.pbkdf2HmacSha256
-import com.infinitum.throne.core.catalog.CatalogFormatException
-import com.infinitum.throne.core.catalog.ProductCatalog
-import com.infinitum.throne.core.catalog.ShelfArranger
-import com.infinitum.throne.core.catalog.ShelfKind
 import com.infinitum.throne.core.home.Edition
 import com.infinitum.throne.core.home.EditionPolicy
 import com.infinitum.throne.core.home.GlyphPixels
@@ -364,67 +360,6 @@ private fun healthy() = DeviceSnapshot(
     lockScreenNotificationsShown = true,
     lockScreenPrivateContentAllowed = false,
 )
-
-class ProductCatalogTest {
-    @Test
-    fun shippedCatalogMatchesCheckedUrls() {
-        val file = java.io.File(System.getProperty("throne.catalog"))
-        val products = ProductCatalog.parse(file.readText())
-        val byId = products.associateBy { it.id }
-        assertEquals("https://infinitumfabric.app", byId.getValue("fabric").url)
-        assertEquals("https://rchtch.app", byId.getValue("architect").url)
-        assertEquals(null, byId.getValue("conductor").url)
-        assertEquals(null, byId.getValue("zerkalo").url)
-        assertEquals(null, byId.getValue("onemind").url)
-        assertEquals("https://infinitumdefense.com", byId.getValue("defense").url)
-        assertEquals("https://infinitumaether.app", byId.getValue("aether").url)
-        assertTrue(byId.getValue("aether").keterOnly)
-        assertFalse(byId.getValue("veil-vpn").keterOnly)
-        assertEquals(listOf("com.infinitum.eidetic.cam"), byId.getValue("eidetic").packages)
-        assertTrue(products.all { it.url == null || it.url!!.startsWith("https://") })
-        val archangel = ShelfArranger.arrange(
-            products,
-            listOf(Launchable("com.infinitum.aether", "Main", "ÆTHER MIL")),
-            Edition.ARCHANGEL,
-            EditionPolicy.LAUNCHER_PACKAGE,
-        )
-        assertTrue(archangel.infinitum.none { it.productId == "aether" })
-        assertTrue(archangel.others.none { it.packageName == "com.infinitum.aether" })
-        val keter = ShelfArranger.arrange(
-            products,
-            listOf(Launchable("com.infinitum.fabric", "Main", "Fabric")),
-            Edition.KETER,
-            EditionPolicy.LAUNCHER_PACKAGE,
-        )
-        assertEquals(ShelfKind.NATIVE, keter.infinitum.first { it.productId == "fabric" }.kind)
-        assertEquals(ShelfKind.WEB, keter.infinitum.first { it.productId == "architect" }.kind)
-        assertEquals(ShelfKind.PLACEHOLDER, keter.infinitum.first { it.productId == "conductor" }.kind)
-        assertTrue(keter.infinitum.any { it.productId == "aether" })
-    }
-
-    @Test
-    fun navigationStaysOnTheProductHostAndCumulusId() {
-        val product = ProductCatalog.parse(
-            """
-            {"products":[{"id":"mail","name":"Mail","summary":"","url":"https://mail.cumuluscloud.app","packages":[],"edition":"all"}]}
-            """.trimIndent(),
-        ).single()
-        assertTrue(ProductCatalog.allowsNavigation(product, "https://mail.cumuluscloud.app/inbox"))
-        assertTrue(ProductCatalog.allowsNavigation(product, "https://id.cumuluscloud.app/login"))
-        assertFalse(ProductCatalog.allowsNavigation(product, "http://mail.cumuluscloud.app"))
-        assertFalse(ProductCatalog.allowsNavigation(product, "https://evil.example/mail"))
-        assertFalse(ProductCatalog.allowsNavigation(product, "javascript:alert(1)"))
-    }
-
-    @Test
-    fun httpCatalogUrlIsRejected() {
-        assertThrows(CatalogFormatException::class.java) {
-            ProductCatalog.parse(
-                """{"products":[{"id":"x","name":"X","summary":"","url":"http://example.com","packages":[],"edition":"all"}]}""",
-            )
-        }
-    }
-}
 
 private fun argb(a: Int, r: Int, g: Int, b: Int): Int {
     return (a shl 24) or (r shl 16) or (g shl 8) or b

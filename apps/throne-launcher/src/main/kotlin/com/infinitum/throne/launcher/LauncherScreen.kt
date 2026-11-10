@@ -72,8 +72,7 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
         emptyList()
     } else {
         (state.infinitum + state.others).filter {
-            it.label.contains(query, ignoreCase = true) ||
-                it.packageName?.contains(query, ignoreCase = true) == true
+            it.label.contains(query, ignoreCase = true) || it.packageName.contains(query, ignoreCase = true)
         }
     }
     Column(
@@ -208,14 +207,6 @@ private fun AppGrid(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 8.dp),
                 )
-                if (app.kind != EntryKind.NATIVE) {
-                    Text(
-                        text = if (app.kind == EntryKind.WEB) "SITE" else "SOON",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = ThroneMuted,
-                        maxLines = 1,
-                    )
-                }
                 if (showPage) {
                     Text(
                         text = if (app.page == HomePage.INFINITUM) "INFINITUM" else "OTHERS",
@@ -230,38 +221,21 @@ private fun AppGrid(
 }
 
 private fun openApp(context: android.content.Context, app: AppEntry) {
-    if (app.kind == EntryKind.NATIVE && app.packageName != null && app.className != null) {
-        val intent = Intent(Intent.ACTION_MAIN)
-            .addCategory(Intent.CATEGORY_LAUNCHER)
-            .setClassName(app.packageName, app.className)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        try {
-            context.startActivity(intent)
-            return
-        } catch (_: ActivityNotFoundException) {
-            context.packageManager.getLaunchIntentForPackage(app.packageName)?.let {
-                context.startActivity(it)
-                return
-            }
-        }
-    }
-    val productId = app.productId ?: return
-    val intent = Intent()
-        .setClassName("com.infinitum.throne.suite", "com.infinitum.throne.suite.ShellActivity")
-        .putExtra("com.infinitum.throne.suite.PRODUCT_ID", productId)
+    val intent = Intent(Intent.ACTION_MAIN)
+        .addCategory(Intent.CATEGORY_LAUNCHER)
+        .setClassName(app.packageName, app.className)
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     try {
         context.startActivity(intent)
     } catch (_: ActivityNotFoundException) {
-        // The suite is installed with the layer. Without it, the row cannot open a site.
+        context.packageManager.getLaunchIntentForPackage(app.packageName)?.let(context::startActivity)
     }
 }
 
 private fun openInfo(context: android.content.Context, app: AppEntry) {
-    val pkg = app.packageName ?: return
     val intent = Intent(
         Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-        Uri.parse("package:$pkg"),
+        Uri.parse("package:${app.packageName}"),
     ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     context.startActivity(intent)
 }

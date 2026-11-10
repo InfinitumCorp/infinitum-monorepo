@@ -19,9 +19,7 @@ rootProject.name = "throne-os"
 include(
     ":libs:throne-core",
     ":libs:throne-ui",
-    ":libs:throne-catalog",
     ":apps:throne-launcher",
     ":apps:throne-guard",
     ":apps:throne-vault-notes",
-    ":apps:throne-suite",
 )

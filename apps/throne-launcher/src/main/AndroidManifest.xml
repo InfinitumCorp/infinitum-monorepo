@@ -6,7 +6,6 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
-        <package android:name="com.infinitum.throne.suite" />
     </queries>
 
     <application

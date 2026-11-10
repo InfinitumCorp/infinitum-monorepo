@@ -9,15 +9,13 @@ param(
     [string]$Serial,
     [string]$LauncherApk,
     [string]$GuardApk,
-    [string]$VaultApk,
-    [string]$SuiteApk
+    [string]$VaultApk
 )
 
 $ErrorActionPreference = "Stop"
 $LauncherPackage = "com.infinitum.throne.launcher"
 $GuardPackage = "com.infinitum.throne.guard"
 $VaultPackage = "com.infinitum.throne.vault"
-$SuitePackage = "com.infinitum.throne.suite"
 
 function Resolve-Adb {
     $cmd = Get-Command adb -ErrorAction SilentlyContinue
@@ -95,16 +93,7 @@ if (-not $VaultApk) {
     if (-not $found) { $VaultApk = $null } else { $VaultApk = $found.FullName }
 }
 
-if (-not $SuiteApk) {
-    $suiteDir = Join-Path $Root "apps\throne-suite\build\outputs\apk\$Edition\debug"
-    $found = Get-ChildItem -Path $suiteDir -Filter "*.apk" -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -notmatch "androidTest" } |
-        Sort-Object LastWriteTime -Descending |
-        Select-Object -First 1
-    if (-not $found) { $SuiteApk = $null } else { $SuiteApk = $found.FullName }
-}
-
-if (-not $LauncherApk -or -not $GuardApk -or -not $VaultApk -or -not $SuiteApk) {
+if (-not $LauncherApk -or -not $GuardApk -or -not $VaultApk) {
     throw @"
 A debug APK is missing for edition '$Edition'.
 Build it first, from the repo root:
@@ -113,7 +102,6 @@ Expected:
   apps\throne-launcher\build\outputs\apk\$Edition\debug\*.apk
   apps\throne-guard\build\outputs\apk\$Edition\debug\*.apk
   apps\throne-vault-notes\build\outputs\apk\$Edition\debug\*.apk
-  apps\throne-suite\build\outputs\apk\$Edition\debug\*.apk
 "@
 }
 
@@ -135,7 +123,6 @@ If this is a signature mismatch, this script will not remove the installed packa
 Install-One -Path $LauncherApk -Label $LauncherPackage
 Install-One -Path $GuardApk -Label $GuardPackage
 Install-One -Path $VaultApk -Label $VaultPackage
-Install-One -Path $SuiteApk -Label $SuitePackage
 
 Write-Host ""
 Write-Host "Trying to grant the Home role to $LauncherPackage"

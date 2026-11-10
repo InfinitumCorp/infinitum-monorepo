@@ -6,29 +6,24 @@ import android.content.pm.PackageManager
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.infinitum.throne.catalog.CatalogStore
-import com.infinitum.throne.core.catalog.ShelfArranger
-import com.infinitum.throne.core.catalog.ShelfKind
 import com.infinitum.throne.core.home.Edition
 import com.infinitum.throne.core.home.EditionPolicy
+import com.infinitum.throne.core.home.HomeCatalog
 import com.infinitum.throne.core.home.HomePage
 import com.infinitum.throne.core.home.Launchable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-enum class EntryKind { NATIVE, WEB, PLACEHOLDER }
-
 data class AppEntry(
-    val key: String,
+    val packageName: String,
+    val className: String,
     val label: String,
     val page: HomePage,
     val icon: ImageBitmap?,
-    val kind: EntryKind,
-    val packageName: String?,
-    val className: String?,
-    val productId: String?,
-)
+) {
+    val key: String = "$packageName/$className"
+}
 
 data class LauncherUiState(
     val edition: Edition,
@@ -77,47 +72,15 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
             }
             Launchable(packageName, className, label)
         }
-        val products = CatalogStore.load(getApplication())
-        val shelf = ShelfArranger.arrange(
-            products = products,
+        val arranged = HomeCatalog.arrange(
             apps = launchables,
             edition = state.value.edition,
             selfPackage = EditionPolicy.LAUNCHER_PACKAGE,
         )
-        val infinitum = shelf.infinitum.map { item ->
-            val nativeKey = if (item.packageName != null && item.className != null) {
-                "${item.packageName}/${item.className}"
-            } else {
-                null
-            }
-            AppEntry(
-                key = "product:${item.productId}",
-                label = item.name,
-                page = HomePage.INFINITUM,
-                icon = nativeKey?.let { glyphs[it] } ?: IconGlyphs.monogram(item.name),
-                kind = when (item.kind) {
-                    ShelfKind.NATIVE -> EntryKind.NATIVE
-                    ShelfKind.WEB -> EntryKind.WEB
-                    ShelfKind.PLACEHOLDER -> EntryKind.PLACEHOLDER
-                },
-                packageName = item.packageName,
-                className = item.className,
-                productId = item.productId,
-            )
-        }
-        val others = shelf.others.map { app ->
+        fun entries(apps: List<Launchable>, page: HomePage) = apps.map { app ->
             val key = "${app.packageName}/${app.className}"
-            AppEntry(
-                key = key,
-                label = app.label,
-                page = HomePage.OTHERS,
-                icon = glyphs[key],
-                kind = EntryKind.NATIVE,
-                packageName = app.packageName,
-                className = app.className,
-                productId = null,
-            )
+            AppEntry(app.packageName, app.className, app.label, page, glyphs[key])
         }
-        return infinitum to others
+        return entries(arranged.infinitum, HomePage.INFINITUM) to entries(arranged.others, HomePage.OTHERS)
     }
 }
