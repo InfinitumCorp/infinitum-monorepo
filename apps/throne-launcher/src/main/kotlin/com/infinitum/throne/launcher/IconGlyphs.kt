@@ -17,7 +17,7 @@ object IconGlyphs {
         val mono = monochrome(drawable)
         if (mono != null) {
             val painted = draw(mono, sizePx, forceInk = true)
-            if (!isBlank(painted)) return painted.asImageBitmap()
+            if (!isBlank(painted)) return blackInk(painted)
             painted.recycle()
         }
         val source = (drawable as? AdaptiveIconDrawable)?.foreground ?: drawable
@@ -28,7 +28,21 @@ object IconGlyphs {
         val ink = GlyphPixels.desaturateThreshold(pixels, sizePx, sizePx)
         val out = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
         out.setPixels(ink, 0, sizePx, 0, 0, sizePx, sizePx)
-        return out.asImageBitmap()
+        return blackInk(out)
+    }
+
+    /** Pure black ink. Themed-icon fallbacks stay black, never a gray tint. */
+    private fun blackInk(bitmap: Bitmap): ImageBitmap {
+        val width = bitmap.width
+        val height = bitmap.height
+        val pixels = IntArray(width * height)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+        for (index in pixels.indices) {
+            val alpha = pixels[index] ushr 24
+            if (alpha != 0) pixels[index] = alpha shl 24
+        }
+        bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
+        return bitmap.asImageBitmap()
     }
 
     private fun monochrome(drawable: Drawable): Drawable? {

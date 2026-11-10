@@ -4,7 +4,7 @@
 
 Path A from the design: a launcher, a guard, and a vault on locked HiOS 15. The repo name stays `throne-os`. Nothing here flashes firmware, unlocks the bootloader, or claims a certification.
 
-The product name is **THRONE][OS™**. The KM4 layer uses the white Infinitum field: background `#FFFFFF`, ink `#161616`, secondary `#5C5C5C`, thin system type, and no color accents. Press-kit fonts and logo binaries are not in git. The apps draw a geometric lattice in vectors.
+The product name is **THRONE][OS™**. The KM4 layer uses the white Infinitum field: background `#FFFFFF`, ink `#161616`, secondary `#5C5C5C`, thin type, and no color accents. The home header centers the official Infinitum Corporation horizontal lockup, black on white: the same artwork as the live site header at `infinitumcorporation.ai/brand/horizontal-white-bg.png`, from the high-resolution official file so it stays sharp.
 
 ## What is installed
 
@@ -55,7 +55,7 @@ Checked on 10 Nov 2026. Sibling InfinitumCorp repositories were not readable fro
 
 "Opens as" is the kind when that native package is not installed. An installed package opens as native instead.
 
-Icons use the adaptive-icon monochrome layer on Android 13 and later when the app supplies one. Otherwise the glyph is a desaturate-and-threshold fallback. Full-bleed color icons can become coarse silhouettes.
+Home icons sit in white rounded-squircle tiles. An official catalog mark is drawn in black when one exists: VEIL VPN is the wordmark V | ™, FABRIC++ is ++™, and Architect is a single entry. Other apps use the monochrome (themed) icon layer painted black. If an app has no monochrome layer, the mark is a black threshold of the icon, not a gray photograph. A frosted dock keeps the call button centered at the bottom of every launcher screen, including both pages, search, and About. The button opens the dialer with `ACTION_DIAL` and does not request `CALL_PHONE`.
 
 ## Build
 
