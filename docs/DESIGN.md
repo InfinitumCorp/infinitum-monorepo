@@ -1,17 +1,17 @@
-# THRONE//OS™ design
+# THRONE][OS™ design
 
 **Infinitum Corporation®**
 
-> **CONFIDENTIAL — MASTER edition.** THRONE//OS™ MASTER is for William Aaron Turner only. Nobody else receives the MASTER signing keys, policy profile, wallpaper set, preinstalled military apps, or MASTER builds.
+> **CONFIDENTIAL — MASTER edition.** THRONE][OS™ MASTER is for William Aaron Turner only. Nobody else receives the MASTER signing keys, policy profile, wallpaper set, preinstalled military apps, or MASTER builds.
 
-A private design for THRONE//OS™, the software side of a THRONE PHONE™, for William Aaron Turner. It is honest about what a TECNO KM4 can do and what only a Pixel running GrapheneOS can do.
+A private design for THRONE][OS™, the software side of a THRONE PHONE™, for William Aaron Turner. It is honest about what a TECNO KM4 can do and what only a Pixel running GrapheneOS can do.
 
-Design as of 10 Nov 2026, Europe/Moscow. This document is the Markdown form of the THRONE//OS™ design Page. Nothing here has been compiled, flashed, or shipped.
+Design as of 10 Nov 2026, Europe/Moscow. This document is the Markdown form of the THRONE][OS™ design Page. The KM4 layer in [KM4-LAYER.md](KM4-LAYER.md) can be compiled as debug APKs. Nothing in this repository has been flashed, and nothing here is a certification.
 
 ## Contents
 
 - [The honest verdict](#the-honest-verdict)
-- [What THRONE//OS is](#what-throneos-is)
+- [What THRONE][OS™ is](#what-throneos-is)
 - [The phone we have](#the-phone-we-have)
 - [What military grade can mean](#what-military-grade-can-mean)
 - [Three build paths](#three-build-paths)
@@ -28,23 +28,23 @@ Design as of 10 Nov 2026, Europe/Moscow. This document is the Markdown form of t
 
 The KM4 cannot become a certified military operating system.
 
-THRONE//OS MASTER on this TECNO is a branded launcher, a hardening agent, always-on VEIL VPN, and Infinitum’s own apps on top of locked HiOS 15. That is real hardening, not theater, and it is also not NIAP, FIPS, or DISA certification. The build nobody else should have, with OS-level exploit mitigations and a hardware root of trust that has actually been validated, belongs on an unlockable Pixel running GrapheneOS.
+THRONE][OS™ MASTER on this TECNO is a branded launcher, a hardening agent, always-on VEIL VPN, and Infinitum’s own apps on top of locked HiOS 15. That is real hardening, not theater, and it is also not NIAP, FIPS, or DISA certification. The build nobody else should have, with OS-level exploit mitigations and a hardware root of trust that has actually been validated, belongs on an unlockable Pixel running GrapheneOS.
 
 William Aaron Turner, 10 Nov 2026:
 
 > Use our Infinitum branding and create better logos as well. We need tons of security feature that align with our products for our OS. REAL encryption, hardened, no trackers. This OS will be the master version. For me, William Aaron Turner. The master of INFINITUM CORPORATION. Nobody will have this build.
 
-## What THRONE//OS is
+## What THRONE][OS™ is
 
-THRONE//OS™ is the software layer of a THRONE PHONE™: Infinitum’s own home screen, policy agent, and product suite, aligned with VEIL, Cumulus, and the rest of the Nexus. It is a private design for William Aaron Turner, President of Infinitum Corporation®.
+THRONE][OS™ is the software layer of a THRONE PHONE™: Infinitum’s own home screen, policy agent, and product suite, aligned with VEIL, Cumulus, and the rest of the Nexus. It is a private design for William Aaron Turner, President of Infinitum Corporation®.
 
-The public #THRONE™ line on infinitumcorporation.ai is already a family of AI computers (Book, Tower, Rack) that ship with Throne OS™, a hardened Linux system. #THRONE MIL™ is the rugged laptop and transit-case server for authorized defense users, shipping with the ODIN°™ stack and ÆTHER MIL™. THRONE//OS™ and THRONE PHONE™ are the handheld counterparts of that line, using the double slash so the phone OS is not confused with Throne OS™ on the computers.
+The public #THRONE™ line on infinitumcorporation.ai is already a family of AI computers (Book, Tower, Rack) that ship with Throne OS™, a hardened Linux system. #THRONE MIL™ is the rugged laptop and transit-case server for authorized defense users, shipping with the ODIN°™ stack and ÆTHER MIL™. THRONE][OS™ and THRONE PHONE™ are the handheld counterparts of that line, using the `][` mark so the phone OS is not confused with Throne OS™ on the computers.
 
 | | |
 | --- | --- |
 | Owner | William Aaron Turner, sole holder of the MASTER build |
 | Company | Infinitum Corporation® |
-| Marks | THRONE//OS™, THRONE PHONE™, related to #THRONE™ / Throne OS™ |
+| Marks | THRONE][OS™, THRONE PHONE™, related to #THRONE™ / Throne OS™ |
 | Editions | MASTER (William only, confidential) and SENTINEL (security-minded edition for others) |
 | Date | Design as of 10 Nov 2026, Europe/Moscow |
 | Site | https://infinitumcorporation.ai/ |
@@ -67,7 +67,7 @@ Unlocking, if a method even works on this unit, wipes userdata, trips the verifi
 
 ## What military grade can mean
 
-“Military grade” is marketing language unless it maps to a named standard and a named evaluation. Infinitum should not print FIPS, NIAP, Common Criteria, or DISA STIG marks on THRONE//OS until a laboratory has evaluated a specific module, device, and configuration. The table below is the honest mapping.
+“Military grade” is marketing language unless it maps to a named standard and a named evaluation. Infinitum should not print FIPS, NIAP, Common Criteria, or DISA STIG marks on THRONE][OS™ until a laboratory has evaluated a specific module, device, and configuration. The table below is the honest mapping.
 
 | Standard | What it actually is | On the KM4 | On a Pixel |
 | --- | --- | --- | --- |
@@ -80,11 +80,11 @@ MASTER should be described as maximum hardening for a single owner, informed by 
 
 ## Three build paths
 
-There are three technically real ways to put THRONE//OS on a phone. They are not equal, and they should not be sold as if they were.
+There are three technically real ways to put THRONE][OS™ on a phone. They are not equal, and they should not be sold as if they were.
 
 ### Path A. Launcher plus hardening agent
 
-A THRONE//OS launcher replaces the HiOS home screen with an INFINITUM screen and an Others screen. A THRONE Agent app applies whatever Android will allow without rewriting the OS: always-on VPN through VEIL, Private DNS, a restricted profile of settings, leftover Transsion package disables, optional device-owner policies, and quick launch into VEIL, Cumulus, and ÆTHER MIL. The bootloader stays locked, so OEM verified boot stays intact. This is the only path that is safe to start on the KM4 without wiping it.
+A THRONE][OS™ launcher replaces the HiOS home screen with an INFINITUM screen and an Others screen. A THRONE Agent app applies whatever Android will allow without rewriting the OS: always-on VPN through VEIL, Private DNS, a restricted profile of settings, leftover Transsion package disables, optional device-owner policies, and quick launch into VEIL, Cumulus, and ÆTHER MIL. The bootloader stays locked, so OEM verified boot stays intact. This is the only path that is safe to start on the KM4 without wiping it.
 
 Full device-owner power (`adb shell dpm set-device-owner` against a DevicePolicyManager receiver) is stronger: USB data off, camera policy, password quality, screen capture off, application hiding, always-on VPN lock, remote wipe. Android will accept that command only on an unprovisioned device with no accounts. William’s KM4 already has accounts, so true device-owner mode means a factory reset, then installing the Agent, then setting device owner, then signing back into Google and the rest. That is a deliberate MASTER step, not a background tweak.
 
@@ -149,7 +149,7 @@ Features are grouped so the KM4 can be judged separately from a Pixel. Partial o
 
 | Control | KM4 | Pixel and GrapheneOS |
 | --- | --- | --- |
-| Infinitum telemetry | None in THRONE//OS, the Agent, or the preinstalled Infinitum apps as designed. | Same. |
+| Infinitum telemetry | None in THRONE][OS™, the Agent, or the preinstalled Infinitum apps as designed. | Same. |
 | Transsion / HiOS analytics | Disable leftover packages the earlier cleanup did not remove, including known telemetry such as `com.transsion.trancare`, `com.transsion.hamal`, `com.transsion.statisticalsales`, `com.transsion.tecnospot`, and `com.hoffnung` (Athena / shalltry.com). Privileged packages can return after an OEM update. | No Transsion code. GrapheneOS does not include OEM analytics. |
 | Tracker-blocking DNS | Private DNS (DNS over TLS) and VEIL’s resolver. Not a substitute for per-app network denial. | Same, plus Vanadium and per-app network permission. |
 | Google services | William asked to keep Google apps. On HiOS they remain privileged Play services. The Agent should not pretend they are sandboxed. | Optional sandboxed Google Play: ordinary apps with no privileged OS role, confinable to one profile. |
@@ -184,7 +184,7 @@ Military editions on the public site are reserved for authorized defense users, 
 
 ### Civilian Infinitum apps already on the KM4
 
-| App | Package | Role on THRONE//OS |
+| App | Package | Role on THRONE][OS™ |
 | --- | --- | --- |
 | VEIL VPN | `com.infinitum.veilvpn` | Always-on VPN and kill switch on both editions |
 | VEIL Browser | `app.infinitum.veil.browser` | Default browser on both editions |
@@ -200,13 +200,13 @@ GitHub counterparts used for descriptions: InfinitumCorp/veil-vpn, InfinitumCorp
 
 ## Architecture
 
-THRONE//OS is three pieces on top of a base OS William already has, or on GrapheneOS if MASTER moves. No path rewrites the Unisoc boot chain in version one.
+THRONE][OS™ is three pieces on top of a base OS William already has, or on GrapheneOS if MASTER moves. No path rewrites the Unisoc boot chain in version one.
 
 ```
 William Aaron Turner (sole MASTER owner)
         |                         |
         v                         v
-THRONE//OS launcher          THRONE Agent
+THRONE][OS™ launcher          THRONE Agent
  INFINITUM + Others      DevicePolicyManager
         |                         |
         |            +------------+
@@ -233,16 +233,14 @@ THRONE//OS launcher          THRONE Agent
 
 Existing Infinitum marks are a square lattice of two overlapping diamonds that form an X, paired with an angular cut INFINITUM wordmark and CORPORATION underneath. Those assets live in the Infinitum press kit (white and black lattice marks and wordmarks) and the public site brand set.
 
-Production direction for UI chrome: void black backgrounds (`#0A0A0A`) with clean white Infinitum logos. Never place a black mark on a black field. The press kit also uses Infinitum red `#C8102E` on void black. The public site paper is warm ivory `#F4F4F1`.
-
-THRONE//OS should keep that lattice and lettering. Antique gold `#C6A354` may be used as a restrained accent so the OS can match the gold wallpaper already on the KM4 without replacing corporate red. Red stays the MASTER and alert color. Gold is metal and rank, not decoration for its own sake. Rendered logos in the launcher, splash, and About screen should be the clean white Infinitum lockups on black, unless a chosen concept below calls for a gold accent on the mark itself.
+Production chrome for the KM4 layer, set by William: a white field (`#FFFFFF`), black and dark-gray ink, thin type, generous whitespace, and no color accents. The earlier gold and red studies below are not what the launcher, guard, or vault ship. Press-kit fonts and logo binaries stay out of git. The apps draw a thin geometric lattice and set THRONE][OS™ in the system sans.
 
 | Concept | Mark | Type | Palette |
 | --- | --- | --- | --- |
-| Lattice throne | The existing diamond lattice seated on a short gold plinth, as if the mark were a throne seen from the front. No extra crown, no eagles. | The angular INFINITUM letters unused here. Caption in tracked caps: THRONE//OS under the plinth, CORPORATION dropped. | White or gold lattice and plinth on void black. Ivory for light mode. Red pinstripe only on the MASTER splash. |
+| Lattice throne | The existing diamond lattice seated on a short gold plinth, as if the mark were a throne seen from the front. No extra crown, no eagles. | The angular INFINITUM letters unused here. Caption in tracked caps: THRONE][OS™ under the plinth, CORPORATION dropped. | White or gold lattice and plinth on void black. Ivory for light mode. Red pinstripe only on the MASTER splash. |
 | Double slash | Two parallel gold bars, slightly raked, cut through the lattice like a portcullis or a rank stripe. The bars are the // in the name. | THRONE in the existing angular face, then //OS in a narrower cut of the same face, white or gold on black. | Black field, white Infinitum mark and word, optional gold // bars, ivory secondary text. Red reserved for MASTER builds and duress/wipe screens. |
-| Sealed lattice | The lattice inside a thin circular seal, broken at the lower right by a small registration notch so it does not look like a generic police badge. | Around the ring: INFINITUM CORPORATION above, THRONE//OS below. MASTER seals add a serial field; SENTINEL seals do not. | White lattice on black for both editions. MASTER inner ring in red. SENTINEL inner ring in ivory or gold only. |
-| Command wordmark | No new pictogram. The current horizontal lockup (lattice plus INFINITUM CORPORATION) with a second line, THRONE//OS, set in the same angular face and optical size as CORPORATION. | Best for the boot splash, settings About screen, and printed one-pagers. Pairs with any of the three marks above as the app icon. | Clean white wordmark on black for the splash and chrome. Optional gold on black for a lockscreen that matches the present wallpaper. |
+| Sealed lattice | The lattice inside a thin circular seal, broken at the lower right by a small registration notch so it does not look like a generic police badge. | Around the ring: INFINITUM CORPORATION above, THRONE][OS™ below. MASTER seals add a serial field; SENTINEL seals do not. | White lattice on black for both editions. MASTER inner ring in red. SENTINEL inner ring in ivory or gold only. |
+| Command wordmark | No new pictogram. The current horizontal lockup (lattice plus INFINITUM CORPORATION) with a second line, THRONE][OS™, set in the same angular face and optical size as CORPORATION. | Best for the boot splash, settings About screen, and printed one-pagers. Pairs with any of the three marks above as the app icon. | Clean white wordmark on black for the splash and chrome. Optional gold on black for a lockscreen that matches the present wallpaper. |
 
 Recommended pairing: Double slash as the launcher icon, command wordmark on the splash and About screen, sealed lattice only if William wants a MASTER-specific crest that SENTINEL is not allowed to draw. Do not invent a new letter style. The current Infinitum face is already distinctive.
 
@@ -251,7 +249,7 @@ Recommended pairing: Double slash as the launcher icon, command wordmark on the 
 Nothing in this plan flashes firmware, contacts a vendor, or changes another repository. Each phase waits on William’s say-so. Cyber work stays on Infinitum’s own apps and on Android public APIs.
 
 1. **Phase 0. Design freeze.** This document. Confirm edition names, the Pixel question, and whether a factory reset for device owner is acceptable on MASTER.
-2. **Phase 1. Launcher on the KM4.** Ship THRONE//OS as an Android launcher: INFINITUM and Others screens, black chrome with clean white Infinitum logos, the chosen mark, quick tiles for VEIL and Cumulus, ÆTHER MIL pinned only on MASTER. No wipe. HiOS stays underneath.
+2. **Phase 1. Launcher on the KM4.** Ship THRONE][OS™ as an Android launcher: INFINITUM and Others screens, white field, black monochrome glyphs, ÆTHER MIL pinned only on MASTER. No wipe. HiOS stays underneath. The source for this phase, the guard, and the vault is in [KM4-LAYER.md](KM4-LAYER.md).
 3. **Phase 2. Agent without device owner.** Private DNS, VEIL always-on checks, disable leftover Transsion analytics packages, reboot reminder, status dashboard. Works on the phone as it stands today.
 4. **Phase 3. Optional MASTER device owner.** A planned factory reset, no accounts, install the Agent, `dpm set-device-owner`, then restore Google and Infinitum apps. Enables USB lockdown, capture blocks, password quality, hidden packages, and a policy-level wipe. Skip this until William explicitly accepts the wipe.
 5. **Phase 4. MASTER on Pixel and GrapheneOS.** Source an unlockable Pixel 8a or newer. Install GrapheneOS, relock, enable sandboxed Play if Google apps stay, install the Infinitum suite and ÆTHER MIL, apply the MASTER policy profile. This is the build that can honestly carry the stronger hardening claims.

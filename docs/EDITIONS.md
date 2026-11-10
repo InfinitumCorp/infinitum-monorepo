@@ -1,8 +1,8 @@
-# THRONE//OS™ editions
+# THRONE][OS™ editions
 
 **Infinitum Corporation®**
 
-> **CONFIDENTIAL — MASTER edition.** THRONE//OS™ MASTER is for William Aaron Turner only. Nobody else receives MASTER signing keys, policy profiles, wallpaper sets, preinstalled military apps, or MASTER builds.
+> **CONFIDENTIAL — MASTER edition.** THRONE][OS™ MASTER is for William Aaron Turner only. Nobody else receives MASTER signing keys, policy profiles, wallpaper sets, preinstalled military apps, or MASTER builds.
 
 Two editions are specified. MASTER is confidential. SENTINEL is the proposed name for a later security-minded edition; CITADEL is the fallback name if SENTINEL feels too close to a watchdog product.
 
@@ -25,8 +25,8 @@ Two editions are specified. MASTER is confidential. SENTINEL is the proposed nam
 
 | Feature | MASTER | SENTINEL |
 | --- | --- | --- |
-| THRONE//OS launcher, two screens (INFINITUM and Others) | Yes | Yes |
-| Black backgrounds with clean white Infinitum logos | Yes | Yes |
+| THRONE][OS™ launcher, two screens (INFINITUM and Others) | Yes | Yes |
+| White field, black monochrome glyphs, no color accents | Yes | Yes |
 | VEIL VPN always-on and kill switch | Yes, locked if device owner is set | Yes, user-controlled |
 | VEIL Browser default | Yes | Yes |
 | Cumulus Mail and Cumulus://ID | Yes | Yes |

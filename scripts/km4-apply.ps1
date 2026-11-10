@@ -1,0 +1,162 @@
+# Requires Windows PowerShell 5.1 or PowerShell 7, and adb on PATH.
+# Installs the THRONE][OS debug APKs and tries to select the launcher as Home.
+# Does not wipe the device, unlock the bootloader, root the phone, flash partitions, or remove packages.
+
+[CmdletBinding()]
+param(
+    [ValidateSet("master", "sentinel")]
+    [string]$Edition = "master",
+    [string]$Serial,
+    [string]$LauncherApk,
+    [string]$GuardApk,
+    [string]$VaultApk
+)
+
+$ErrorActionPreference = "Stop"
+$LauncherPackage = "com.infinitum.throne.launcher"
+$GuardPackage = "com.infinitum.throne.guard"
+$VaultPackage = "com.infinitum.throne.vault"
+
+function Resolve-Adb {
+    $cmd = Get-Command adb -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    $candidates = @(
+        (Join-Path $env:LOCALAPPDATA "Android\Sdk\platform-tools\adb.exe"),
+        (Join-Path $env:ANDROID_HOME "platform-tools\adb.exe"),
+        (Join-Path $env:ANDROID_SDK_ROOT "platform-tools\adb.exe")
+    )
+    foreach ($candidate in $candidates) {
+        if ($candidate -and (Test-Path $candidate)) { return $candidate }
+    }
+    throw "adb was not found. Install Android platform-tools and add them to PATH."
+}
+
+function Invoke-Adb {
+    param([Parameter(Mandatory = $true)][string[]]$ArgumentList)
+    $output = & $script:AdbExe @script:AdbPrefix @ArgumentList 2>&1 | ForEach-Object { "$_" }
+    $text = ($output -join "`n").Trim()
+    [pscustomobject]@{
+        ExitCode = $LASTEXITCODE
+        Text     = $text
+    }
+}
+
+$Root = Split-Path -Parent $PSScriptRoot
+$AdbExe = Resolve-Adb
+$AdbPrefix = @()
+if ($Serial) { $AdbPrefix = @("-s", $Serial) }
+
+Write-Host "THRONE][OS KM4 apply"
+Write-Host "Installs debug APKs and tries to set the Home app."
+Write-Host "Does not wipe, unlock, root, flash, or remove packages."
+Write-Host ""
+
+$devices = Invoke-Adb -ArgumentList @("devices")
+$ready = @($devices.Text -split "`n" | Where-Object { $_ -match "`tdevice$" })
+if ($ready.Count -eq 0) {
+    throw "No adb device in the 'device' state.`n$($devices.Text)"
+}
+if (-not $Serial -and $ready.Count -gt 1) {
+    throw "More than one device is connected. Re-run with -Serial."
+}
+
+$reportedDevice = (Invoke-Adb -ArgumentList @("shell", "getprop", "ro.product.device")).Text
+$reportedProduct = (Invoke-Adb -ArgumentList @("shell", "getprop", "ro.product.name")).Text
+$reportedRelease = (Invoke-Adb -ArgumentList @("shell", "getprop", "ro.build.version.release")).Text
+Write-Host "Phone reports device=$reportedDevice product=$reportedProduct release=$reportedRelease"
+if ($reportedDevice -notmatch "KM4" -and $reportedProduct -notmatch "KM4") {
+    Write-Host "This phone did not report KM4. Continuing. The script only installs apps."
+}
+
+if (-not $LauncherApk) {
+    $LauncherApk = Join-Path $Root "apps\throne-launcher\build\outputs\apk\$Edition\debug"
+    $found = Get-ChildItem -Path $LauncherApk -Filter "*.apk" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notmatch "androidTest" } |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+    if (-not $found) { $LauncherApk = $null } else { $LauncherApk = $found.FullName }
+}
+if (-not $GuardApk) {
+    $guardDir = Join-Path $Root "apps\throne-guard\build\outputs\apk\$Edition\debug"
+    $found = Get-ChildItem -Path $guardDir -Filter "*.apk" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notmatch "androidTest" } |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+    if (-not $found) { $GuardApk = $null } else { $GuardApk = $found.FullName }
+}
+if (-not $VaultApk) {
+    $vaultDir = Join-Path $Root "apps\throne-vault-notes\build\outputs\apk\$Edition\debug"
+    $found = Get-ChildItem -Path $vaultDir -Filter "*.apk" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notmatch "androidTest" } |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+    if (-not $found) { $VaultApk = $null } else { $VaultApk = $found.FullName }
+}
+
+if (-not $LauncherApk -or -not $GuardApk -or -not $VaultApk) {
+    throw @"
+A debug APK is missing for edition '$Edition'.
+Build it first, from the repo root:
+  .\gradlew test assembleDebug
+Expected:
+  apps\throne-launcher\build\outputs\apk\$Edition\debug\*.apk
+  apps\throne-guard\build\outputs\apk\$Edition\debug\*.apk
+  apps\throne-vault-notes\build\outputs\apk\$Edition\debug\*.apk
+"@
+}
+
+function Install-One {
+    param([string]$Path, [string]$Label)
+    Write-Host "Installing $Label"
+    Write-Host "  $Path"
+    $result = Invoke-Adb -ArgumentList @("install", "-r", $Path)
+    if ($result.ExitCode -ne 0 -or $result.Text -match "Failure|INSTALL_FAILED") {
+        throw @"
+Install failed for $Label.
+$($result.Text)
+If this is a signature mismatch, this script will not remove the installed package.
+"@
+    }
+    Write-Host $result.Text
+}
+
+Install-One -Path $LauncherApk -Label $LauncherPackage
+Install-One -Path $GuardApk -Label $GuardPackage
+Install-One -Path $VaultApk -Label $VaultPackage
+
+Write-Host ""
+Write-Host "Trying to grant the Home role to $LauncherPackage"
+$role = Invoke-Adb -ArgumentList @("shell", "cmd", "role", "add-role-holder", "android.app.role.HOME", $LauncherPackage)
+$home = Invoke-Adb -ArgumentList @("shell", "cmd", "package", "set-home-activity", "$LauncherPackage/.MainActivity")
+$roleOk = ($role.ExitCode -eq 0 -and $role.Text -notmatch "SecurityException|Error")
+$homeOk = ($home.ExitCode -eq 0 -and $home.Text -notmatch "SecurityException|Error")
+if ($role.Text) { Write-Host $role.Text }
+if ($home.Text) { Write-Host $home.Text }
+if (-not $roleOk -and -not $homeOk) {
+    Write-Host "Could not set the default Home app from adb. Opening the Home picker."
+    $picker = Invoke-Adb -ArgumentList @("shell", "am", "start", "-a", "android.settings.HOME_SETTINGS")
+    if ($picker.ExitCode -ne 0) {
+        Invoke-Adb -ArgumentList @("shell", "am", "start", "-a", "android.intent.action.MAIN", "-c", "android.intent.category.HOME") | Out-Null
+    }
+} else {
+    Write-Host "Home role command returned success. HiOS may still ask you to confirm."
+}
+
+Write-Host ""
+Write-Host "Remaining manual steps. This script does not do these."
+Write-Host "1. If the Home picker is open, choose THRONE][OS. HiOS may ask once."
+Write-Host "2. Open THRONE][OS Guard from the INFINITUM page."
+Write-Host "3. Set a PIN, pattern, or password if Guard says the screen lock is open."
+Write-Host "4. Set Private DNS yourself: Settings, Network and internet, Private DNS, Private DNS provider hostname, dns.adguard-dns.com"
+Write-Host "   Guard cannot write this setting. That hostname is a public resolver, not an Infinitum server."
+Write-Host "5. Install VEIL VPN (com.infinitum.veilvpn) if it is not installed."
+Write-Host "   In VPN settings enable Always-on VPN and Block connections without VPN."
+Write-Host "6. In Google Messages, turn on RCS Chat features yourself. Encryption applies to RCS chats with other RCS users."
+Write-Host "   Plain SMS and MMS, including RCS fallback, are not encrypted. This script cannot change Messages."
+Write-Host "7. Hide lock-screen message previews. Guard links to notification settings and cannot see each Messages channel."
+Write-Host "8. Use THRONE][OS Vault for a message you want sealed before it is handed to Messages. Compare safety numbers in person."
+Write-Host "9. Turn off Developer options and USB debugging when you are done installing."
+Write-Host "10. Device-owner policy is not applied. It would require a factory reset, which this script does not perform."
+Write-Host "11. Nothing here is NIAP, FIPS, or DISA certified. OS-level hardening needs the Pixel and GrapheneOS build."
+Write-Host ""
+Write-Host "Done. No wipe, unlock, root, flash, or package removal was performed."
