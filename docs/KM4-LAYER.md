@@ -85,7 +85,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\km4-apply.ps1
 
 `-Edition archangel` installs the ARCH//ANGEL debug APKs. The default is ^KETER, for William's KM4. The script installs the four debug APKs with `adb install -r`, tries to grant the Home role, and opens the Home picker if that grant fails. It prints the remaining manual steps.
 
-It does not wipe the device, unlock the bootloader, root the phone, flash partitions, or remove packages. A signature mismatch on reinstall is reported and left alone.
+It does not wipe the device, unlock the bootloader, root the phone, flash partitions, or remove packages. Debug APKs are signed with the shared debug key in `keystore/throne-debug.keystore` (alias `androiddebugkey`, store and key password `android`). That key is debug-only. CI and a local build produce the same signature, so a later build updates the installed app and Vault's data stays. The script does not uninstall. An APK already on the phone that was signed by an older one-off CI debug key cannot be replaced until that copy is removed by hand; Android rejects the signature change and leaves the app, including Vault, where it is.
 
 ## Manual steps the apps cannot do
 

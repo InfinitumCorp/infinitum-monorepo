@@ -27,9 +27,14 @@ object ProductMarks {
     fun bitmap(context: Context, productId: String, sizePx: Int): ImageBitmap? {
         val id = resId(productId) ?: return null
         val drawable = context.getDrawable(id) ?: return null
-        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+        val sourceW = drawable.intrinsicWidth.coerceAtLeast(1)
+        val sourceH = drawable.intrinsicHeight.coerceAtLeast(1)
+        val scale = sizePx.toFloat() / maxOf(sourceW, sourceH)
+        val width = (sourceW * scale).toInt().coerceAtLeast(1)
+        val height = (sourceH * scale).toInt().coerceAtLeast(1)
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, sizePx, sizePx)
+        drawable.setBounds(0, 0, width, height)
         drawable.draw(canvas)
         return bitmap.asImageBitmap()
     }

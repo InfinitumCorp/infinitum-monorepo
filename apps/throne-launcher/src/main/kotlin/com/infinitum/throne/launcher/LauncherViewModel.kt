@@ -79,7 +79,7 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
             val packageName = info.activityInfo.packageName
             val className = info.activityInfo.name
             val rawLabel = info.loadLabel(pm)?.toString().orEmpty().ifBlank { packageName }
-            val label = SHORT_LABELS[packageName] ?: rawLabel
+            val label = shortLabel(packageName, null, rawLabel)
             val key = "$packageName/$className"
             glyphs[key] = try {
                 info.loadIcon(pm)?.let { IconGlyphs.toGlyph(it, 144) }
@@ -124,7 +124,7 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
             }
             AppEntry(
                 key = "product:${item.productId}",
-                label = item.name,
+                label = shortLabel(item.packageName, item.productId, item.name),
                 page = HomePage.INFINITUM,
                 icon = nativeKey?.let { glyphs[it] },
                 kind = when (item.kind) {
@@ -165,8 +165,19 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
             "com.infinitum.throne.launcher" to "THRONE",
             "com.infinitum.throne.guard" to "Guard",
             "com.infinitum.throne.vault" to "Vault",
+            "com.infinitum.throne.suite" to "Suite",
             "com.infinitum.eidetic.cam" to "EIDETIC",
             "com.infinitum.hrvst.cam" to "HRVST",
         )
+        val SHORT_BY_PRODUCT = mapOf(
+            "eidetic" to "EIDETIC",
+            "hrvst" to "HRVST",
+        )
+
+        fun shortLabel(packageName: String?, productId: String?, fallback: String): String {
+            SHORT_BY_PRODUCT[productId]?.let { return it }
+            SHORT_LABELS[packageName]?.let { return it }
+            return fallback
+        }
     }
 }
