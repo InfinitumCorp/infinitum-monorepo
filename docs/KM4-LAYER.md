@@ -55,7 +55,9 @@ Checked on 10 Nov 2026. Sibling InfinitumCorp repositories were not readable fro
 
 "Opens as" is the kind when that native package is not installed. An installed package opens as native instead.
 
-Icons use the adaptive-icon monochrome layer on Android 13 and later when the app supplies one. Otherwise the glyph is a desaturate-and-threshold fallback. Full-bleed color icons can become coarse silhouettes.
+Catalog tiles are white rounded squircles. Lettering on those tiles is black. The Infinitum site sets type as `Helvetica Neue`, Helvetica, Arial, with no webfont file. Helvetica Neue is not an open license, so the bundled face is Liberation Sans (SIL OFL 1.1), the metric match for that stack's Arial. Source: https://github.com/liberationfonts/liberation-fonts and the site CSS https://infinitumcorporation.ai/assets/one-page.css . VEIL VPN is `V | ™`, FABRIC++ is `++ ™`, and the THRONE][OS launcher icon is `T]™`, all in that face. SCALVS.ai is a black S in the same face.
+
+Other installed apps still use the adaptive-icon monochrome layer on Android 13 and later when the app supplies one. Otherwise the glyph is a desaturate-and-threshold fallback.
 
 ## Build
 

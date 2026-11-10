@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -63,7 +64,13 @@ private val ThroneColors = lightColorScheme(
 )
 
 private val BaseType = Typography()
-private val Sans = TextStyle(fontFamily = FontFamily.SansSerif)
+
+/** Liberation Sans, the OFL stand-in for the site stack Helvetica Neue / Helvetica / Arial. */
+private val BrandSans = FontFamily(
+    Font(R.font.liberation_sans, FontWeight.Normal),
+    Font(R.font.liberation_sans_bold, FontWeight.Bold),
+)
+private val Sans = TextStyle(fontFamily = BrandSans)
 
 private val ThroneType = BaseType.copy(
     headlineLarge = BaseType.headlineLarge.merge(Sans).copy(fontWeight = FontWeight.Light, letterSpacing = 0.4.sp),
