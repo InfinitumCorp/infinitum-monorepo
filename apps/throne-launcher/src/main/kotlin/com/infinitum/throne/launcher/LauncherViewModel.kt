@@ -116,7 +116,7 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
                 key = "product:${item.productId}",
                 label = item.name,
                 page = HomePage.INFINITUM,
-                icon = nativeKey?.let { glyphs[it] } ?: IconGlyphs.monogram(item.name),
+                icon = nativeKey?.let { glyphs[it] },
                 kind = when (item.kind) {
                     ShelfKind.NATIVE -> EntryKind.NATIVE
                     ShelfKind.WEB -> EntryKind.WEB

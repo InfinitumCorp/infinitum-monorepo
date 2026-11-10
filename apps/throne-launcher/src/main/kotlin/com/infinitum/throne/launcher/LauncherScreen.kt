@@ -49,6 +49,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.infinitum.throne.core.catalog.ProductCatalog
 import com.infinitum.throne.core.home.HomePage
+import com.infinitum.throne.ui.HydratedTile
 import com.infinitum.throne.ui.ThroneInk
 import com.infinitum.throne.ui.ThroneLine
 import com.infinitum.throne.ui.ThroneMuted
@@ -195,7 +196,16 @@ private fun AppGrid(
                     }
                     .padding(vertical = 6.dp),
             ) {
-                if (app.icon != null) {
+                if (app.page == HomePage.INFINITUM) {
+                    HydratedTile(
+                        productId = app.productId,
+                        fallback = app.icon,
+                        contentDescription = app.label,
+                        modifier = Modifier
+                            .padding(4.dp)
+                            .size(54.dp),
+                    )
+                } else if (app.icon != null) {
                     Image(app.icon, contentDescription = app.label, modifier = Modifier.size(52.dp))
                 } else {
                     Box(Modifier.size(52.dp).border(1.dp, ThroneLine))

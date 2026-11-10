@@ -372,12 +372,15 @@ class ProductCatalogTest {
         val file = java.io.File(System.getProperty("throne.catalog"))
         val products = ProductCatalog.parse(file.readText())
         val byId = products.associateBy { it.id }
-        assertEquals(26, products.size)
+        assertEquals(25, products.size)
         assertEquals("https://infinitumfabric.app", byId.getValue("fabric").url)
         assertEquals(listOf("app.infinitumfabric.client", "com.infinitum.fabric"), byId.getValue("fabric").packages)
         assertEquals("https://rchtch.app", byId.getValue("architect").url)
         assertEquals(listOf("com.infinitum.architect"), byId.getValue("architect").packages)
-        assertEquals(null, byId.getValue("conductor").url)
+        assertEquals(":\\ARCHITECT\\™", byId.getValue("architect").name)
+        assertTrue(byId.getValue("architect").hosts.contains("cndctr.app"))
+        assertTrue(byId.getValue("architect").hosts.contains("rchtch.app"))
+        assertFalse(byId.containsKey("conductor"))
         assertEquals(null, byId.getValue("zerkalo").url)
         assertEquals(null, byId.getValue("onemind").url)
         assertEquals(null, byId.getValue("conjure").url)
@@ -413,7 +416,7 @@ class ProductCatalogTest {
         )
         assertTrue(archangel.infinitum.none { it.productId == "aether" })
         assertTrue(archangel.others.none { it.packageName == "com.infinitum.aether" })
-        assertEquals(20, archangel.infinitum.size)
+        assertEquals(19, archangel.infinitum.size)
         val keter = ShelfArranger.arrange(
             products,
             listOf(Launchable("app.infinitumfabric.client", "Main", "FabriC++")),
@@ -423,10 +426,9 @@ class ProductCatalogTest {
         assertEquals(ShelfKind.NATIVE, keter.infinitum.first { it.productId == "fabric" }.kind)
         assertEquals("app.infinitumfabric.client", keter.infinitum.first { it.productId == "fabric" }.packageName)
         assertEquals(ShelfKind.WEB, keter.infinitum.first { it.productId == "architect" }.kind)
-        assertEquals(ShelfKind.PLACEHOLDER, keter.infinitum.first { it.productId == "conductor" }.kind)
         assertEquals(ShelfKind.PLACEHOLDER, keter.infinitum.first { it.productId == "onemind" }.kind)
         assertTrue(keter.infinitum.any { it.productId == "aether" && it.kind == ShelfKind.WEB })
-        assertEquals(26, keter.infinitum.size)
+        assertEquals(25, keter.infinitum.size)
     }
 
     @Test

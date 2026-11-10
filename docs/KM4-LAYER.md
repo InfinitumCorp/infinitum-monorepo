@@ -30,14 +30,13 @@ Checked on 10 Nov 2026. Sibling InfinitumCorp repositories were not readable fro
 | Conjure™ | both | placeholder | `com.conjure.app` | Coming soon. No product page responded. |
 | FabriC++ | both | web shell | `app.infinitumfabric.client`, also `com.infinitum.fabric` | https://infinitumfabric.app |
 | SCALVS.ai | both | web shell | `app.scalvs` | https://scalvs.app |
-| /CNDCTR/ Conductor | both | placeholder | none | Coming soon. `cndctr.app` redirects to Architect (`rchtch.app`). |
-| Architect | both | web shell | `com.infinitum.architect` | https://rchtch.app |
+| :\ARCHITECT\™ | both | web shell | `com.infinitum.architect` | https://rchtch.app . `cndctr.app` is an alias of this same site. |
 | Firmament Network™ | both | web shell | none | https://firmnetwork.app |
 | FIRM WALLET | both | web shell | none | https://firmwallet.app |
 | Cumulus://Cloud | both | web shell | none | https://cumuluscloud.app and `drive.cumuluscloud.app` |
 | Cumulus://Mail | both | web shell | `app.cumuluscloud.mail` | https://mail.cumuluscloud.app |
 | Cumulus://ID | both | web shell | `id.cumuluscloud.app` | https://id.cumuluscloud.app . The live page title is +SPCTR™. |
-| VEIL VPN | both | web shell | `com.infinitum.veilvpn` | https://infinitumveilvpn.app . The published APK URL returned 404. |
+| VEIL</>™ VPN | both | web shell | `com.infinitum.veilvpn` | https://infinitumveilvpn.app . The icon is the black wordmark V \| ™ on a white rounded tile, not the site mark. |
 | VEIL browser | both | web shell | `app.infinitum.veil.browser` | https://infinitumveil.app |
 | ei·det·ic™ | both | web shell | `com.infinitum.eidetic.cam` | https://infinitumcorporation.ai/products/eidetic |
 | [HRVST] | both | web shell | `com.infinitum.hrvst.cam` | https://infinitumcorporation.ai/products/hrvst |

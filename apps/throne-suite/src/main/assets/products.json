@@ -5,49 +5,52 @@
       "name": "Conjure™",
       "summary": "Live prediction. No public product page responded, so this build does not open a site.",
       "url": null,
-      "packages": ["com.conjure.app"],
+      "packages": [
+        "com.conjure.app"
+      ],
       "cumulusId": false,
       "edition": "all"
     },
     {
       "id": "fabric",
-      "name": "FabriC++",
-      "summary": "Encrypted messaging. The public Android preview is app.infinitumfabric.client.",
+      "name": "FABRIC™",
+      "summary": "Secure communications. The product site titles this FABRIC™. Public Android preview package app.infinitumfabric.client.",
       "url": "https://infinitumfabric.app",
-      "packages": ["app.infinitumfabric.client", "com.infinitum.fabric"],
+      "packages": [
+        "app.infinitumfabric.client",
+        "com.infinitum.fabric"
+      ],
       "cumulusId": true,
       "edition": "all"
     },
     {
       "id": "scalvs",
-      "name": "SCALVS.ai",
+      "name": "SCALVS.ai™",
       "summary": "AI workforce. The public site is the client. No public Android package was published.",
       "url": "https://scalvs.app",
-      "packages": ["app.scalvs"],
+      "packages": [
+        "app.scalvs"
+      ],
       "cumulusId": true,
-      "edition": "all"
-    },
-    {
-      "id": "conductor",
-      "name": "/CNDCTR/ Conductor",
-      "summary": "cndctr.app redirects to Architect at rchtch.app, so it is not opened as Conductor.",
-      "url": null,
-      "packages": [],
-      "cumulusId": false,
       "edition": "all"
     },
     {
       "id": "architect",
-      "name": "Architect",
-      "summary": "AI execution workspace. The public Android preview is com.infinitum.architect.",
+      "name": ":\\ARCHITECT\\™",
+      "summary": "AI execution workspace. cndctr.app is an alias of rchtch.app.",
       "url": "https://rchtch.app",
-      "packages": ["com.infinitum.architect"],
+      "packages": [
+        "com.infinitum.architect"
+      ],
       "cumulusId": true,
-      "edition": "all"
+      "edition": "all",
+      "hosts": [
+        "cndctr.app"
+      ]
     },
     {
       "id": "firmament",
-      "name": "Firmament Network™",
+      "name": "$Firmament Network™",
       "summary": "Trust layer recorded under the apps. No separate Android package was published.",
       "url": "https://firmnetwork.app",
       "packages": [],
@@ -56,7 +59,7 @@
     },
     {
       "id": "firm-wallet",
-      "name": "FIRM WALLET",
+      "name": "$FIRM Wallet™",
       "summary": "Self-custody wallet. The public site is live. No Android package was published.",
       "url": "https://firmwallet.app",
       "packages": [],
@@ -65,10 +68,12 @@
     },
     {
       "id": "cumulus-cloud",
-      "name": "Cumulus://Cloud",
+      "name": "Cumulus://Cloud™",
       "summary": "Cloud suite, including Cumulus Drive.",
       "url": "https://cumuluscloud.app",
-      "hosts": ["drive.cumuluscloud.app"],
+      "hosts": [
+        "drive.cumuluscloud.app"
+      ],
       "packages": [],
       "cumulusId": true,
       "edition": "all"
@@ -78,34 +83,42 @@
       "name": "Cumulus://Mail",
       "summary": "Private mail. The public Android package is app.cumuluscloud.mail.",
       "url": "https://mail.cumuluscloud.app",
-      "packages": ["app.cumuluscloud.mail"],
+      "packages": [
+        "app.cumuluscloud.mail"
+      ],
       "cumulusId": true,
       "edition": "all"
     },
     {
       "id": "cumulus-id",
-      "name": "Cumulus://ID",
-      "summary": "Sign-in host. The live page at this host is titled +SPCTR™.",
+      "name": "+SPCTR™",
+      "summary": "Live page at id.cumuluscloud.app. The site titles this +SPCTR™.",
       "url": "https://id.cumuluscloud.app",
-      "packages": ["id.cumuluscloud.app"],
+      "packages": [
+        "id.cumuluscloud.app"
+      ],
       "cumulusId": true,
       "edition": "all"
     },
     {
       "id": "veil-vpn",
-      "name": "VEIL VPN",
+      "name": "VEIL</>™ VPN",
       "summary": "Always-on VPN. Native package com.infinitum.veilvpn. The public APK link did not answer.",
       "url": "https://infinitumveilvpn.app",
-      "packages": ["com.infinitum.veilvpn"],
+      "packages": [
+        "com.infinitum.veilvpn"
+      ],
       "cumulusId": true,
       "edition": "all"
     },
     {
       "id": "veil-browser",
-      "name": "VEIL browser",
+      "name": "VEIL</>™",
       "summary": "Tor-first browser. The public Android package is app.infinitum.veil.browser.",
       "url": "https://infinitumveil.app",
-      "packages": ["app.infinitum.veil.browser"],
+      "packages": [
+        "app.infinitum.veil.browser"
+      ],
       "cumulusId": true,
       "edition": "all"
     },
@@ -114,16 +127,20 @@
       "name": "ei·det·ic™",
       "summary": "Camera app com.infinitum.eidetic.cam opens when it is installed.",
       "url": "https://infinitumcorporation.ai/products/eidetic",
-      "packages": ["com.infinitum.eidetic.cam"],
+      "packages": [
+        "com.infinitum.eidetic.cam"
+      ],
       "cumulusId": false,
       "edition": "all"
     },
     {
       "id": "hrvst",
-      "name": "[HRVST]",
+      "name": "[HRVST]™",
       "summary": "Camera app com.infinitum.hrvst.cam opens when it is installed. The public download is not up yet.",
       "url": "https://infinitumcorporation.ai/products/hrvst",
-      "packages": ["com.infinitum.hrvst.cam"],
+      "packages": [
+        "com.infinitum.hrvst.cam"
+      ],
       "cumulusId": false,
       "edition": "all"
     },
@@ -138,7 +155,7 @@
     },
     {
       "id": "flower",
-      "name": "Flower",
+      "name": "Flower™",
       "summary": "Launch and recovery for POLLEN. No Android package was published.",
       "url": "https://infinitumcorporation.ai/products/flower",
       "packages": [],
@@ -147,7 +164,7 @@
     },
     {
       "id": "pollen",
-      "name": "POLLEN",
+      "name": "POLLEN™",
       "summary": "Coordinated micro-aircraft coverage. No Android package was published.",
       "url": "https://infinitumcorporation.ai/products/pollen",
       "packages": [],
@@ -183,10 +200,12 @@
     },
     {
       "id": "aether",
-      "name": "ÆTHER MIL",
+      "name": "ÆTHER MIL™",
       "summary": "ÆTHER / ÆTHER MIL field communications. ^KETER only.",
       "url": "https://infinitumaether.app",
-      "packages": ["com.infinitum.aether"],
+      "packages": [
+        "com.infinitum.aether"
+      ],
       "cumulusId": false,
       "edition": "keter"
     },
@@ -201,7 +220,7 @@
     },
     {
       "id": "odin",
-      "name": "ODIN°",
+      "name": "ODIN°™",
       "summary": "Military command suite. No Android package was published. ^KETER only.",
       "url": "https://infinitumcorporation.ai/products/odin",
       "packages": [],
@@ -210,7 +229,7 @@
     },
     {
       "id": "odin-daemon",
-      "name": "ODIN DAEMON",
+      "name": "DAEMON™",
       "summary": "The public page is titled DAEMON™. ^KETER only.",
       "url": "https://infinitumcorporation.ai/products/daemon",
       "packages": [],
@@ -219,8 +238,8 @@
     },
     {
       "id": "argus",
-      "name": ">_ARGUS™ Military Edition",
-      "summary": "Observe layer. No Android package was published. ^KETER only.",
+      "name": ">_ARGUS MIL™",
+      "summary": "Observe layer. The public page is titled >_ARGUS MIL™. ^KETER only.",
       "url": "https://infinitumcorporation.ai/products/argus",
       "packages": [],
       "cumulusId": false,

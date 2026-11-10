@@ -22,9 +22,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -46,17 +44,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.infinitum.throne.core.catalog.Product
 import com.infinitum.throne.core.catalog.ProductCatalog
 import com.infinitum.throne.core.catalog.ShelfKind
 import com.infinitum.throne.core.home.EditionPolicy
+import com.infinitum.throne.ui.HydratedTile
 import com.infinitum.throne.ui.ThroneButton
 import com.infinitum.throne.ui.ThroneCard
-import com.infinitum.throne.ui.ThroneInk
-import com.infinitum.throne.ui.ThroneLine
 import com.infinitum.throne.ui.ThroneMuted
 import com.infinitum.throne.ui.ThroneTheme
 import com.infinitum.throne.ui.Wordmark
@@ -184,7 +180,11 @@ private fun Directory(edition: String, products: List<Product>, onOpen: (Product
             }
             ThroneCard {
                 Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Monogram(product.name)
+                    HydratedTile(
+                        productId = product.id,
+                        contentDescription = product.name,
+                        modifier = Modifier.size(52.dp),
+                    )
                     Column(Modifier.weight(1f)) {
                         Text(product.name, style = MaterialTheme.typography.bodyLarge)
                         Text(product.summary, style = MaterialTheme.typography.bodySmall, color = ThroneMuted)
@@ -201,19 +201,6 @@ private fun Directory(edition: String, products: List<Product>, onOpen: (Product
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun Monogram(name: String) {
-    val mark = name.trim().firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString() ?: "·"
-    Box(
-        modifier = Modifier
-            .size(44.dp)
-            .border(1.dp, ThroneLine),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(mark, color = ThroneInk, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
     }
 }
 
