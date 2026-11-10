@@ -4,7 +4,7 @@
 
 Path A from the design: a launcher, a guard, and a vault on locked HiOS 15. The repo name stays `throne-os`. Nothing here flashes firmware, unlocks the bootloader, or claims a certification.
 
-The product name is **THRONE][OS™**. The KM4 layer uses the white Infinitum field: background `#FFFFFF`, ink `#161616`, secondary `#5C5C5C`, thin type, and no color accents. The home header centers the official Infinitum Corporation horizontal lockup, black on white: the same artwork as the live site header at `infinitumcorporation.ai/brand/horizontal-white-bg.png`, from the high-resolution official file so it stays sharp.
+The product name is **THRONE][OS™**. The KM4 layer uses the white Infinitum field: background `#FFFFFF`, ink `#161616`, secondary `#5C5C5C`, thin type, and no color accents. The home screen opens with the THRONE][OS™ title and the edition name. The large Infinitum Corporation lockup is not on that screen.
 
 ## What is installed
 

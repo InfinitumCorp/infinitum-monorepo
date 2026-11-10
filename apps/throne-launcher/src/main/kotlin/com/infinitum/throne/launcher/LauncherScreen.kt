@@ -142,7 +142,6 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
                     .padding(horizontal = 22.dp),
             ) {
                 Spacer(Modifier.height(8.dp))
-                OfficialLogo(onClick = viewModel::openAbout)
                 Text(
                     text = "THRONE][OS™",
                     style = Brand.copy(fontWeight = FontWeight.Light, fontSize = 15.sp, letterSpacing = 0.4.sp),
@@ -150,7 +149,7 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 12.dp),
+                        .clickable(onClick = viewModel::openAbout),
                 )
                 Text(
                     text = state.edition.label,
@@ -260,19 +259,6 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
-}
-
-@Composable
-private fun OfficialLogo(onClick: () -> Unit) {
-    Image(
-        painter = painterResource(com.infinitum.throne.ui.R.drawable.infinitum_logo_lockup),
-        contentDescription = "Infinitum Corporation",
-        contentScale = ContentScale.Fit,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp)
-            .clickable(onClick = onClick),
-    )
 }
 
 @Composable
