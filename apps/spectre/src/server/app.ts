@@ -1,3 +1,5 @@
+import { serveNodeLabyrinthUI } from "@infinitum/lbrnth";
+import { serveNodeDroneBackend } from "@infinitum/drone-backend";
 import { serveNodeLabyrinth } from "@infinitum/lbrnth";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { readFile } from "node:fs/promises";
@@ -18,13 +20,14 @@ import {
   dataIssues,
 } from "../core/cleaning.ts";
 import { OPEN_STAGES, STAGES } from "../core/model.ts";
-import { askClaude, AiNotConnected, type AiConfig } from "./ai.ts";
+import { askSpectre, aiConnected, AiNotConnected, type AiConfig } from "./ai.ts";
 import { registerGrowthRoutes, type GrowthEvent } from "./growth-routes.ts";
-import { registerConjureRoutes } from "./conjure-routes.ts";
+import { registerConjureRoutes, dealSeed } from "./conjure-routes.ts";
 import { registerEngageRoutes, RawResponse } from "./engage-routes.ts";
 import { dispatch, runDue, type AutomationEngine } from "../core/automations.ts";
 import type { Providers } from "../core/messaging.ts";
-import type { Complete } from "@infinitum/conjure";
+import type { Complete, ConjureLiveClient } from "@infinitum/conjure";
+import { parseConjureMention, handleConjureMention, conjureLiveFromEnv, formatForecast, ConjureApiError } from "@infinitum/conjure";
 import { createVeilControl, serveNodeVeil } from "@infinitum/veil/server";
 import type { DeviceExitConfig, VeilServer } from "@infinitum/veil/server";
 import { runLlmAgent, LlmError } from "@infinitum/scalus";
@@ -47,6 +50,8 @@ export interface AppDeps {
   ai: AiConfig;
   publicDir: string;
   secureCookies: boolean;
+  /** Parent domain, for example .cumuluscloud.app. Omit on localhost. */
+  cookieDomain?: string;
   /** Public origin, e.g. https://spectre.infinitum.example; used for sign-in callback URLs. */
   origin: string;
   /** Called after any request that changed data (persistence hook). */
@@ -66,6 +71,8 @@ export interface AppDeps {
   twilioAuthToken?: string;
   /** Tests: scripted model for Conjure simulations. */
   conjureComplete?: Complete;
+  /** Hosted Conjure for "@conjure" in Ask. Defaults to CONJURE_URL + CONJURE_PRODUCT_KEY; null turns it off. */
+  conjureLive?: ConjureLiveClient | null;
   /**
    * VEIL browser proxy. A plan is required for the exit and for bridges.
    * Local Tor in the extension does not call this.
@@ -165,8 +172,9 @@ export function createApp(deps: AppDeps) {
     routes.push({ method, pattern, keys, auth, handler, csrf: opts.csrf ?? true, optionalAuth: opts.optionalAuth ?? false });
   };
 
+  const domainAttr = deps.cookieDomain ? `; Domain=${deps.cookieDomain}` : "";
   const sessionCookie = (token: string, maxAgeDays = 30) =>
-    `${COOKIE}=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${maxAgeDays * 86400}${deps.secureCookies ? "; Secure" : ""}`;
+    `${COOKIE}=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${maxAgeDays * 86400}${domainAttr}${deps.secureCookies ? "; Secure" : ""}`;
   const setSession = (res: ServerResponse, token: string) => {
     res.setHeader("Set-Cookie", sessionCookie(token));
   };
@@ -237,7 +245,7 @@ export function createApp(deps: AppDeps) {
   const oauthCookie = (provider: string, value: string, maxAge: number) => {
     // Apple returns with a cross-site form POST, which only carries SameSite=None cookies.
     const sameSite = provider === "apple" && deps.secureCookies ? "None" : "Lax";
-    return `${OAUTH_COOKIE}=${value}; HttpOnly; Path=/api/auth/oauth; SameSite=${sameSite}; Max-Age=${maxAge}${deps.secureCookies ? "; Secure" : ""}`;
+    return `${OAUTH_COOKIE}=${value}; HttpOnly; Path=/api/auth/oauth; SameSite=${sameSite}; Max-Age=${maxAge}${domainAttr}${deps.secureCookies ? "; Secure" : ""}`;
   };
 
   route("GET", "/api/auth/providers", () => cid.socialProvidersEnabled(), false);
@@ -638,9 +646,26 @@ export function createApp(deps: AppDeps) {
 
   /* ---------------- Ask in plain language ---------------- */
 
+  // "@conjure <question>" in Ask starts a live Conjure forecast instead of a plain answer.
+  const conjureLive = deps.conjureLive === undefined ? conjureLiveFromEnv() : deps.conjureLive;
+  const livePredictions = new Map<string, string>(); // prediction id -> workspace that asked
+
   route("POST", "/api/ask", async (ctx) => {
     need(ctx, "question");
     const ws = ctx.user!.workspace;
+    if (parseConjureMention(String(ctx.body.question))) {
+      if (!conjureLive) throw new HttpError(503, "Conjure isn't connected. Set CONJURE_URL and CONJURE_PRODUCT_KEY to use @conjure.");
+      // On a deal, the forecast is seeded with everything +SPCTR knows about it.
+      const deal = typeof ctx.body.dealId === "string" ? dealSeed(crm, ws, ctx.body.dealId).seed : "";
+      try {
+        const out = await handleConjureMention(conjureLive, String(ctx.body.question).slice(0, 2000), { context: deal, user: ctx.user!.account.cid, source: deal ? "deal" : "ask", wait: false });
+        if (out!.prediction) livePredictions.set(out!.prediction.id, ws);
+        return { answer: out!.text, conjure: out!.prediction };
+      } catch (err) {
+        if (err instanceof ConjureApiError) throw new HttpError(err.status === 429 ? 429 : 502, err.message);
+        throw err;
+      }
+    }
     const scores = scoresFor(ws);
     const companies = crm.list("companies", ws);
     const names = new Map(companies.map((c) => [c.id, c.name]));
@@ -652,13 +677,20 @@ export function createApp(deps: AppDeps) {
       recentActivity: crm.list("activities", ws).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 80).map((a) => ({ at: a.at.slice(0, 10), kind: a.kind, summary: a.summary, company: a.companyId ? names.get(a.companyId) : undefined, inbound: a.inbound, done: a.done })),
     };
     try {
-      return { answer: await askClaude(deps.ai, String(ctx.body.question).slice(0, 2000), context) };
+      return { answer: await askSpectre(deps.ai, String(ctx.body.question).slice(0, 2000), context) };
     } catch (err) {
       if (err instanceof AiNotConnected) throw new HttpError(503, err.message);
       throw new HttpError(502, (err as Error).message);
     }
   });
 
+
+  /** Follow a live @conjure forecast started from Ask (only from the workspace that asked). */
+  route("GET", "/api/conjure/live/:id", async (ctx) => {
+    if (!conjureLive || livePredictions.get(ctx.params.id) !== ctx.user!.workspace) throw new HttpError(404, "No such forecast");
+    const prediction = await conjureLive.get(ctx.params.id);
+    return { prediction, text: formatForecast(prediction) };
+  });
 
   /* ---------------- Research & Agents ---------------- */
 
@@ -947,13 +979,13 @@ export function createApp(deps: AppDeps) {
 
   /** Run one SCALVS.ai agent on the workspace; store its proposals for approval. */
   async function runTeamAgent(ctx: Ctx, agentId: string, prompt: string) {
-    if (!deps.ai.apiKey) throw new HttpError(503, new AiNotConnected().message);
+    if (!aiConnected(deps.ai)) throw new HttpError(503, new AiNotConnected().message);
     const ws = ctx.user!.workspace;
     const def = agentDefinition(agentId, agentCtx(ctx), crm.now().toISOString().slice(0, 10));
     if (!def) throw new HttpError(404, "No such agent");
     let result;
     try {
-      result = await runLlmAgent({ apiKey: deps.ai.apiKey, model: deps.ai.model, fetchImpl: deps.ai.fetchImpl, newId: newProposalId }, def, prompt);
+      result = await runLlmAgent({ router: deps.ai.router, newId: newProposalId }, def, prompt);
     } catch (err) {
       if (err instanceof LlmError) throw new HttpError(502, err.status === 429 ? "The AI is busy right now. Please try again in a minute." : "The AI service couldn't complete this run. Please try again.");
       throw err;
@@ -973,7 +1005,7 @@ export function createApp(deps: AppDeps) {
   }
 
   route("GET", "/api/agents", (ctx) => ({
-    aiConnected: Boolean(deps.ai.apiKey),
+    aiConnected: aiConnected(deps.ai),
     agents: AGENT_IDS.map((id) => ({ id, name: AGENTS[id].name, role: AGENTS[id].role, starters: AGENTS[id].starters, canPropose: AGENTS[id].propose })),
     pending: crm.list("proposals", ctx.user!.workspace).filter((p) => p.status === "pending").length,
   }));
@@ -1116,7 +1148,9 @@ export function createApp(deps: AppDeps) {
       return;
     }
     try {
+      if (url.pathname === "/labyrinth" || url.pathname.startsWith("/labyrinth/")) return await serveNodeLabyrinthUI(req, res);
       if (url.pathname === "/api/labyrinth") return await serveNodeLabyrinth(req, res, deps.suite?.labyrinth, parseCookies(req.headers.cookie)[COOKIE], deps.onChange);
+      if (url.pathname.startsWith("/api/drones/")) return await serveNodeDroneBackend(req, res, deps.suite?.labyrinth, deps.origin);
       if (url.pathname.startsWith("/api/veil/")) return await serveNodeVeil(req, res, veilControl, deps.origin);
       if (!url.pathname.startsWith("/api/")) {
         if (req.method !== "GET" && req.method !== "HEAD") throw new HttpError(405, "Method not allowed");

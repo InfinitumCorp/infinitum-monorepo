@@ -1,6 +1,6 @@
 /* VEIL web app service worker: offline shell only. Downloads are never cached. */
-const CACHE = "veil-shell-v2";
-const SHELL = ["./", "index.html", "app.js", "lib/trackers.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "brand/horizontal-white-bg.png"];
+const CACHE = "veil-shell-v12";
+const SHELL = ["./", "index.html", "app.js", "lib/trackers.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -19,7 +19,7 @@ self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname.includes("/downloads/")) return;
   // Network first so updates show at once; fall back to the cached shell offline.
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: "no-cache" }) // revalidate, so new HTML never meets an old app.js
       .then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy));
