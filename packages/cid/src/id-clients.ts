@@ -105,13 +105,15 @@ export const ID_CLIENTS: Record<string, IdClient> = {
   "1mind": {
     name: "1MIND",
     app: "1mind",
-    origins: [],
+    // 1MIND Russia (Yandex Cloud, conjure-russia). Internal: the server still checks CID_OWNERS.
+    origins: ["https://1mind-ru.infinitumcorporation.ai"],
     loopback: true,
   },
   conjure: {
     name: "Conjure",
     app: "conjure",
-    origins: [],
+    // Conjure Russia (Yandex Cloud). Staff only: the server still checks its staff list.
+    origins: ["https://conjure-ru.infinitumcorporation.ai"],
     loopback: true,
   },
   "eidetic-admin": {
@@ -130,6 +132,12 @@ export const ID_CLIENTS: Record<string, IdClient> = {
     name: "+SPCTR",
     app: "spectre",
     origins: ["https://spectre.infinitumcorporation.ai"],
+  },
+  // developer.infinitumcorporation.ai: where Infinitum developers sign in.
+  developer: {
+    name: "Infinitum Developer",
+    app: "cumulus",
+    origins: ["https://developer.infinitumcorporation.ai"],
   },
 };
 
