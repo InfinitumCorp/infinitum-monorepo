@@ -1,0 +1,17 @@
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+*.keystore
+*.jks
+!keystore/throne-debug.keystore
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+*.hprof
+.DS_Store

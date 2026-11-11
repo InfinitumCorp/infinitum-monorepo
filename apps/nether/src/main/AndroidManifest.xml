@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <permission
+        android:name="app.infinitum.nether.ACCESS_VAULT"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="app.infinitum.nether.ACCESS_VAULT" />
+
+    <queries>
+        <package android:name="com.infinitum.throne.suite" />
+        <package android:name="app.infinitum.veil.browser" />
+        <provider android:authorities="com.infinitum.throne.suite.nether" />
+    </queries>
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Nether"
+        android:usesCleartextTraffic="false">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <provider
+            android:name="app.infinitum.nether.ui.VaultBlobProvider"
+            android:authorities="app.infinitum.nether.vault"
+            android:exported="true"
+            android:grantUriPermissions="false"
+            android:permission="app.infinitum.nether.ACCESS_VAULT" />
+
+        <service
+            android:name=".NetherAutofillService"
+            android:exported="true"
+            android:permission="android.permission.BIND_AUTOFILL_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.autofill.AutofillService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.autofill"
+                android:resource="@xml/autofill_service" />
+        </service>
+    </application>
+</manifest>
