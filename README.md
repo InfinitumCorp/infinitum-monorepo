@@ -40,6 +40,10 @@ Infinitum Corporation® visual direction for THRONE][OS™, matching the other I
 
 ## Status
 
-The KM4 layer is source in this repository: `apps/throne-launcher`, `apps/throne-guard`, `apps/throne-vault-notes`, and `apps/throne-suite`. The suite catalog is `apps/throne-suite/src/main/assets/products.json`. It has not been flashed. There are no signing keys and no certification claims. Build and install steps are in [docs/KM4-LAYER.md](docs/KM4-LAYER.md).
+The KM4 layer is source in this repository: `apps/throne-launcher`, `apps/throne-guard`, `apps/throne-vault-notes`, `apps/throne-suite`, and `apps/nether`. The suite catalog is `apps/throne-suite/src/main/assets/products.json`. It has not been flashed. There are no signing keys and no certification claims. Build and install steps are in [docs/KM4-LAYER.md](docs/KM4-LAYER.md).
+
+## Nether
+
+Nether is the offline password vault for this phone. The standalone app is `app.infinitum.nether`. Cumulus://Suite opens the same vault from its Nether section. Crypto, storage, the generator, TOTP, and the screens live in `libs/nether-core` and `libs/nether-ui`. The vault file is AES-256-GCM. The key comes from Argon2id (Bouncy Castle). A copy of the key can be wrapped by the Android Keystore, StrongBox when the phone has it, and unlocked with BiometricPrompt. Nether has no INTERNET permission. Vault (`com.infinitum.throne.vault`) stays installed; the launcher hides it and puts Nether in that grid slot. Nether does not read Vault's private files.
 
 Site: https://infinitumcorporation.ai/

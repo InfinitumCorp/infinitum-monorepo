@@ -10,7 +10,8 @@ param(
     [string]$LauncherApk,
     [string]$GuardApk,
     [string]$VaultApk,
-    [string]$SuiteApk
+    [string]$SuiteApk,
+    [string]$NetherApk
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,6 +19,7 @@ $LauncherPackage = "com.infinitum.throne.launcher"
 $GuardPackage = "com.infinitum.throne.guard"
 $VaultPackage = "com.infinitum.throne.vault"
 $SuitePackage = "com.infinitum.throne.suite"
+$NetherPackage = "app.infinitum.nether"
 
 function Resolve-Adb {
     $cmd = Get-Command adb -ErrorAction SilentlyContinue
@@ -102,8 +104,16 @@ if (-not $SuiteApk) {
         Select-Object -First 1
     if (-not $found) { $SuiteApk = $null } else { $SuiteApk = $found.FullName }
 }
+if (-not $NetherApk) {
+    $netherDir = Join-Path $Root "apps\nether\build\outputs\apk\$Edition\debug"
+    $found = Get-ChildItem -Path $netherDir -Filter "*.apk" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notmatch "androidTest" } |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+    if (-not $found) { $NetherApk = $null } else { $NetherApk = $found.FullName }
+}
 
-if (-not $LauncherApk -or -not $GuardApk -or -not $VaultApk -or -not $SuiteApk) {
+if (-not $LauncherApk -or -not $GuardApk -or -not $VaultApk -or -not $SuiteApk -or -not $NetherApk) {
     throw @"
 A debug APK is missing for edition '$Edition'.
 Build it first, from the repo root:
@@ -113,6 +123,7 @@ Expected:
   apps\throne-guard\build\outputs\apk\$Edition\debug\*.apk
   apps\throne-vault-notes\build\outputs\apk\$Edition\debug\*.apk
   apps\throne-suite\build\outputs\apk\$Edition\debug\*.apk
+  apps\nether\build\outputs\apk\$Edition\debug\*.apk
 "@
 }
 
@@ -137,6 +148,7 @@ Install-One -Path $LauncherApk -Label $LauncherPackage
 Install-One -Path $GuardApk -Label $GuardPackage
 Install-One -Path $VaultApk -Label $VaultPackage
 Install-One -Path $SuiteApk -Label $SuitePackage
+Install-One -Path $NetherApk -Label $NetherPackage
 
 Write-Host ""
 Write-Host "Trying to grant the Home role to $LauncherPackage"

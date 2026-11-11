@@ -61,11 +61,19 @@ android {
             buildConfigField("String", "EDITION", "\"ARCH//ANGEL\"")
         }
     }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/versions/**"
+        }
+    }
 }
 
 dependencies {
     implementation(project(":libs:throne-core"))
     implementation(project(":libs:throne-ui"))
+    implementation(project(":libs:nether-ui"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))

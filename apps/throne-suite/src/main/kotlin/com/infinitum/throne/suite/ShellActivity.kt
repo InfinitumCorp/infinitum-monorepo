@@ -77,6 +77,10 @@ class ShellActivity : ComponentActivity() {
         val edition = EditionPolicy.parse(BuildConfig.EDITION)
         products = loadProducts().let { ProductCatalog.visible(it, edition) }
         productId = intent.getStringExtra(ProductCatalog.EXTRA_PRODUCT_ID)
+        if (productId == "nether") {
+            startActivity(Intent(this, NetherActivity::class.java))
+            productId = null
+        }
         if (openNative(productId)) return
         setContent {
             ThroneTheme {
@@ -97,6 +101,11 @@ class ShellActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         val requested = intent.getStringExtra(ProductCatalog.EXTRA_PRODUCT_ID)
+        if (requested == "nether") {
+            startActivity(Intent(this, NetherActivity::class.java))
+            productId = null
+            return
+        }
         if (!openNative(requested)) productId = requested
     }
 
@@ -170,6 +179,27 @@ private fun Directory(edition: String, products: List<Product>, onOpen: (Product
                 color = ThroneMuted,
                 modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
             )
+        }
+        item(key = "nether") {
+            val context = LocalContext.current
+            ThroneCard {
+                Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    HydratedTile(
+                        productId = "nether",
+                        contentDescription = "Nether",
+                        modifier = Modifier.size(52.dp),
+                    )
+                    Column(Modifier.weight(1f)) {
+                        Text("Nether", style = MaterialTheme.typography.bodyLarge)
+                        Text("Passwords, codes, and notes. Same vault as the Nether app.", style = MaterialTheme.typography.bodySmall, color = ThroneMuted)
+                    }
+                }
+                ThroneButton(
+                    text = "Open",
+                    onClick = { context.startActivity(Intent(context, NetherActivity::class.java)) },
+                    modifier = Modifier.padding(top = 10.dp),
+                )
+            }
         }
         items(products, key = { it.id }) { product ->
             val context = LocalContext.current

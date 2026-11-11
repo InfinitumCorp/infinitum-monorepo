@@ -108,7 +108,7 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
             val hits = withContext(Dispatchers.IO) {
                 SearchHits(
                     apps = apps
-                        .filter { it.packageName != "com.infinitum.throne.guard" }
+                        .filter { it.packageName != GUARD_PACKAGE && it.packageName != VAULT_PACKAGE }
                         .filter {
                             PhoneSearch.matches(it.label, trimmed) ||
                                 (it.packageName != null && PhoneSearch.matches(it.packageName, trimmed))
@@ -183,7 +183,7 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
                     productId = null,
                 )
             }
-            val placed = placeMetatron(
+            val placed = placeHome(
                 entries(arranged.infinitum, HomePage.INFINITUM, glyphs, colorIcons),
                 entries(arranged.others, HomePage.OTHERS, glyphs, colorIcons),
                 launchables,
@@ -231,8 +231,44 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
                 productId = null,
             )
         }
-        val placed = placeMetatron(infinitum, others, launchables)
+        val placed = placeHome(infinitum, others, launchables)
         return LoadedHome(placed.first, placed.second, resolveMessages(pm))
+    }
+
+    private fun placeHome(
+        infinitum: List<AppEntry>,
+        others: List<AppEntry>,
+        launchables: List<Launchable>,
+    ): Pair<List<AppEntry>, List<AppEntry>> {
+        val metatron = placeMetatron(infinitum, others, launchables)
+        return placeNether(metatron.first, metatron.second, launchables)
+    }
+
+    private fun placeNether(
+        infinitum: List<AppEntry>,
+        others: List<AppEntry>,
+        launchables: List<Launchable>,
+    ): Pair<List<AppEntry>, List<AppEntry>> {
+        val home = infinitum.toMutableList()
+        val rest = others.toMutableList()
+        val vaultAt = home.indexOfFirst { it.packageName == VAULT_PACKAGE }
+        home.removeAll { it.packageName == VAULT_PACKAGE || it.packageName == NETHER_PACKAGE || it.productId == "nether" }
+        rest.removeAll { it.packageName == VAULT_PACKAGE || it.packageName == NETHER_PACKAGE || it.productId == "nether" }
+        val native = launchables.firstOrNull { it.packageName == NETHER_PACKAGE }
+        val nether = AppEntry(
+            key = "product:nether",
+            label = "Nether",
+            page = HomePage.INFINITUM,
+            icon = null,
+            colorIcon = false,
+            kind = if (native != null) EntryKind.NATIVE else EntryKind.PLACEHOLDER,
+            packageName = native?.packageName,
+            className = native?.className,
+            productId = "nether",
+        )
+        val index = if (vaultAt >= 0) vaultAt.coerceAtMost(home.size) else home.size
+        home.add(index, nether)
+        return home to rest
     }
 
     private fun placeMetatron(
@@ -284,6 +320,9 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         if (entry.packageName == CONJURE_PACKAGE || entry.productId == "conjure") {
             return entry.copy(productId = "conjure", colorIcon = false)
         }
+        if (entry.packageName == NETHER_PACKAGE || entry.productId == "nether") {
+            return entry.copy(productId = "nether", colorIcon = false)
+        }
         return entry
     }
 
@@ -319,6 +358,7 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
             "com.infinitum.throne.launcher" to "THRONE",
             "com.infinitum.throne.guard" to "Guard",
             "com.infinitum.throne.vault" to "Vault",
+            "app.infinitum.nether" to "Nether",
             "com.infinitum.throne.suite" to "Suite",
             "com.infinitum.eidetic.cam" to "EIDETIC",
             "com.infinitum.hrvst.cam" to "HRVST",
@@ -327,9 +367,11 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
             "eidetic" to "EIDETIC",
             "hrvst" to "HRVST",
             "metatron" to "METATRON¹⁰⁰",
+            "nether" to "Nether",
         )
         const val GUARD_PACKAGE = "com.infinitum.throne.guard"
         const val VAULT_PACKAGE = "com.infinitum.throne.vault"
+        const val NETHER_PACKAGE = "app.infinitum.nether"
         const val HRVST_PACKAGE = "com.infinitum.hrvst.cam"
         const val EIDETIC_PACKAGE = "com.infinitum.eidetic.cam"
         const val CONJURE_PACKAGE = "com.conjure.app"

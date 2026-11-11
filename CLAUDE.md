@@ -11,3 +11,4 @@
 - Editions: ^KETER (William's, shown as ^KETERv1) and ARCH//ANGEL (public). ^KETER and MIL apps stay off public sites.
 - White, minimal, iOS "hydrated" style; black lettering on white rounded tiles; official Infinitum names and logos only.
 - Never enable system grayscale on the phone.
+- Nether (`app.infinitum.nether`, also a section inside Cumulus://Suite) is the password vault. It replaces Vault on the home grid. Leave `com.infinitum.throne.vault` installed and do not read or delete its private files. Nether has no INTERNET permission. The `{n}` mark is `libs/throne-ui/src/main/res/drawable-nodpi/ic_mark_nether.png` and the standalone adaptive icon is `design/nether/android` when that folder is present. Do not redraw those files.

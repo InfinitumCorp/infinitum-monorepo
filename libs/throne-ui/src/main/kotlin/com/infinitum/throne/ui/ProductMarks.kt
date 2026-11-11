@@ -24,6 +24,7 @@ object ProductMarks {
         "hrvst" -> R.drawable.ic_mark_hrvst
         "eidetic" -> R.drawable.ic_mark_eidetic
         "conjure" -> R.drawable.ic_mark_conjure
+        "nether" -> R.drawable.ic_mark_nether
         "corporation", "defense", "academy", "aether" -> R.drawable.ic_mark_lattice
         else -> null
     }

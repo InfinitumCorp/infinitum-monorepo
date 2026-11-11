@@ -2,12 +2,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <permission
+        android:name="app.infinitum.nether.ACCESS_VAULT"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="app.infinitum.nether.ACCESS_VAULT" />
 
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <package android:name="app.infinitum.nether" />
+        <provider android:authorities="app.infinitum.nether.vault" />
     </queries>
 
     <application
@@ -19,6 +25,16 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Throne"
         android:usesCleartextTraffic="false">
+        <activity
+            android:name=".NetherActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <provider
+            android:name="app.infinitum.nether.ui.VaultBlobProvider"
+            android:authorities="com.infinitum.throne.suite.nether"
+            android:exported="true"
+            android:grantUriPermissions="false"
+            android:permission="app.infinitum.nether.ACCESS_VAULT" />
         <activity
             android:name=".ShellActivity"
             android:exported="true"

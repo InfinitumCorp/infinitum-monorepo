@@ -9,6 +9,7 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
         <package android:name="com.infinitum.throne.suite" />
+        <package android:name="app.infinitum.nether" />
         <package android:name="com.google.android.apps.messaging" />
         <intent>
             <action android:name="android.intent.action.SENDTO" />

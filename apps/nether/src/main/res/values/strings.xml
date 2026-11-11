@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nether</string>
+    <string name="autofill_unlock">Unlock Nether</string>
+    <string name="autofill_fill">Fill from Nether</string>
+</resources>
