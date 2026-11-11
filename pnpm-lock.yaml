@@ -21,8 +21,8 @@ importers:
         version: link:../../packages/lbrnth-client
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -37,8 +37,8 @@ importers:
         version: link:../../packages/firmament
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2
@@ -83,17 +83,17 @@ importers:
         version: 4.2.0
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       cf:
         specifier: 1.0.0-beta.28
-        version: 1.0.0-beta.28(@types/node@22.20.5)
+        version: 1.0.0-beta.28(@types/node@26.6.6)
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
       wrangler:
         specifier: ^4.158.0
-        version: 4.158.0(@types/node@22.20.5)
+        version: 4.158.0(@types/node@26.6.6)
 
   apps/data-exchange:
     dependencies:
@@ -108,8 +108,8 @@ importers:
         version: link:../../packages/lbrnth-client
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -121,8 +121,8 @@ importers:
         version: link:../../packages/fabric
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -165,10 +165,10 @@ importers:
     devDependencies:
       '@preact/preset-vite':
         specifier: ^2.10.6
-        version: 2.10.6(@babel/core@7.29.13)(preact@11.2.0)(vite@8.3.6(@types/node@22.20.5)(esbuild@0.28.2))
+        version: 2.10.6(@babel/core@7.29.13)(preact@11.2.0)(vite@8.3.6(@types/node@26.6.6)(esbuild@0.28.2))
       '@types/node':
-        specifier: ^22.20.5
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       fake-indexeddb:
         specifier: ^6.2.7
         version: 6.2.8
@@ -177,13 +177,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: ^8.3.6
-        version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)
+        version: 8.3.6(@types/node@26.6.6)(esbuild@0.28.2)
       vitest:
         specifier: ^5.1.0
-        version: 5.1.0(@types/node@22.20.5)(vite@8.3.6(@types/node@22.20.5)(esbuild@0.28.2))
+        version: 5.1.0(@types/node@26.6.6)(vite@8.3.6(@types/node@26.6.6)(esbuild@0.28.2))
       wrangler:
         specifier: ^4.158.0
-        version: 4.158.0(@types/node@22.20.5)
+        version: 4.158.0(@types/node@26.6.6)
 
   apps/hrvst:
     dependencies:
@@ -195,8 +195,8 @@ importers:
         version: link:../../packages/lbrnth-client
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -211,8 +211,8 @@ importers:
         version: 8.16.3
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       '@types/pg':
         specifier: 8.15.6
         version: 8.15.6
@@ -263,8 +263,8 @@ importers:
         specifier: 0.3.14
         version: 0.3.14
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -279,8 +279,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/firmament
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -293,10 +293,10 @@ importers:
     devDependencies:
       cf:
         specifier: ^1.0.0-beta.28
-        version: 1.0.0-beta.28(@types/node@22.20.5)
+        version: 1.0.0-beta.28(@types/node@26.6.6)
       wrangler:
         specifier: ^4.158.0
-        version: 4.158.0(@types/node@22.20.5)
+        version: 4.158.0(@types/node@26.6.6)
 
   packages/aether:
     dependencies:
@@ -305,8 +305,8 @@ importers:
         version: link:../lbrnth-client
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -314,8 +314,8 @@ importers:
   packages/ai:
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -327,8 +327,8 @@ importers:
         version: link:../lbrnth-client
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -346,8 +346,8 @@ importers:
         version: link:../sense
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -355,8 +355,8 @@ importers:
   packages/billing:
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -364,8 +364,8 @@ importers:
   packages/brand:
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -377,8 +377,8 @@ importers:
         version: link:../firmament
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -399,8 +399,8 @@ importers:
         version: 8.23.1
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       '@types/pg':
         specifier: ^8.15.5
         version: 8.23.1
@@ -424,8 +424,8 @@ importers:
         version: link:../scalus
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -452,8 +452,8 @@ importers:
         version: link:../mail
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -471,8 +471,8 @@ importers:
         version: link:../lbrnth-client
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -490,8 +490,8 @@ importers:
         specifier: workspace:*
         version: link:../firmament
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -503,8 +503,8 @@ importers:
         version: link:../lbrnth-client
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -516,8 +516,8 @@ importers:
         version: link:../lbrnth-client
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -529,8 +529,8 @@ importers:
         version: link:../lbrnth-client
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -542,8 +542,8 @@ importers:
         version: link:../lbrnth-client
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -555,8 +555,8 @@ importers:
         version: link:../lbrnth-client
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -571,8 +571,8 @@ importers:
         version: link:../sense
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -587,8 +587,8 @@ importers:
         version: link:../sense
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -596,8 +596,8 @@ importers:
   packages/i18n:
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -618,8 +618,8 @@ importers:
         specifier: 0.3.14
         version: 0.3.14
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -627,8 +627,8 @@ importers:
   packages/lbrnth-client:
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -643,8 +643,8 @@ importers:
         version: link:../lbrnth-client
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -656,8 +656,8 @@ importers:
         version: link:../lbrnth-client
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -672,8 +672,8 @@ importers:
         version: link:../lbrnth-client
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -681,8 +681,8 @@ importers:
   packages/sense:
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.5
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -1367,8 +1367,8 @@ packages:
   '@types/estree@1.0.10':
     resolution: {integrity: sha512-lTyOMnOcmRBzdCv6/4zUZCrEhV0xrqQiUZBZtVcbmLHBXKLnN8q89v/wKRF/Q0HbwVsqbIG3o5HDoFl9sduM+g==}
 
-  '@types/node@22.20.5':
-    resolution: {integrity: sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==}
+  '@types/node@26.6.6':
+    resolution: {integrity: sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog==}
 
   '@types/pg@8.15.6':
     resolution: {integrity: sha512-NoaMtzhxOrubeL/7UZuNTrejB4MPAJ0RpxZqXQf2qXuVlTPuG6Y8p4u9dKRaue4yjmC7ZhzVO2/Yyyn25znrPQ==}
@@ -1841,8 +1841,8 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  undici-types@6.21.0:
-    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
+  undici-types@8.9.0:
+    resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
 
   undici@7.30.1:
     resolution: {integrity: sha512-03KrMbjIFDWQR5RNPrSw3bd1r12JpyFQl9/yxjUbJtqkjmllqC5lFjZh6ujeuJCKr8EOQvRW872Oy/az+nLYxg==}
@@ -2151,9 +2151,9 @@ snapshots:
 
   '@cloudflare/kv-asset-handler@0.5.0': {}
 
-  '@cloudflare/runtime-types@0.1.23(@types/node@22.20.5)':
+  '@cloudflare/runtime-types@0.1.23(@types/node@26.6.6)':
     dependencies:
-      miniflare: 5.20261104.0-beta(@types/node@22.20.5)
+      miniflare: 5.20261104.0-beta(@types/node@26.6.6)
       workerd: 1.20261104.1
     transitivePeerDependencies:
       - '@types/node'
@@ -2428,19 +2428,19 @@ snapshots:
 
   '@poppinss/exception@1.2.3': {}
 
-  '@preact/preset-vite@2.10.6(@babel/core@7.29.13)(preact@11.2.0)(vite@8.3.6(@types/node@22.20.5)(esbuild@0.28.2))':
+  '@preact/preset-vite@2.10.6(@babel/core@7.29.13)(preact@11.2.0)(vite@8.3.6(@types/node@26.6.6)(esbuild@0.28.2))':
     dependencies:
       '@babel/core': 7.29.13
       '@babel/plugin-transform-react-jsx': 7.29.7(@babel/core@7.29.13)
       '@babel/plugin-transform-react-jsx-development': 7.29.7(@babel/core@7.29.13)
-      '@prefresh/vite': 2.4.12(preact@11.2.0)(vite@8.3.6(@types/node@22.20.5)(esbuild@0.28.2))
+      '@prefresh/vite': 2.4.12(preact@11.2.0)(vite@8.3.6(@types/node@26.6.6)(esbuild@0.28.2))
       '@rollup/pluginutils': 5.5.1
       babel-plugin-transform-hook-names: 1.0.2(@babel/core@7.29.13)
       debug: 4.4.3
       magic-string: 0.30.21
       picocolors: 1.1.1
-      vite: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)
-      vite-prerender-plugin: 0.5.14(vite@8.3.6(@types/node@22.20.5)(esbuild@0.28.2))
+      vite: 8.3.6(@types/node@26.6.6)(esbuild@0.28.2)
+      vite-prerender-plugin: 0.5.14(vite@8.3.6(@types/node@26.6.6)(esbuild@0.28.2))
       zimmerframe: 1.1.5
     transitivePeerDependencies:
       - preact
@@ -2457,7 +2457,7 @@ snapshots:
 
   '@prefresh/utils@1.2.1': {}
 
-  '@prefresh/vite@2.4.12(preact@11.2.0)(vite@8.3.6(@types/node@22.20.5)(esbuild@0.28.2))':
+  '@prefresh/vite@2.4.12(preact@11.2.0)(vite@8.3.6(@types/node@26.6.6)(esbuild@0.28.2))':
     dependencies:
       '@babel/core': 7.29.13
       '@prefresh/babel-plugin': 0.5.4(@babel/core@7.29.13)
@@ -2465,7 +2465,7 @@ snapshots:
       '@prefresh/utils': 1.2.1
       '@rollup/pluginutils': 4.2.1
       preact: 11.2.0
-      vite: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)
+      vite: 8.3.6(@types/node@26.6.6)(esbuild@0.28.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -2565,30 +2565,30 @@ snapshots:
 
   '@types/estree@1.0.10': {}
 
-  '@types/node@22.20.5':
+  '@types/node@26.6.6':
     dependencies:
-      undici-types: 6.21.0
+      undici-types: 8.9.0
 
   '@types/pg@8.15.6':
     dependencies:
-      '@types/node': 22.20.5
+      '@types/node': 26.6.6
       pg-protocol: 1.16.1
       pg-types: 2.2.0
 
   '@types/pg@8.23.1':
     dependencies:
-      '@types/node': 22.20.5
+      '@types/node': 26.6.6
       pg-protocol: 1.16.1
       pg-types: 2.2.0
 
-  '@vitest/mocker@5.1.0(vite@8.3.6(@types/node@22.20.5)(esbuild@0.28.2))':
+  '@vitest/mocker@5.1.0(vite@8.3.6(@types/node@26.6.6)(esbuild@0.28.2))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@vitest/spy': 5.1.0
       estree-walker: 3.0.3
       magic-string: 1.4.5
     optionalDependencies:
-      vite: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)
+      vite: 8.3.6(@types/node@26.6.6)(esbuild@0.28.2)
 
   '@vitest/spy@5.1.0': {}
 
@@ -2619,13 +2619,13 @@ snapshots:
 
   caniuse-lite@1.0.30001823: {}
 
-  cf@1.0.0-beta.28(@types/node@22.20.5):
+  cf@1.0.0-beta.28(@types/node@26.6.6):
     dependencies:
       '@cloudflare/build-output-utils': 0.9.10
       '@cloudflare/config': 0.30.2
-      '@cloudflare/runtime-types': 0.1.23(@types/node@22.20.5)
+      '@cloudflare/runtime-types': 0.1.23(@types/node@26.6.6)
       blake3-wasm: 2.1.5
-      miniflare: 5.20261104.0-beta(@types/node@22.20.5)
+      miniflare: 5.20261104.0-beta(@types/node@26.6.6)
     transitivePeerDependencies:
       - '@types/node'
       - bufferutil
@@ -2808,10 +2808,10 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  miniflare@5.20261104.0-beta(@types/node@22.20.5):
+  miniflare@5.20261104.0-beta(@types/node@26.6.6):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
-      sharp: 0.35.5(@types/node@22.20.5)
+      sharp: 0.35.5(@types/node@26.6.6)
       undici: 7.30.1
       workerd: 1.20261104.1
       ws: 8.21.0
@@ -2959,7 +2959,7 @@ snapshots:
 
   semver@7.8.6: {}
 
-  sharp@0.35.5(@types/node@22.20.5):
+  sharp@0.35.5(@types/node@26.6.6):
     dependencies:
       '@img/colour': 1.1.0
       detect-libc: 2.1.2
@@ -2990,7 +2990,7 @@ snapshots:
       '@img/sharp-win32-arm64': 0.35.5
       '@img/sharp-win32-ia32': 0.35.5
       '@img/sharp-win32-x64': 0.35.5
-      '@types/node': 22.20.5
+      '@types/node': 26.6.6
 
   simple-code-frame@1.3.0:
     dependencies:
@@ -3022,7 +3022,7 @@ snapshots:
 
   typescript@5.9.3: {}
 
-  undici-types@6.21.0: {}
+  undici-types@8.9.0: {}
 
   undici@7.30.1: {}
 
@@ -3053,7 +3053,7 @@ snapshots:
       - utf-8-validate
       - zod
 
-  vite-prerender-plugin@0.5.14(vite@8.3.6(@types/node@22.20.5)(esbuild@0.28.2)):
+  vite-prerender-plugin@0.5.14(vite@8.3.6(@types/node@26.6.6)(esbuild@0.28.2)):
     dependencies:
       kolorist: 1.8.0
       magic-string: 0.30.21
@@ -3061,9 +3061,9 @@ snapshots:
       simple-code-frame: 1.3.0
       source-map: 0.7.6
       stack-trace: 1.0.0
-      vite: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)
+      vite: 8.3.6(@types/node@26.6.6)(esbuild@0.28.2)
 
-  vite@8.3.6(@types/node@22.20.5)(esbuild@0.28.2):
+  vite@8.3.6(@types/node@26.6.6)(esbuild@0.28.2):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -3071,14 +3071,14 @@ snapshots:
       rolldown: 1.2.16
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 22.20.5
+      '@types/node': 26.6.6
       esbuild: 0.28.2
       fsevents: 2.3.3
 
-  vitest@5.1.0(@types/node@22.20.5)(vite@8.3.6(@types/node@22.20.5)(esbuild@0.28.2)):
+  vitest@5.1.0(@types/node@26.6.6)(vite@8.3.6(@types/node@26.6.6)(esbuild@0.28.2)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.1.0(vite@8.3.6(@types/node@22.20.5)(esbuild@0.28.2))
+      '@vitest/mocker': 5.1.0(vite@8.3.6(@types/node@26.6.6)(esbuild@0.28.2))
       chai: 6.3.0
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -3089,10 +3089,10 @@ snapshots:
       tinybench: 6.2.3
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
-      vite: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)
+      vite: 8.3.6(@types/node@26.6.6)(esbuild@0.28.2)
       why-is-node-running: 3.2.1
     optionalDependencies:
-      '@types/node': 22.20.5
+      '@types/node': 26.6.6
     transitivePeerDependencies:
       - msw
 
@@ -3106,14 +3106,14 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20261104.1
       '@cloudflare/workerd-windows-64': 1.20261104.1
 
-  wrangler@4.158.0(@types/node@22.20.5):
+  wrangler@4.158.0(@types/node@26.6.6):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.0
       '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261104.1)
       '@cspotcode/source-map-support': 0.8.1
       blake3-wasm: 2.1.5
       esbuild: 0.28.2
-      miniflare: 5.20261104.0-beta(@types/node@22.20.5)
+      miniflare: 5.20261104.0-beta(@types/node@26.6.6)
       path-to-regexp: 6.3.0
       unenv: 2.0.0-rc.24
       workerd: 1.20261104.1
