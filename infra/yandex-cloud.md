@@ -123,6 +123,25 @@ Each Russia deployment has its own public repo holding what differs for Russia (
 - CI per repo: shellcheck on push/PR. The live checks run only on manual dispatch, so no scheduled minutes are used.
 - Defense products (AETHER, ARGUS, ODIN, E(O)N) get no Russia version or server.
 
+## Russia copies of all products + VEIL VPN nodes (started 2026-11-11)
+
+Decision (William, 2026-11-11): every product gets a Russia copy on Yandex while its current hosting stays as it is; infinitum-product-1/2/3 become VEIL</> VPN nodes.
+
+Not copied to Russia: defense products (AETHER, ARGUS, ODIN, E(O)N, infinitumdefense.com, drone/autonomy), internal tools (1MIND, THRONE//OS, personal sites), and anything that would call Claude. The Firmament / $FIRM token offering is held for a sanctions and securities check first.
+
+**russia-web** (new web server for the Russia copies)
+- VM `russia-web`, ru-central1-e, 2 vCPU, 4 GB, 20 GB SSD, Ubuntu 24.04, `infinitum-product-sg`, labels `product=web,region=russia`. IP 93.77.163.229 (dynamic until the static-IP quota rises). SSH: `ssh russia-web`.
+- nginx serves, by name: `ru.scalvs.app` (default site), `ru.infinitumcorporation.ai` (InfinitumCorp/infinitum-corporation-site) and `ru.infinitumveilvpn.app` (VEIL VPN site, `npm run build` -> `dist/site`). All answer 200 on the server; HTTP only until DNS points here, then certbot.
+- GitHub runner `russia-web` (labels `yandex-ru,russia-web`) for InfinitumCorp/scalvs-ru, as the non-root `runner` user. scalvs-ru PR #5 moves the deploy job onto it.
+
+**VEIL VPN nodes**
+- Security group `veil-vpn-sg` (`enp25m9l167b57r2sm1q`): SSH from the admin IP; 80/443; WireGuard UDP 51820; IKEv2 UDP 500/4500; OpenVPN UDP+TCP 1194; VLESS TCP 2053; Shadowsocks TCP+UDP 16080; agent TCP 9101 (the node's own nftables limits it to the control API); ICMP; all egress. Not attached yet.
+- Planned names: `vpn-ru1/ru2/ru3.infinitumveilvpn.app` -> infinitum-product-1/2/3 (84.201.173.68, 153.51.166.190, 93.77.160.57), matching the existing `vpn-<region>` nodes.
+- Node setup is `node/provision.sh` in InfinitumCorp/veil-vpn. It needs the control API's `TOKEN_SECRET` and `AGENT_SECRET`; those are not in any repo and are placed on each node by William.
+
+**Quotas**
+- Static public IPs: limit 2, both used (fabric-russia, conjure-russia). Increase to 8 requested 2026-11-11 so russia-web and the three nodes keep their IPs.
+
 ## Using the servers for builds
 
 Today every InfinitumCorp repo is public, so GitHub-hosted runners are free, and the Grok Bot box already has an `infinitum-ci` runner registered per repo as the fallback. Using these paid servers for general CI would cost money for work GitHub does for free. Their value is what only a machine inside Russia can do:
