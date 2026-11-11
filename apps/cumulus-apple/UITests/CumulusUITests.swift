@@ -22,10 +22,6 @@ final class CumulusUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.buttons["compose"].waitForExistence(timeout: 5))
         XCTAssertTrue(shows(app, "VYRAL London — hold the forecast"))
-        app.buttons["compose"].tap()
-        // The composer is a group on macOS and an other element on iOS, so match it by identifier alone.
-        XCTAssertTrue(app.descendants(matching: .any)["composer"].waitForExistence(timeout: 5)
-                      || app.descendants(matching: .any)["send"].exists)
 
         app.buttons["product-cloud"].tap()
         XCTAssertTrue(app.buttons["my-drive"].waitForExistence(timeout: 5))
@@ -35,6 +31,15 @@ final class CumulusUITests: XCTestCase {
 
         app.buttons["product-id"].tap()
         XCTAssertTrue(shows(app, "alex@cumuluscloud.app"))
+
+        // Open the composer last: it can make the window taller than a small CI display,
+        // which pushes the product bar off screen.
+        app.buttons["product-mail"].tap()
+        XCTAssertTrue(app.buttons["compose"].waitForExistence(timeout: 5))
+        app.buttons["compose"].tap()
+        // The composer is a group on macOS and an other element on iOS, so match it by identifier alone.
+        XCTAssertTrue(app.descendants(matching: .any)["composer"].waitForExistence(timeout: 5)
+                      || app.descendants(matching: .any)["send"].exists)
     }
 
     /// Text inside a row or button is part of that element's label, not its own static text,
