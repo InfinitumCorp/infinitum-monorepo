@@ -107,3 +107,16 @@ Checked on 2026-11-11. Applied only where the license allows a copy and the Type
 | OpenDDS, OpenCPI | No SPDX license on the repo | Not copied. |
 | mavlink/mavlink | Generator is LGPL | Already implemented in `@infinitum/drone-backend`. The upstream tree is not copied. |
 
+## Social feeds and marketing measurement
+
+Checked on 2026-11-11 after the operator asked for social platforms, their collection code, and their marketing rankers. The full list is [docs/OSS-FEATURE-SURVEY-3-2026-11-11.md](../docs/OSS-FEATURE-SURVEY-3-2026-11-11.md).
+
+| Upstream | License | Decision |
+|---|---|---|
+| [xai-org/x-algorithm](https://github.com/xai-org/x-algorithm) value model | Apache-2.0 | Translated into `zerkalo/feed_rank.py`. Predicted probabilities times the published weights. The Phoenix model, visibility filters, and takedown rules were not copied. |
+| twitter/the-algorithm and twitter/the-algorithm-ml | AGPL-3.0 | Not copied into proprietary apps. |
+| Collection SDKs (Snowplow, Mixpanel, Amplitude, archived Segment) | BSD / Apache / MIT | Not wired in. They would send or store events from the websites, which this pass does not change. Use only on an opted-in surface. |
+| Training stacks (EasyRec, PaddleRec, Merlin, CatBoost, Annoy, Vespa, buffalo) | Apache-2.0 or MIT | Stay upstream. They are large training or serving systems, not a function these apps call. |
+| PostHog, GrowthBook, RudderStack, Matomo, Mastodon | split, Elastic-2.0, GPL, or AGPL | Not copied. |
+
+
