@@ -23,6 +23,7 @@ object ProductMarks {
         "metatron" -> R.drawable.ic_mark_metatron
         "hrvst" -> R.drawable.ic_mark_hrvst
         "eidetic" -> R.drawable.ic_mark_eidetic
+        "conjure" -> R.drawable.ic_mark_conjure
         "corporation", "defense", "academy", "aether" -> R.drawable.ic_mark_lattice
         else -> null
     }

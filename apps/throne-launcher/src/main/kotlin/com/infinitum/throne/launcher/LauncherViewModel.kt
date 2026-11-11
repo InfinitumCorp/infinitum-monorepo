@@ -232,6 +232,9 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         if (entry.packageName == EIDETIC_PACKAGE || entry.productId == "eidetic") {
             return entry.copy(productId = "eidetic", colorIcon = false)
         }
+        if (entry.packageName == CONJURE_PACKAGE || entry.productId == "conjure") {
+            return entry.copy(productId = "conjure", colorIcon = false)
+        }
         return entry
     }
 
@@ -280,6 +283,7 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         const val VAULT_PACKAGE = "com.infinitum.throne.vault"
         const val HRVST_PACKAGE = "com.infinitum.hrvst.cam"
         const val EIDETIC_PACKAGE = "com.infinitum.eidetic.cam"
+        const val CONJURE_PACKAGE = "com.conjure.app"
 
         fun shortLabel(packageName: String?, productId: String?, fallback: String): String {
             SHORT_BY_PRODUCT[productId]?.let { return it }
