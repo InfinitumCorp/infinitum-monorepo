@@ -10,6 +10,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -49,12 +50,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -85,7 +87,7 @@ import kotlinx.coroutines.launch
 
 private val Brand = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Normal, letterSpacing = 0.sp)
 private val SearchFill = Color(0xFFF3F3F5)
-private val Glass = Color.White.copy(alpha = 0.62f)
+private val DockFill = Color(0xE8E4E4E9)
 private val DockShape = RoundedCornerShape(36.dp)
 private val TileSize = 60.dp
 
@@ -279,40 +281,71 @@ private fun FrostedCallDock(
     val absorb = remember { MutableInteractionSource() }
     Box(
         modifier
-            .padding(horizontal = 28.dp)
-            .padding(bottom = 10.dp)
+            .padding(horizontal = 22.dp)
+            .padding(bottom = 12.dp)
             .fillMaxWidth()
-            .height(92.dp)
-            .shadow(
-                elevation = 16.dp,
-                shape = DockShape,
-                ambientColor = Color(0x14000000),
-                spotColor = Color(0x12000000),
-            )
-            .clip(DockShape)
-            .background(Glass)
+            .height(96.dp)
+            .drawBehind { drawDockShadow() }
+            .background(DockFill, DockShape)
+            .border(0.75.dp, Color.Black.copy(alpha = 0.08f), DockShape)
             .clickable(interactionSource = absorb, indication = null, onClick = {}),
         contentAlignment = Alignment.Center,
     ) {
+        val button = 58.dp
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (messages != null) {
-                HydratedTile(
-                    productId = null,
-                    fallback = messages.icon,
-                    contentDescription = "Messages",
-                    colorIcon = messages.icon != null,
-                    modifier = Modifier
-                        .size(TileSize)
-                        .semantics { contentDescription = "Messages" }
-                        .clickable { onMessages(messages) },
-                )
+                Spacer(Modifier.size(button))
                 Spacer(Modifier.size(18.dp))
             }
             CallButton(onCall)
             if (messages != null) {
                 Spacer(Modifier.size(18.dp))
-                Spacer(Modifier.size(TileSize))
+                MessagesButton(onClick = { onMessages(messages) })
             }
+        }
+    }
+}
+
+private fun DrawScope.drawDockShadow() {
+    val corner = 36.dp.toPx()
+    val blur = 14.dp.toPx()
+    val steps = 8
+    for (step in steps downTo 1) {
+        val spread = blur * step / steps
+        drawRoundRect(
+            color = Color.Black.copy(alpha = 0.12f / steps),
+            topLeft = Offset(-spread, 2.dp.toPx()),
+            size = Size(size.width + spread * 2f, size.height + spread),
+            cornerRadius = CornerRadius(corner + spread, corner + spread),
+        )
+    }
+}
+
+@Composable
+private fun MessagesButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(58.dp)
+            .shadow(8.dp, CircleShape, ambientColor = Color(0x22000000), spotColor = Color(0x18000000))
+            .background(ThroneInk, CircleShape)
+            .semantics { contentDescription = "Messages" }
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(Modifier.size(24.dp)) {
+            drawRoundRect(
+                color = Color.White,
+                topLeft = Offset(size.width * 0.08f, size.height * 0.08f),
+                size = Size(size.width * 0.84f, size.height * 0.62f),
+                cornerRadius = CornerRadius(5.dp.toPx(), 5.dp.toPx()),
+            )
+            val tail = androidx.compose.ui.graphics.Path().apply {
+                moveTo(size.width * 0.22f, size.height * 0.66f)
+                lineTo(size.width * 0.16f, size.height * 0.94f)
+                lineTo(size.width * 0.46f, size.height * 0.66f)
+                close()
+            }
+            drawPath(tail, Color.White)
         }
     }
 }
@@ -474,6 +507,7 @@ private fun AppTile(
             .graphicsLayer {
                 scaleX = scale.value
                 scaleY = scale.value
+                clip = false
             }
             .then(
                 if (!interactive) {

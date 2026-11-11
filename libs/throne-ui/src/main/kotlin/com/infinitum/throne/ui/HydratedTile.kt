@@ -4,20 +4,23 @@ import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -54,46 +57,56 @@ fun HydratedTile(
     }
     Box(
         modifier = modifier
-            .shadow(
-                elevation = 10.dp,
-                shape = HydratedShape,
-                ambientColor = Color(0x1A000000),
-                spotColor = Color.Transparent,
-            )
-            .shadow(
-                elevation = 2.dp,
-                shape = HydratedShape,
-                ambientColor = Color.Transparent,
-                spotColor = Color(0x2A000000),
-            )
+            .drawBehind { drawRaisedShadow() }
             .clip(HydratedShape)
             .background(Color.White)
+            .border(0.75.dp, Color.Black.copy(alpha = 0.07f), HydratedShape)
             .drawWithContent {
                 drawContent()
                 drawRect(
                     brush = Brush.verticalGradient(
-                        0f to Color.White.copy(alpha = 0.42f),
-                        0.38f to Color.Transparent,
+                        0f to Color.White.copy(alpha = 0.55f),
+                        0.42f to Color.Transparent,
                     ),
                 )
             },
         contentAlignment = Alignment.Center,
     ) {
         if (glyph != null) {
-            val wide = !colorIcon && glyph.width > glyph.height * 1.6f
             Image(
                 bitmap = glyph,
                 contentDescription = contentDescription,
                 contentScale = ContentScale.Fit,
-                modifier = when {
-                    colorIcon -> Modifier.fillMaxSize(0.86f)
-                    wide -> Modifier
-                        .fillMaxWidth(0.90f)
-                        .aspectRatio(glyph.width.toFloat() / glyph.height.toFloat())
-                    else -> Modifier.fillMaxSize(0.60f)
-                },
+                modifier = Modifier.fillMaxSize(0.55f),
             )
         }
+    }
+}
+
+private fun DrawScope.drawRaisedShadow() {
+    val corner = size.minDimension * 0.22f
+    val ambientBlur = 12.dp.toPx()
+    val ambientSteps = 8
+    for (step in ambientSteps downTo 1) {
+        val spread = ambientBlur * step / ambientSteps
+        drawRoundRect(
+            color = Color.Black.copy(alpha = 0.10f / ambientSteps),
+            topLeft = Offset(-spread, -spread * 0.25f),
+            size = Size(size.width + spread * 2f, size.height + spread * 2f),
+            cornerRadius = CornerRadius(corner + spread, corner + spread),
+        )
+    }
+    val keyBlur = 6.dp.toPx()
+    val keyDrop = 3.5.dp.toPx()
+    val keySteps = 6
+    for (step in keySteps downTo 1) {
+        val spread = keyBlur * step / keySteps
+        drawRoundRect(
+            color = Color.Black.copy(alpha = 0.18f / keySteps),
+            topLeft = Offset(-spread * 0.35f, keyDrop),
+            size = Size(size.width + spread * 0.7f, size.height + spread * 0.7f),
+            cornerRadius = CornerRadius(corner + spread * 0.35f, corner + spread * 0.35f),
+        )
     }
 }
 
