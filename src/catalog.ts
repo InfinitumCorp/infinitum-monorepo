@@ -217,6 +217,37 @@ export const getPlan = (id: string) => PLANS.find((p) => p.id === id);
 export const getMeter = (id: string) => METERS.find((m) => m.id === id);
 export const getSku = (id: string) => HARDWARE.find((h) => h.id === id);
 export const getMarketplace = (product: string) => MARKETPLACES.find((m) => m.product === product);
+
+/**
+ * A company that buys consented observations. `prospective` means they fit the
+ * marketplace and are the account to approach. It is not a signed contract,
+ * and it does not create an org, a balance, or a licence.
+ */
+export interface AnchorBuyer {
+  id: string;
+  name: string;
+  site: string;
+  products: ProductId[];
+  /** Place classes a mission from this buyer may ask for. Restricted classes are never included. */
+  placeClasses: Array<"street" | "retail" | "field" | "public_building">;
+  purposes: string[];
+  status: "prospective";
+}
+
+export const ANCHOR_BUYERS: AnchorBuyer[] = [
+  {
+    id: "premise",
+    name: "Premise",
+    site: "https://premise.com",
+    products: ["hrvst", "cumulus"],
+    placeClasses: ["retail", "street", "public_building", "field"],
+    purposes: ["retail_shelf_audit", "public_place_inspection"],
+    status: "prospective",
+  },
+];
+
+export const getAnchorBuyer = (id: string) => ANCHOR_BUYERS.find((b) => b.id === id);
+
 export const freePlanFor = (product: ProductId) =>
   PLANS.find((p) => p.product === product && p.priceCents === 0 && p.channel === "self_serve" && !p.overage);
 
