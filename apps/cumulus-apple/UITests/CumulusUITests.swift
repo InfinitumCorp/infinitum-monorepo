@@ -23,7 +23,9 @@ final class CumulusUITests: XCTestCase {
         XCTAssertTrue(app.buttons["compose"].waitForExistence(timeout: 5))
         XCTAssertTrue(shows(app, "VYRAL London — hold the forecast"))
         app.buttons["compose"].tap()
-        XCTAssertTrue(app.otherElements["composer"].waitForExistence(timeout: 3) || app.buttons["send"].exists)
+        // The composer is a group on macOS and an other element on iOS, so match it by identifier alone.
+        XCTAssertTrue(app.descendants(matching: .any)["composer"].waitForExistence(timeout: 5)
+                      || app.descendants(matching: .any)["send"].exists)
 
         app.buttons["product-cloud"].tap()
         XCTAssertTrue(app.buttons["my-drive"].waitForExistence(timeout: 5))
