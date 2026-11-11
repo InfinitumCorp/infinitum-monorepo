@@ -13,4 +13,5 @@ test("SPECTRE_EXTRA_ORIGINS accepts mirrors under the rpId host only", () => {
 test("the live Worker config keeps the Russian mirror", () => {
   const config = readFileSync(new URL("../../wrangler.jsonc", import.meta.url), "utf8");
   assert.match(config, /"SPECTRE_EXTRA_ORIGINS":\s*"https:\/\/ru\.id\.cumuluscloud\.app"/);
+  assert.match(config, /"ai":\s*\{\s*"binding":\s*"AI"\s*\}/);
 });

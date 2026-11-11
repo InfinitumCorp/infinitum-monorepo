@@ -34,7 +34,7 @@ describe("+SPCTR social sign-in over HTTP", () => {
       social: { providers: { github: { clientId: "gh-client", clientSecret: "gh-secret" } }, fetchImpl: github },
     });
     const crm = new SpectreCRM({ ledger, signer });
-    const app = createApp({ cid, crm, ai: {}, publicDir: join(here, "../../public"), secureCookies: false, origin: "https://spectre.example", mirrorOrigins: ["https://ru.spectre.example"] });
+    const app = createApp({ cid, crm, ai: {}, publicDir: join(here, "../../public"), secureCookies: false, origin: "https://spectre.example", mirrorOrigins: ["https://ru.id.cumuluscloud.app"] });
     server = app.server();
     await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -76,10 +76,10 @@ describe("+SPCTR social sign-in over HTTP", () => {
     assert.equal(ids.linked[0].email, "morgan@github.example");
   });
 
-  it("returns to the mirror the sign-in started on, and ignores unknown mirrors", async () => {
+  it("returns to ru.id.cumuluscloud.app when the flow started there, and ignores unknown mirrors", async () => {
     const via = (mirror: string) => fetch(base + "/api/auth/oauth/github/start", { redirect: "manual", headers: { "x-spctr-mirror": mirror } });
-    const ru = new URL((await via("https://ru.spectre.example")).headers.get("location")!);
-    assert.equal(ru.searchParams.get("redirect_uri"), "https://ru.spectre.example/api/auth/oauth/github/callback");
+    const ru = new URL((await via("https://ru.id.cumuluscloud.app")).headers.get("location")!);
+    assert.equal(ru.searchParams.get("redirect_uri"), "https://ru.id.cumuluscloud.app/api/auth/oauth/github/callback");
     const evil = new URL((await via("https://evil.example")).headers.get("location")!);
     assert.equal(evil.searchParams.get("redirect_uri"), "https://spectre.example/api/auth/oauth/github/callback");
   });

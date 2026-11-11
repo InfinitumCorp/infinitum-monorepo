@@ -56,8 +56,8 @@ export interface AppDeps {
   /** Public origin, e.g. https://spectre.infinitum.example; used for sign-in callback URLs. */
   origin: string;
   /**
-   * Mirrors of `origin` (for example https://ru.id.cumuluscloud.app for Russian networks). A mirror
-   * names itself in the x-spctr-mirror header, and social sign-in started there returns there.
+   * Mirrors of `origin` (for example https://ru.id.cumuluscloud.app). A mirror names itself in the
+   * x-spctr-mirror header, and social sign-in started there returns there.
    */
   mirrorOrigins?: string[];
   /** Called after any request that changed data (persistence hook). */

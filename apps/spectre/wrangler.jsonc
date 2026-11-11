@@ -7,6 +7,8 @@
 //   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET   Google sign-in (off until both are set)
 //   CID_OIDC_SIGNING_KEY   ES256 or Ed25519 private JWK. OpenID Connect stays off until it is set.
 //                          node scripts/generate-oidc-key.mjs   (writes a file, does not print the key)
+// The AI binding below is Workers AI on the free daily allowance. It is not a secret.
+// Ask Spectre uses it first and falls back to OMNIROUTE_BASE_URL / OMNIROUTE_API_KEY when those are set.
 // Other sign-in providers use the variables listed in src/server/main.ts. See docs/cumulus-id.md.
 {
   "name": "cumulus-id",
@@ -28,5 +30,6 @@
     "COGNITO_DOMAIN": "cumulus-id.auth.us-east-1.amazoncognito.com"
   },
   "durable_objects": { "bindings": [{ "name": "NEXUS_STATE", "class_name": "NexusStore" }] },
+  "ai": { "binding": "AI" },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["NexusStore"] }]
 }
