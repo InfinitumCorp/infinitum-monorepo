@@ -58,12 +58,10 @@ Everything else inbound is dropped (verified from Cloud Shell). If the admin IP 
 - That is why the boot disks are 10 GB and there is one server per zone.
 - To grow disks or add a second server in a zone, request an increase on the console's Quotas page first.
 
-## scalvs-ru (live on all three servers since 2026-11-11)
+## scalvs-ru (moved to russia-web 2026-11-11)
 
-- nginx on each server serves `/var/www/scalvs-ru` as the default site and for `Host: ru.scalvs.app` (HTTP only until DNS and TLS move).
-- GitHub runners `yandex-ru-1/2/3` (labels `yandex-ru`, `yandex-ru-N`) are registered to InfinitumCorp/scalvs-ru and run as the non-root `runner` user under systemd.
-- Workflow `deploy-yandex.yml` (scalvs-ru PR #4) rsyncs `main` to all three on every push to main; never on pull requests.
-- DNS for ru.scalvs.app still points at GitHub Pages. Moving it here needs static IPs, a DNS change and certbot.
+- Served by `russia-web` over HTTPS (see below). It ran on infinitum-product-1/2/3 from 2026-11-11 until it moved the same day.
+- Retired from product-1/2/3 on 2026-11-11: runner services removed, runners `yandex-ru-1/2/3` deregistered (only `russia-web` remains), the `runner` user, nginx and `/var/www` removed.
 
 ## Fabric Russia (`fabric-russia`, since 2026-11-11)
 
@@ -117,7 +115,7 @@ Each Russia deployment has its own public repo holding what differs for Russia (
 |---|---|---|
 | [InfinitumCorp/fabric-ru](https://github.com/InfinitumCorp/fabric-ru) | fabric-russia | Synapse + Postgres compose, the closed/no-federation settings, `setup-server.sh`, `setup-tls.sh`, `setup-backups.sh`, `check.sh` |
 | [InfinitumCorp/conjure-ru](https://github.com/InfinitumCorp/conjure-ru) | conjure-russia | `setup.sh` (pinned Conjure SHA, systemd, nginx, TLS; never Anthropic) and `check.sh` |
-| [InfinitumCorp/scalvs-ru](https://github.com/InfinitumCorp/scalvs-ru) | infinitum-product-1/2/3 | The scalvs.app Russia mirror (existing) |
+| [InfinitumCorp/scalvs-ru](https://github.com/InfinitumCorp/scalvs-ru) | russia-web | The scalvs.app Russia mirror (existing) |
 
 - Verified 2026-11-11: fabric-ru's setup produces the live config from scratch (Postgres, client-only listener, closed, no federation) and is safe to re-run. conjure-ru's setup re-ran end to end on conjure-russia (same release, HTTPS kept). Both `check.sh` scripts pass against the live servers.
 - CI per repo: shellcheck on push/PR. The live checks run only on manual dispatch, so no scheduled minutes are used.
@@ -131,13 +129,17 @@ Not copied to Russia: defense products (AETHER, ARGUS, ODIN, E(O)N, infinitumdef
 
 **russia-web** (new web server for the Russia copies)
 - VM `russia-web`, ru-central1-e, 2 vCPU, 4 GB, 20 GB SSD, Ubuntu 24.04, `infinitum-product-sg`, labels `product=web,region=russia`. IP 93.77.163.229 (dynamic until the static-IP quota rises). SSH: `ssh russia-web`.
-- nginx serves, by name: `ru.scalvs.app` (default site), `ru.infinitumcorporation.ai` (InfinitumCorp/infinitum-corporation-site) and `ru.infinitumveilvpn.app` (VEIL VPN site, `npm run build` -> `dist/site`). All answer 200 on the server; HTTP only until DNS points here, then certbot.
-- GitHub runner `russia-web` (labels `yandex-ru,russia-web`) for InfinitumCorp/scalvs-ru, as the non-root `runner` user. scalvs-ru PR #5 moves the deploy job onto it.
+- nginx serves, by name: `ru.scalvs.app` (InfinitumCorp/scalvs-ru), `ru.infinitumcorporation.ai` (InfinitumCorp/infinitum-corporation-site) and `ru.infinitumveilvpn.app` (VEIL VPN site, `npm run build` -> `dist/site`).
+- Cloudflare DNS-only A records (TTL 300) → 93.77.163.229: `ru.infinitumcorporation.ai`, `ru.infinitumveilvpn.app`, and `ru.scalvs.app` (changed from a CNAME to GitHub Pages on 2026-11-11).
+- HTTPS since 2026-11-11: one Let's Encrypt cert per name (webroot, no email, `certbot.timer` with an nginx reload hook), valid to 2027-02-09. HTTP 301 to HTTPS, HSTS. Checked from outside: all three return 200 with the right page titles.
+- GitHub runner `russia-web` (labels `yandex-ru,russia-web`) for InfinitumCorp/scalvs-ru, as the non-root `runner` user. scalvs-ru #5 (merged 2026-11-11) moved the deploy job onto it.
+- scalvs-ru #6 (open, needs William's OK to merge): the post-deploy check still requests HTTP and would get the 301, so it now checks HTTPS locally. The deploy runs after #5 sat in GitHub's queue with no job assigned; the site content on the server is current.
 
 **VEIL VPN nodes**
-- Security group `veil-vpn-sg` (`enp25m9l167b57r2sm1q`): SSH from the admin IP; 80/443; WireGuard UDP 51820; IKEv2 UDP 500/4500; OpenVPN UDP+TCP 1194; VLESS TCP 2053; Shadowsocks TCP+UDP 16080; agent TCP 9101 (the node's own nftables limits it to the control API); ICMP; all egress. Not attached yet.
-- Planned names: `vpn-ru1/ru2/ru3.infinitumveilvpn.app` -> infinitum-product-1/2/3 (84.201.173.68, 153.51.166.190, 93.77.160.57), matching the existing `vpn-<region>` nodes.
-- Node setup is `node/provision.sh` in InfinitumCorp/veil-vpn. It needs the control API's `TOKEN_SECRET` and `AGENT_SECRET`; those are not in any repo and are placed on each node by William.
+- Security group `veil-vpn-sg` (`enp25m9l167b57r2sm1q`): SSH from the admin IP; 80/443; WireGuard UDP 51820; IKEv2 UDP 500/4500; OpenVPN UDP+TCP 1194; VLESS TCP 2053; Shadowsocks TCP+UDP 16080; agent TCP 9101 (the node's own nftables limits it to the control API); ICMP; all egress. Attached to infinitum-product-1/2/3 on 2026-11-11, alongside `infinitum-product-sg` (`enpcv3ntnffkgvkgv0a5`).
+- Names: `vpn-ru1/ru2/ru3.infinitumveilvpn.app` -> infinitum-product-1/2/3 (84.201.173.68, 153.51.166.190, 93.77.160.57), matching the existing `vpn-<region>` nodes. DNS for these is not created yet.
+- Staged on each node (2026-11-11): InfinitumCorp/veil-vpn cloned to `/opt/veil-vpn` (`d80886e`), and `/root/veil-node-ru.sh` (root-only) with that node's `NODE_ID`, `DOMAIN=vpn-ruN.infinitumveilvpn.app`, `CONTROL_IP` = Cloudflare's IPv4 ranges, and VLESS + Shadowsocks on. nginx is gone, so port 80 is free for provision.sh's certbot.
+- To finish a node (William): create the `vpn-ruN` A record (DNS only) → the node's IP; on the node put the control API's `TOKEN_SECRET` and `AGENT_SECRET` in `/root/veil.env` (chmod 600); run `sudo bash /root/veil-node-ru.sh`. Its log `/root/veil-provision.log` ends with the node's NODES entry, which contains node secrets: add it to the control Worker's `NODES` only, never to a repo.
 
 **Quotas**
 - Static public IPs: limit 2, both used (fabric-russia, conjure-russia). Increase to 8 requested 2026-11-11 so russia-web and the three nodes keep their IPs.
@@ -159,7 +161,8 @@ Rules for the runners:
 ## Follow-ups
 
 - Reserve static IPs if DNS will point at these servers (dynamic IPs change on stop/start).
-- Product servers 1-3 have no backups (they only hold the scalvs-ru mirror, which CI redeploys).
+- Product servers 1-3 have no backups (they now hold only the staged VEIL node setup).
+- russia-web has no backup yet (its sites are rebuilt from their repos).
 
 ## Backups (since 2026-11-11)
 
