@@ -133,7 +133,7 @@ Not copied to Russia: defense products (AETHER, ARGUS, ODIN, E(O)N, infinitumdef
 - Cloudflare DNS-only A records (TTL 300) → 93.77.163.229: `ru.infinitumcorporation.ai`, `ru.infinitumveilvpn.app`, and `ru.scalvs.app` (changed from a CNAME to GitHub Pages on 2026-11-11).
 - HTTPS since 2026-11-11: one Let's Encrypt cert per name (webroot, no email, `certbot.timer` with an nginx reload hook), valid to 2027-02-09. HTTP 301 to HTTPS, HSTS. Checked from outside: all three return 200 with the right page titles.
 - GitHub runner `russia-web` (labels `yandex-ru,russia-web`) for InfinitumCorp/scalvs-ru, as the non-root `runner` user. scalvs-ru #5 (merged 2026-11-11) moved the deploy job onto it.
-- scalvs-ru #6 (open, needs William's OK to merge): the post-deploy check still requests HTTP and would get the 301, so it now checks HTTPS locally. The deploy runs after #5 sat in GitHub's queue with no job assigned; the site content on the server is current.
+- scalvs-ru #6 (merged 2026-11-12): the post-deploy check now requests HTTPS locally (HTTP gets the 301). The first deploy after it ran on `russia-web` and passed.
 
 **VEIL VPN nodes**
 - Security group `veil-vpn-sg` (`enp25m9l167b57r2sm1q`): SSH from the admin IP; 80/443; WireGuard UDP 51820; IKEv2 UDP 500/4500; OpenVPN UDP+TCP 1194; VLESS TCP 2053; Shadowsocks TCP+UDP 16080; agent TCP 9101 (the node's own nftables limits it to the control API); ICMP; all egress. Attached to infinitum-product-1/2/3 on 2026-11-11, alongside `infinitum-product-sg` (`enpcv3ntnffkgvkgv0a5`).
