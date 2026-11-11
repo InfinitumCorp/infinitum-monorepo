@@ -214,20 +214,14 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         )
         val guardAt = home.indexOfFirst { it.packageName == GUARD_PACKAGE }
         if (guardAt >= 0) {
-            val guard = home.removeAt(guardAt)
+            home.removeAt(guardAt)
             home.add(guardAt, metatron)
-            val vaultAt = home.indexOfFirst { it.packageName == VAULT_PACKAGE }
-            home.add(if (vaultAt >= 0) vaultAt + 1 else home.size, guard.copy(page = HomePage.INFINITUM))
         } else {
             val vaultAt = home.indexOfFirst { it.packageName == VAULT_PACKAGE }
             home.add(if (vaultAt >= 0) vaultAt else home.size, metatron)
-            val guardFromOthers = rest.indexOfFirst { it.packageName == GUARD_PACKAGE }
-            if (guardFromOthers >= 0) {
-                val guard = rest.removeAt(guardFromOthers)
-                val afterVault = home.indexOfFirst { it.packageName == VAULT_PACKAGE }
-                home.add(if (afterVault >= 0) afterVault + 1 else home.size, guard.copy(page = HomePage.INFINITUM))
-            }
         }
+        home.removeAll { it.packageName == GUARD_PACKAGE }
+        rest.removeAll { it.packageName == GUARD_PACKAGE }
         return home to rest
     }
 
