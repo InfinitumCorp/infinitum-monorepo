@@ -71,7 +71,7 @@ Dedicated server for Fabric's Russia homeserver. Fabric's existing Cloudflare se
 
 - VM `fabric-russia` (created as `infinitum-fabric-ru`, renamed 2026-11-11), zone ru-central1-d, 2 vCPU, 4 GB RAM, 20 GB SSD, Ubuntu 24.04, same `infinitum-product-sg` firewall. SSH: `ssh fabric-russia`.
 - Quota raised 2026-11-11 (approved instantly): 6 vCPU and 50 GB SSD per zone in a/d/e. Zone b is closed to new VMs; zone f has a 0-disk quota (an unused `default-ru-central1-f` subnet exists).
-- A first copy ran on infinitum-product-1 while the quota was blocked. Its containers are stopped; `/opt/fabric` there can be deleted.
+- A first copy ran on infinitum-product-1 while the quota was blocked. Deleted 2026-11-11 (containers, network, `/opt/fabric` and the Synapse/Postgres images); product-1 went from 4.6 GB to 3.5 GB used and still serves scalvs-ru.
 
 Setup on fabric-russia:
 
