@@ -132,6 +132,9 @@ importers:
       '@infinitum/conjure':
         specifier: workspace:*
         version: link:../../packages/conjure
+      '@infinitum/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@infinitum/metatron':
         specifier: workspace:*
         version: link:../../packages/metatron
@@ -582,6 +585,15 @@ importers:
       '@infinitum/sense':
         specifier: workspace:*
         version: link:../sense
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.5
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
+  packages/i18n:
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
