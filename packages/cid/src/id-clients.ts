@@ -105,7 +105,8 @@ export const ID_CLIENTS: Record<string, IdClient> = {
   "1mind": {
     name: "1MIND",
     app: "1mind",
-    origins: [],
+    // 1MIND Russia (Yandex Cloud, conjure-russia). Internal: the server still checks CID_OWNERS.
+    origins: ["https://1mind-ru.infinitumcorporation.ai"],
     loopback: true,
   },
   conjure: {
