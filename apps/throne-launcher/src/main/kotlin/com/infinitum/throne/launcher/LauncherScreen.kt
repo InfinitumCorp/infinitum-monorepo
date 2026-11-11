@@ -670,6 +670,15 @@ private fun openDialer(context: android.content.Context) {
 }
 
 private fun openApp(context: android.content.Context, app: AppEntry) {
+    if (app.productId == "metatron" && app.kind != EntryKind.NATIVE) {
+        val view = Intent(Intent.ACTION_VIEW, Uri.parse("https://mttrn.app")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            context.startActivity(view)
+        } catch (_: ActivityNotFoundException) {
+            // No browser is available.
+        }
+        return
+    }
     if (app.kind == EntryKind.NATIVE && app.packageName != null && app.className != null) {
         val intent = Intent(Intent.ACTION_MAIN)
             .addCategory(Intent.CATEGORY_LAUNCHER)

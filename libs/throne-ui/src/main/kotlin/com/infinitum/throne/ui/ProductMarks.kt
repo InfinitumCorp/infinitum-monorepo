@@ -20,6 +20,7 @@ object ProductMarks {
         "veil-browser" -> R.drawable.ic_mark_veil
         "cumulus-cloud" -> R.drawable.ic_mark_cloud
         "cumulus-id" -> R.drawable.ic_mark_spectre
+        "metatron" -> R.drawable.ic_mark_metatron
         "corporation", "defense", "academy", "aether" -> R.drawable.ic_mark_lattice
         else -> null
     }

@@ -134,11 +134,12 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
                     productId = null,
                 )
             }
-            return LoadedHome(
+            val placed = placeMetatron(
                 entries(arranged.infinitum, HomePage.INFINITUM, glyphs, colorIcons),
                 entries(arranged.others, HomePage.OTHERS, glyphs, colorIcons),
-                resolveMessages(pm),
+                launchables,
             )
+            return LoadedHome(placed.first, placed.second, resolveMessages(pm))
         }
         val shelf = ShelfArranger.arrange(
             products = products,
@@ -181,7 +182,53 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
                 productId = null,
             )
         }
-        return LoadedHome(infinitum, others, resolveMessages(pm))
+        val placed = placeMetatron(infinitum, others, launchables)
+        return LoadedHome(placed.first, placed.second, resolveMessages(pm))
+    }
+
+    private fun placeMetatron(
+        infinitum: List<AppEntry>,
+        others: List<AppEntry>,
+        launchables: List<Launchable>,
+    ): Pair<List<AppEntry>, List<AppEntry>> {
+        val home = infinitum.filterNot { it.productId == "metatron" }.toMutableList()
+        val rest = others.filterNot { it.productId == "metatron" }.toMutableList()
+        val native = launchables.firstOrNull { app ->
+            val pkg = app.packageName.lowercase()
+            pkg.contains("metatron") || pkg.contains("mttrn") || app.label.contains("METATRON", ignoreCase = true)
+        }
+        if (native != null) {
+            rest.removeAll { it.packageName == native.packageName }
+            home.removeAll { it.packageName == native.packageName }
+        }
+        val metatron = AppEntry(
+            key = "product:metatron",
+            label = "METATRON",
+            page = HomePage.INFINITUM,
+            icon = null,
+            colorIcon = false,
+            kind = if (native != null) EntryKind.NATIVE else EntryKind.WEB,
+            packageName = native?.packageName,
+            className = native?.className,
+            productId = "metatron",
+        )
+        val guardAt = home.indexOfFirst { it.packageName == GUARD_PACKAGE }
+        if (guardAt >= 0) {
+            val guard = home.removeAt(guardAt)
+            home.add(guardAt, metatron)
+            val vaultAt = home.indexOfFirst { it.packageName == VAULT_PACKAGE }
+            home.add(if (vaultAt >= 0) vaultAt + 1 else home.size, guard.copy(page = HomePage.INFINITUM))
+        } else {
+            val vaultAt = home.indexOfFirst { it.packageName == VAULT_PACKAGE }
+            home.add(if (vaultAt >= 0) vaultAt else home.size, metatron)
+            val guardFromOthers = rest.indexOfFirst { it.packageName == GUARD_PACKAGE }
+            if (guardFromOthers >= 0) {
+                val guard = rest.removeAt(guardFromOthers)
+                val afterVault = home.indexOfFirst { it.packageName == VAULT_PACKAGE }
+                home.add(if (afterVault >= 0) afterVault + 1 else home.size, guard.copy(page = HomePage.INFINITUM))
+            }
+        }
+        return home to rest
     }
 
     private fun resolveMessages(pm: PackageManager): MessageDock? {
@@ -223,7 +270,10 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         val SHORT_BY_PRODUCT = mapOf(
             "eidetic" to "EIDETIC",
             "hrvst" to "HRVST",
+            "metatron" to "METATRON",
         )
+        const val GUARD_PACKAGE = "com.infinitum.throne.guard"
+        const val VAULT_PACKAGE = "com.infinitum.throne.vault"
 
         fun shortLabel(packageName: String?, productId: String?, fallback: String): String {
             SHORT_BY_PRODUCT[productId]?.let { return it }
