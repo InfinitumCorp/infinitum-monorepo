@@ -61,7 +61,8 @@ final class CumulusUITests: XCTestCase {
     /// Text inside a row or button is part of that element's label, not its own static text,
     /// so match any element whose label contains it.
     private func shows(_ app: XCUIApplication, _ text: String, timeout: TimeInterval = 5) -> Bool {
-        app.descendants(matching: .any)
+        // Search the window only: the whole app includes every menu item and can time out.
+        app.windows.firstMatch.descendants(matching: .any)
             .matching(NSPredicate(format: "label CONTAINS %@ OR value CONTAINS %@", text, text))
             .firstMatch
             .waitForExistence(timeout: timeout)
