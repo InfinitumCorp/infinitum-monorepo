@@ -78,8 +78,9 @@ final class CumulusSession: ObservableObject {
         self.api = CumulusAPI(configuration: configuration, http: HTTPClient(), tokens: store)
         if CommandLine.arguments.contains("-CumulusPreview") {
             loadPreview()
-            // UI tests can open a product directly: -CumulusProduct cloud
-            if let start = UserDefaults.standard.string(forKey: "CumulusProduct").flatMap(Product.init(rawValue:)) {
+            // UI tests can open a product directly with CUMULUS_PRODUCT=cloud. It is an environment
+            // variable because macOS treats a bare launch argument as a file to open and then skips the window.
+            if let start = ProcessInfo.processInfo.environment["CUMULUS_PRODUCT"].flatMap(Product.init(rawValue:)) {
                 product = start
             }
         } else {

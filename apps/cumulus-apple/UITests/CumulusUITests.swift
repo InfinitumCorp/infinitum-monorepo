@@ -16,7 +16,7 @@ final class CumulusUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["on every device."].waitForExistence(timeout: 5) || app.otherElements["download-hero"].exists)
     }
 
-    // Each check launches straight into its product (-CumulusProduct), because on a small CI
+    // Each check launches straight into its product (CUMULUS_PRODUCT), because on a small CI
     // display the window's top edge, and with it the product bar, can sit above the screen.
     func testPreviewMailbox() {
         let app = launchPreview("mail")
@@ -43,7 +43,8 @@ final class CumulusUITests: XCTestCase {
 
     private func launchPreview(_ product: String) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-CumulusPreview", "-CumulusProduct", product]
+        app.launchArguments = ["-CumulusPreview"]
+        app.launchEnvironment["CUMULUS_PRODUCT"] = product
         app.launch()
         app.activate()
         return app
