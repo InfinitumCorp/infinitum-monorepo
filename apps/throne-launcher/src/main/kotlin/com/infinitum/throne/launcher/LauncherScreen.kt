@@ -2,7 +2,9 @@ package com.infinitum.throne.launcher
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.provider.MediaStore
 import android.provider.Settings
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -220,6 +222,7 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
         FrostedCallDock(
             messages = state.messages,
             onCall = { openDialer(context) },
+            onCamera = { openCamera(context) },
             onMessages = { message -> openMessages(context, message) },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
@@ -275,6 +278,7 @@ private fun AboutScreen(edition: String, onBack: () -> Unit, modifier: Modifier 
 private fun FrostedCallDock(
     messages: MessageDock?,
     onCall: () -> Unit,
+    onCamera: () -> Unit,
     onMessages: (MessageDock) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -293,14 +297,14 @@ private fun FrostedCallDock(
     ) {
         val button = 58.dp
         Row(verticalAlignment = Alignment.CenterVertically) {
-            if (messages != null) {
-                Spacer(Modifier.size(button))
-                Spacer(Modifier.size(18.dp))
-            }
+            CameraButton(onCamera)
+            Spacer(Modifier.size(18.dp))
             CallButton(onCall)
+            Spacer(Modifier.size(18.dp))
             if (messages != null) {
-                Spacer(Modifier.size(18.dp))
                 MessagesButton(onClick = { onMessages(messages) })
+            } else {
+                Spacer(Modifier.size(button))
             }
         }
     }
@@ -318,6 +322,42 @@ private fun DrawScope.drawDockShadow() {
             size = Size(size.width + spread * 2f, size.height + spread),
             cornerRadius = CornerRadius(corner + spread, corner + spread),
         )
+    }
+}
+
+@Composable
+private fun CameraButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(58.dp)
+            .shadow(8.dp, CircleShape, ambientColor = Color(0x22000000), spotColor = Color(0x18000000))
+            .background(ThroneInk, CircleShape)
+            .semantics { contentDescription = "Camera" }
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(Modifier.size(24.dp)) {
+            val stroke = Stroke(width = 1.7.dp.toPx())
+            drawRoundRect(
+                color = Color.White,
+                topLeft = Offset(size.width * 0.06f, size.height * 0.28f),
+                size = Size(size.width * 0.88f, size.height * 0.58f),
+                cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx()),
+                style = stroke,
+            )
+            drawCircle(
+                color = Color.White,
+                radius = size.minDimension * 0.16f,
+                center = Offset(size.width / 2f, size.height * 0.58f),
+                style = stroke,
+            )
+            drawRoundRect(
+                color = Color.White,
+                topLeft = Offset(size.width * 0.34f, size.height * 0.14f),
+                size = Size(size.width * 0.22f, size.height * 0.14f),
+                cornerRadius = CornerRadius(1.5.dp.toPx(), 1.5.dp.toPx()),
+            )
+        }
     }
 }
 
@@ -558,6 +598,43 @@ private fun AppTile(
                 color = ThroneMuted,
                 maxLines = 1,
             )
+        }
+    }
+}
+
+private fun openCamera(context: android.content.Context) {
+    val still = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        context.startActivity(still)
+        return
+    } catch (_: ActivityNotFoundException) {
+        // Try the default still-capture handler.
+    }
+    val capture = Intent(MediaStore.ACTION_IMAGE_CAPTURE).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    if (context.packageManager.resolveActivity(capture, PackageManager.MATCH_DEFAULT_ONLY) != null) {
+        try {
+            context.startActivity(capture)
+            return
+        } catch (_: ActivityNotFoundException) {
+            // Try a known camera package, then any capture handler.
+        }
+    }
+    val pm = context.packageManager
+    val packages = LinkedHashSet<String>()
+    packages += "com.transsion.camera"
+    pm.queryIntentActivities(capture, PackageManager.MATCH_ALL).forEach { info ->
+        packages += info.activityInfo.packageName
+    }
+    pm.queryIntentActivities(still, PackageManager.MATCH_ALL).forEach { info ->
+        packages += info.activityInfo.packageName
+    }
+    for (pkg in packages) {
+        val launch = pm.getLaunchIntentForPackage(pkg)?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) ?: continue
+        try {
+            context.startActivity(launch)
+            return
+        } catch (_: ActivityNotFoundException) {
+            // Try the next camera.
         }
     }
 }
