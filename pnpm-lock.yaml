@@ -633,6 +633,19 @@ importers:
         specifier: ^5.9.0
         version: 5.9.3
 
+  packages/lbrnth-openclaw:
+    dependencies:
+      typebox:
+        specifier: 1.3.35
+        version: 1.3.35
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.6
+        version: 26.6.6
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
   packages/mail:
     dependencies:
       '@infinitum/cid':
@@ -1836,6 +1849,9 @@ packages:
   tslib@2.9.1:
     resolution: {integrity: sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==}
 
+  typebox@1.3.35:
+    resolution: {integrity: sha512-gNcaAKuh/4JpDHHyo9AfXOtwlpVUMIHhhdJBEY+1x6rnRFB9usGGo6QfnwAadVbO7J6AptAZwGsi1ZMEObIS3g==}
+
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
@@ -3019,6 +3035,8 @@ snapshots:
 
   tslib@2.9.1:
     optional: true
+
+  typebox@1.3.35: {}
 
   typescript@5.9.3: {}
 
