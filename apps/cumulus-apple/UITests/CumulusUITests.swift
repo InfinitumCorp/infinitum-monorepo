@@ -45,7 +45,16 @@ final class CumulusUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-CumulusPreview", "-CumulusProduct", product]
         app.launch()
+        app.activate()
         return app
+    }
+
+    override func record(_ issue: XCTIssue) {
+        // Print what is actually on screen so a CI failure can be read from the log.
+        print("UI-TREE-BEGIN
+\(XCUIApplication().debugDescription)
+UI-TREE-END")
+        super.record(issue)
     }
 
     /// Text inside a row or button is part of that element's label, not its own static text,
