@@ -58,12 +58,10 @@ Everything else inbound is dropped (verified from Cloud Shell). If the admin IP 
 - That is why the boot disks are 10 GB and there is one server per zone.
 - To grow disks or add a second server in a zone, request an increase on the console's Quotas page first.
 
-## scalvs-ru (live on all three servers since 2026-11-11)
+## scalvs-ru (moved to russia-web 2026-11-11)
 
-- nginx on each server serves `/var/www/scalvs-ru` as the default site and for `Host: ru.scalvs.app` (HTTP only until DNS and TLS move).
-- GitHub runners `yandex-ru-1/2/3` (labels `yandex-ru`, `yandex-ru-N`) are registered to InfinitumCorp/scalvs-ru and run as the non-root `runner` user under systemd.
-- Workflow `deploy-yandex.yml` (scalvs-ru PR #4) rsyncs `main` to all three on every push to main; never on pull requests.
-- DNS for ru.scalvs.app still points at GitHub Pages. Moving it here needs static IPs, a DNS change and certbot.
+- Served by `russia-web` over HTTPS (see below). It ran on infinitum-product-1/2/3 from 2026-11-11 until it moved the same day.
+- Retired from product-1/2/3 on 2026-11-11: runner services removed, runners `yandex-ru-1/2/3` deregistered (only `russia-web` remains), the `runner` user, nginx and `/var/www` removed.
 
 ## Fabric Russia (`fabric-russia`, since 2026-11-11)
 
@@ -71,7 +69,7 @@ Dedicated server for Fabric's Russia homeserver. Fabric's existing Cloudflare se
 
 - VM `fabric-russia` (created as `infinitum-fabric-ru`, renamed 2026-11-11), zone ru-central1-d, 2 vCPU, 4 GB RAM, 20 GB SSD, Ubuntu 24.04, same `infinitum-product-sg` firewall. SSH: `ssh fabric-russia`.
 - Quota raised 2026-11-11 (approved instantly): 6 vCPU and 50 GB SSD per zone in a/d/e. Zone b is closed to new VMs; zone f has a 0-disk quota (an unused `default-ru-central1-f` subnet exists).
-- A first copy ran on infinitum-product-1 while the quota was blocked. Its containers are stopped; `/opt/fabric` there can be deleted.
+- A first copy ran on infinitum-product-1 while the quota was blocked. Deleted 2026-11-11 (containers, network, `/opt/fabric` and the Synapse/Postgres images); product-1 went from 4.6 GB to 3.5 GB used and still serves scalvs-ru.
 
 Setup on fabric-russia:
 
@@ -117,11 +115,40 @@ Each Russia deployment has its own public repo holding what differs for Russia (
 |---|---|---|
 | [InfinitumCorp/fabric-ru](https://github.com/InfinitumCorp/fabric-ru) | fabric-russia | Synapse + Postgres compose, the closed/no-federation settings, `setup-server.sh`, `setup-tls.sh`, `setup-backups.sh`, `check.sh` |
 | [InfinitumCorp/conjure-ru](https://github.com/InfinitumCorp/conjure-ru) | conjure-russia | `setup.sh` (pinned Conjure SHA, systemd, nginx, TLS; never Anthropic) and `check.sh` |
-| [InfinitumCorp/scalvs-ru](https://github.com/InfinitumCorp/scalvs-ru) | infinitum-product-1/2/3 | The scalvs.app Russia mirror (existing) |
+| [InfinitumCorp/scalvs-ru](https://github.com/InfinitumCorp/scalvs-ru) | russia-web | The scalvs.app Russia mirror (existing) |
 
 - Verified 2026-11-11: fabric-ru's setup produces the live config from scratch (Postgres, client-only listener, closed, no federation) and is safe to re-run. conjure-ru's setup re-ran end to end on conjure-russia (same release, HTTPS kept). Both `check.sh` scripts pass against the live servers.
 - CI per repo: shellcheck on push/PR. The live checks run only on manual dispatch, so no scheduled minutes are used.
 - Defense products (AETHER, ARGUS, ODIN, E(O)N) get no Russia version or server.
+
+## Russia copies of all products + VEIL VPN nodes (started 2026-11-11)
+
+Decision (William, 2026-11-11): every product gets a Russia copy on Yandex while its current hosting stays as it is; infinitum-product-1/2/3 become VEIL</> VPN nodes.
+
+Not copied to Russia: defense products (AETHER, ARGUS, ODIN, E(O)N, infinitumdefense.com, drone/autonomy), internal tools (1MIND, THRONE//OS, personal sites), and anything that would call Claude. The Firmament / $FIRM token offering is held for a sanctions and securities check first.
+
+**russia-web** (new web server for the Russia copies)
+- VM `russia-web`, ru-central1-e, 2 vCPU, 4 GB, 20 GB SSD, Ubuntu 24.04, `infinitum-product-sg`, labels `product=web,region=russia`. IP 93.77.163.229 (dynamic until the static-IP quota rises). SSH: `ssh russia-web`.
+- nginx serves, by name: `ru.scalvs.app` (InfinitumCorp/scalvs-ru), `ru.infinitumcorporation.ai` (InfinitumCorp/infinitum-corporation-site) and `ru.infinitumveilvpn.app` (VEIL VPN site, `npm run build` -> `dist/site`).
+- Cloudflare DNS-only A records (TTL 300) → 93.77.163.229: `ru.infinitumcorporation.ai`, `ru.infinitumveilvpn.app`, and `ru.scalvs.app` (changed from a CNAME to GitHub Pages on 2026-11-11).
+- HTTPS since 2026-11-11: one Let's Encrypt cert per name (webroot, no email, `certbot.timer` with an nginx reload hook), valid to 2027-02-09. HTTP 301 to HTTPS, HSTS. Checked from outside: all three return 200 with the right page titles.
+- GitHub runner `russia-web` (labels `yandex-ru,russia-web`) for InfinitumCorp/scalvs-ru, as the non-root `runner` user. scalvs-ru #5 (merged 2026-11-11) moved the deploy job onto it.
+- scalvs-ru #6 (merged 2026-11-12): the post-deploy check now requests HTTPS locally (HTTP gets the 301). The first deploy after it ran on `russia-web` and passed.
+
+**labyrinth-russia** (Labyrinth's Russia server, created 2026-11-12 on William's OK)
+- VM `labyrinth-russia`, ru-central1-e, standard-v3 2 vCPU 100%, 4 GB, 20 GB network-ssd, Ubuntu 24.04, `infinitum-product-sg`, labels `product=labyrinth,region=russia`. Nothing installed yet.
+- IP 93.77.163.222 (dynamic: `labyrinth-russia-ip` could not be reserved, the static-IP quota is still 2). Internal 10.131.0.27. Boot disk `bg0ocj0s5kgur9d6uo2n`.
+- SSH: `ssh labyrinth-russia`. Direct SSH to the public IP times out from William's PC (the VM is fine, cloud-init finished and the key is in place), so the ssh config jumps through `russia-web` to the internal IP. Switch it back to the public IP once a static IP is attached and reachable.
+- Zone ru-central1-e is now full for the default quota (6 vCPU, 50 GB SSD: product-3, russia-web, labyrinth-russia).
+
+**VEIL VPN nodes**
+- Security group `veil-vpn-sg` (`enp25m9l167b57r2sm1q`): SSH from the admin IP; 80/443; WireGuard UDP 51820; IKEv2 UDP 500/4500; OpenVPN UDP+TCP 1194; VLESS TCP 2053; Shadowsocks TCP+UDP 16080; agent TCP 9101 (the node's own nftables limits it to the control API); ICMP; all egress. Attached to infinitum-product-1/2/3 on 2026-11-11, alongside `infinitum-product-sg` (`enpcv3ntnffkgvkgv0a5`).
+- Names: `vpn-ru1/ru2/ru3.infinitumveilvpn.app` -> infinitum-product-1/2/3 (84.201.173.68, 153.51.166.190, 93.77.160.57), matching the existing `vpn-<region>` nodes. DNS for these is not created yet.
+- Staged on each node (2026-11-11): InfinitumCorp/veil-vpn cloned to `/opt/veil-vpn` (`d80886e`), and `/root/veil-node-ru.sh` (root-only) with that node's `NODE_ID`, `DOMAIN=vpn-ruN.infinitumveilvpn.app`, `CONTROL_IP` = Cloudflare's IPv4 ranges, and VLESS + Shadowsocks on. nginx is gone, so port 80 is free for provision.sh's certbot.
+- To finish a node (William): create the `vpn-ruN` A record (DNS only) → the node's IP; on the node put the control API's `TOKEN_SECRET` and `AGENT_SECRET` in `/root/veil.env` (chmod 600); run `sudo bash /root/veil-node-ru.sh`. Its log `/root/veil-provision.log` ends with the node's NODES entry, which contains node secrets: add it to the control Worker's `NODES` only, never to a repo.
+
+**Quotas**
+- Static public IPs: limit 2, both used (fabric-russia, conjure-russia). Increase to 8 requested 2026-11-11 so russia-web, labyrinth-russia and the three nodes keep their IPs.
 
 ## Using the servers for builds
 
@@ -140,12 +167,13 @@ Rules for the runners:
 ## Follow-ups
 
 - Reserve static IPs if DNS will point at these servers (dynamic IPs change on stop/start).
-- Product servers 1-3 have no backups (they only hold the scalvs-ru mirror, which CI redeploys).
+- Product servers 1-3 have no backups (they now hold only the staged VEIL node setup).
+- russia-web has no backup yet (its sites are rebuilt from their repos).
 
 ## Backups (since 2026-11-11)
 
 - Snapshot schedule `daily-data-servers` (`fd8l3q6kcg93enulpjuj`), status ACTIVE: every day at 00:00 UTC (03:00 Moscow), keeps the 7 newest snapshots per disk.
-- Disks: fabric-russia boot disk `fv47vc5b05rn5m6kevcm` (ru-central1-d) and conjure-russia boot disk `fhmk1prc30bfksuvj8ml` (ru-central1-a).
+- Disks: fabric-russia boot disk `fv47vc5b05rn5m6kevcm` (ru-central1-d) conjure-russia boot disk `fhmk1prc30bfksuvj8ml` (ru-central1-a), and labyrinth-russia boot disk `bg0ocj0s5kgur9d6uo2n` (ru-central1-e, added 2026-11-12).
 - Snapshots are billed per GB stored (incremental after the first). Restore: create a disk from a snapshot, then a VM from that disk.
 - Fabric's Postgres is snapshotted live (crash-consistent), so a clean dump is taken first: systemd timer `fabric-pgdump.timer` on fabric-russia runs `/usr/local/sbin/fabric-pgdump` daily at 23:40 UTC (`pg_dump -Fc` of the `synapse` DB via `docker compose exec`), writes `/var/backups/fabric/synapse-YYYYMMDD.dump` (root-only, mode 600), keeps 7. The 00:00 UTC snapshot then carries it. First run 2026-11-11: 288 KB, 176 tables, `pg_restore --list` reads it.
 - Restore the DB from a dump: `docker compose exec -T db pg_restore -U synapse -d synapse --clean < /var/backups/fabric/synapse-YYYYMMDD.dump` (stop the `synapse` container first).
