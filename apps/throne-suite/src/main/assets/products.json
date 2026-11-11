@@ -92,7 +92,7 @@
     {
       "id": "cumulus-id",
       "name": "+SPCTR™",
-      "summary": "Live page at id.cumuluscloud.app. The site titles this +SPCTR™.",
+      "summary": "AI CRM at id.cumuluscloud.app. The Android app (package id.cumuluscloud.app, +S™ icon) opens it in a Custom Tab.",
       "url": "https://id.cumuluscloud.app",
       "packages": [
         "id.cumuluscloud.app"
