@@ -135,6 +135,12 @@ Not copied to Russia: defense products (AETHER, ARGUS, ODIN, E(O)N, infinitumdef
 - GitHub runner `russia-web` (labels `yandex-ru,russia-web`) for InfinitumCorp/scalvs-ru, as the non-root `runner` user. scalvs-ru #5 (merged 2026-11-11) moved the deploy job onto it.
 - scalvs-ru #6 (merged 2026-11-12): the post-deploy check now requests HTTPS locally (HTTP gets the 301). The first deploy after it ran on `russia-web` and passed.
 
+**labyrinth-russia** (Labyrinth's Russia server, created 2026-11-12 on William's OK)
+- VM `labyrinth-russia`, ru-central1-e, standard-v3 2 vCPU 100%, 4 GB, 20 GB network-ssd, Ubuntu 24.04, `infinitum-product-sg`, labels `product=labyrinth,region=russia`. Nothing installed yet.
+- IP 93.77.163.222 (dynamic: `labyrinth-russia-ip` could not be reserved, the static-IP quota is still 2). Internal 10.131.0.27. Boot disk `bg0ocj0s5kgur9d6uo2n`.
+- SSH: `ssh labyrinth-russia`. Direct SSH to the public IP times out from William's PC (the VM is fine, cloud-init finished and the key is in place), so the ssh config jumps through `russia-web` to the internal IP. Switch it back to the public IP once a static IP is attached and reachable.
+- Zone ru-central1-e is now full for the default quota (6 vCPU, 50 GB SSD: product-3, russia-web, labyrinth-russia).
+
 **VEIL VPN nodes**
 - Security group `veil-vpn-sg` (`enp25m9l167b57r2sm1q`): SSH from the admin IP; 80/443; WireGuard UDP 51820; IKEv2 UDP 500/4500; OpenVPN UDP+TCP 1194; VLESS TCP 2053; Shadowsocks TCP+UDP 16080; agent TCP 9101 (the node's own nftables limits it to the control API); ICMP; all egress. Attached to infinitum-product-1/2/3 on 2026-11-11, alongside `infinitum-product-sg` (`enpcv3ntnffkgvkgv0a5`).
 - Names: `vpn-ru1/ru2/ru3.infinitumveilvpn.app` -> infinitum-product-1/2/3 (84.201.173.68, 153.51.166.190, 93.77.160.57), matching the existing `vpn-<region>` nodes. DNS for these is not created yet.
@@ -142,7 +148,7 @@ Not copied to Russia: defense products (AETHER, ARGUS, ODIN, E(O)N, infinitumdef
 - To finish a node (William): create the `vpn-ruN` A record (DNS only) → the node's IP; on the node put the control API's `TOKEN_SECRET` and `AGENT_SECRET` in `/root/veil.env` (chmod 600); run `sudo bash /root/veil-node-ru.sh`. Its log `/root/veil-provision.log` ends with the node's NODES entry, which contains node secrets: add it to the control Worker's `NODES` only, never to a repo.
 
 **Quotas**
-- Static public IPs: limit 2, both used (fabric-russia, conjure-russia). Increase to 8 requested 2026-11-11 so russia-web and the three nodes keep their IPs.
+- Static public IPs: limit 2, both used (fabric-russia, conjure-russia). Increase to 8 requested 2026-11-11 so russia-web, labyrinth-russia and the three nodes keep their IPs.
 
 ## Using the servers for builds
 
@@ -167,7 +173,7 @@ Rules for the runners:
 ## Backups (since 2026-11-11)
 
 - Snapshot schedule `daily-data-servers` (`fd8l3q6kcg93enulpjuj`), status ACTIVE: every day at 00:00 UTC (03:00 Moscow), keeps the 7 newest snapshots per disk.
-- Disks: fabric-russia boot disk `fv47vc5b05rn5m6kevcm` (ru-central1-d) and conjure-russia boot disk `fhmk1prc30bfksuvj8ml` (ru-central1-a).
+- Disks: fabric-russia boot disk `fv47vc5b05rn5m6kevcm` (ru-central1-d) conjure-russia boot disk `fhmk1prc30bfksuvj8ml` (ru-central1-a), and labyrinth-russia boot disk `bg0ocj0s5kgur9d6uo2n` (ru-central1-e, added 2026-11-12).
 - Snapshots are billed per GB stored (incremental after the first). Restore: create a disk from a snapshot, then a VM from that disk.
 - Fabric's Postgres is snapshotted live (crash-consistent), so a clean dump is taken first: systemd timer `fabric-pgdump.timer` on fabric-russia runs `/usr/local/sbin/fabric-pgdump` daily at 23:40 UTC (`pg_dump -Fc` of the `synapse` DB via `docker compose exec`), writes `/var/backups/fabric/synapse-YYYYMMDD.dump` (root-only, mode 600), keeps 7. The 00:00 UTC snapshot then carries it. First run 2026-11-11: 288 KB, 176 tables, `pg_restore --list` reads it.
 - Restore the DB from a dump: `docker compose exec -T db pg_restore -U synapse -d synapse --clean < /var/backups/fabric/synapse-YYYYMMDD.dump` (stop the `synapse` container first).
