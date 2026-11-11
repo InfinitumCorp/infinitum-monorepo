@@ -222,12 +222,17 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         }
         home.removeAll { it.packageName == GUARD_PACKAGE }
         rest.removeAll { it.packageName == GUARD_PACKAGE }
-        return home.map(::markHrvst) to rest.map(::markHrvst)
+        return home.map(::markTextIcon) to rest.map(::markTextIcon)
     }
 
-    private fun markHrvst(entry: AppEntry): AppEntry {
-        if (entry.packageName != HRVST_PACKAGE && entry.productId != "hrvst") return entry
-        return entry.copy(productId = "hrvst", colorIcon = false)
+    private fun markTextIcon(entry: AppEntry): AppEntry {
+        if (entry.packageName == HRVST_PACKAGE || entry.productId == "hrvst") {
+            return entry.copy(productId = "hrvst", colorIcon = false)
+        }
+        if (entry.packageName == EIDETIC_PACKAGE || entry.productId == "eidetic") {
+            return entry.copy(productId = "eidetic", colorIcon = false)
+        }
+        return entry
     }
 
     private fun resolveMessages(pm: PackageManager): MessageDock? {
@@ -274,6 +279,7 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         const val GUARD_PACKAGE = "com.infinitum.throne.guard"
         const val VAULT_PACKAGE = "com.infinitum.throne.vault"
         const val HRVST_PACKAGE = "com.infinitum.hrvst.cam"
+        const val EIDETIC_PACKAGE = "com.infinitum.eidetic.cam"
 
         fun shortLabel(packageName: String?, productId: String?, fallback: String): String {
             SHORT_BY_PRODUCT[productId]?.let { return it }
