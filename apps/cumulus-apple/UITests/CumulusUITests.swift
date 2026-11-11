@@ -21,17 +21,26 @@ final class CumulusUITests: XCTestCase {
         app.launchArguments = ["-CumulusPreview"]
         app.launch()
         XCTAssertTrue(app.buttons["compose"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["VYRAL London — hold the forecast"].exists)
+        XCTAssertTrue(shows(app, "VYRAL London — hold the forecast"))
         app.buttons["compose"].tap()
         XCTAssertTrue(app.otherElements["composer"].waitForExistence(timeout: 3) || app.buttons["send"].exists)
 
         app.buttons["product-cloud"].tap()
         XCTAssertTrue(app.buttons["my-drive"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["ODIN briefing"].exists || app.buttons["ODIN briefing"].exists)
+        XCTAssertTrue(shows(app, "ODIN briefing"))
         app.buttons["exchange"].tap()
-        XCTAssertTrue(app.staticTexts["Your data, your share"].waitForExistence(timeout: 5))
+        XCTAssertTrue(shows(app, "Your data, your share"))
 
         app.buttons["product-id"].tap()
-        XCTAssertTrue(app.staticTexts["alex@cumuluscloud.app"].waitForExistence(timeout: 5))
+        XCTAssertTrue(shows(app, "alex@cumuluscloud.app"))
+    }
+
+    /// Text inside a row or button is part of that element's label, not its own static text,
+    /// so match any element whose label contains it.
+    private func shows(_ app: XCUIApplication, _ text: String, timeout: TimeInterval = 5) -> Bool {
+        app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@ OR value CONTAINS %@", text, text))
+            .firstMatch
+            .waitForExistence(timeout: timeout)
     }
 }
