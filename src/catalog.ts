@@ -227,6 +227,8 @@ export interface AnchorBuyer {
   id: string;
   name: string;
   site: string;
+  /** Public page or inbox the company publishes. Not a private person. */
+  contact: string;
   products: ProductId[];
   /** Place classes these buyers ask for. A restricted class can still be licensed when the owner opts in; these buyers do not ask for one. */
   placeClasses: Array<"street" | "retail" | "field" | "public_building">;
@@ -239,6 +241,7 @@ export const ANCHOR_BUYERS: AnchorBuyer[] = [
     id: "premise",
     name: "Premise",
     site: "https://premise.com",
+    contact: "https://premise.com/get-in-touch/",
     products: ["hrvst", "cumulus"],
     placeClasses: ["retail", "street", "public_building", "field"],
     purposes: ["retail_shelf_audit", "public_place_inspection"],
@@ -246,8 +249,9 @@ export const ANCHOR_BUYERS: AnchorBuyer[] = [
   },
   {
     id: "field-agent",
-    name: "Field Agent",
-    site: "https://www.fieldagent.net",
+    name: "StoreSight (Field Agent)",
+    site: "https://storesight.com",
+    contact: "https://storesight.com/contact",
     products: ["hrvst"],
     placeClasses: ["retail"],
     purposes: ["price_check", "display_check", "on_shelf_availability"],
@@ -257,9 +261,30 @@ export const ANCHOR_BUYERS: AnchorBuyer[] = [
     id: "roamler",
     name: "Roamler",
     site: "https://www.roamler.com",
+    contact: "https://www.roamler.com/clients/company/contact/",
     products: ["hrvst", "cumulus"],
     placeClasses: ["retail"],
     purposes: ["fmcg_shelf_execution"],
+    status: "prospective",
+  },
+  {
+    id: "bemyeye",
+    name: "BeMyEye",
+    site: "https://www.bemyeye.com",
+    contact: "mailto:sales@bemyeye.com",
+    products: ["hrvst"],
+    placeClasses: ["retail", "street"],
+    purposes: ["retail_audit", "street_observation"],
+    status: "prospective",
+  },
+  {
+    id: "nielseniq",
+    name: "NielsenIQ",
+    site: "https://nielseniq.com",
+    contact: "https://nielseniq.com/global/en/about-us/contact-us/",
+    products: ["hrvst", "cumulus"],
+    placeClasses: ["retail"],
+    purposes: ["retail_measurement"],
     status: "prospective",
   },
 ];
@@ -275,6 +300,8 @@ export interface TrafficBuyer {
   id: string;
   name: string;
   site: string;
+  /** Public page the company publishes. Not a private person. */
+  contact: string;
   products: ProductId[];
   purposes: string[];
   status: "prospective";
@@ -285,6 +312,7 @@ export const TRAFFIC_BUYERS: TrafficBuyer[] = [
     id: "similarweb",
     name: "Similarweb",
     site: "https://www.similarweb.com",
+    contact: "https://www.similarweb.com/corp/contact-us/",
     products: ["cumulus"],
     purposes: ["opt_in_site_traffic", "aggregated_referral"],
     status: "prospective",
@@ -293,6 +321,7 @@ export const TRAFFIC_BUYERS: TrafficBuyer[] = [
     id: "comscore",
     name: "Comscore",
     site: "https://www.comscore.com",
+    contact: "https://www.comscore.com/About/Privacy/Partners",
     products: ["cumulus"],
     purposes: ["opt_in_audience_measurement"],
     status: "prospective",
@@ -301,13 +330,24 @@ export const TRAFFIC_BUYERS: TrafficBuyer[] = [
     id: "nielsen",
     name: "Nielsen",
     site: "https://www.nielsen.com",
+    contact: "https://www.nielsen.com/contact-us/",
     products: ["cumulus"],
     purposes: ["opt_in_digital_audience"],
+    status: "prospective",
+  },
+  {
+    id: "ipsos",
+    name: "Ipsos",
+    site: "https://www.ipsos.com",
+    contact: "https://iris.ipsos.com/contact/",
+    products: ["cumulus"],
+    purposes: ["opt_in_audience_measurement"],
     status: "prospective",
   },
 ];
 
 export const getTrafficBuyer = (id: string) => TRAFFIC_BUYERS.find((b) => b.id === id);
+
 
 
 export const freePlanFor = (product: ProductId) =>
