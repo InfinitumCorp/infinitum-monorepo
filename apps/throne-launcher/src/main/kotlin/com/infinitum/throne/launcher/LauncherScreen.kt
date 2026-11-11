@@ -1,11 +1,16 @@
 package com.infinitum.throne.launcher
 
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.provider.ContactsContract
 import android.provider.MediaStore
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -30,6 +35,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -41,6 +48,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -52,6 +60,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
@@ -107,17 +116,18 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     val query = state.query.trim()
-    val results = if (query.isEmpty()) {
-        emptyList()
-    } else {
-        (state.infinitum + state.others).filter {
-            it.label.contains(query, ignoreCase = true) ||
-                it.packageName?.contains(query, ignoreCase = true) == true
-        }
+    val focus = androidx.compose.ui.platform.LocalFocusManager.current
+    val contactsPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) viewModel.onContactsGranted() else viewModel.dismissContactsPrompt()
+    }
+    BackHandler(enabled = query.isNotEmpty() && !state.showAbout) {
+        viewModel.onQuery("")
+        focus.clearFocus()
     }
     val infinitumGrid = rememberLazyGridState()
     val othersGrid = rememberLazyGridState()
-    val searchGrid = rememberLazyGridState()
     val pagerState = rememberPagerState(pageCount = { 2 })
     Box(
         modifier = Modifier
@@ -159,19 +169,34 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
                         .padding(top = 2.dp),
                 )
                 Spacer(Modifier.height(16.dp))
-                SearchField(value = state.query, onValueChange = viewModel::onQuery)
+                SearchField(
+                    value = state.query,
+                    onValueChange = viewModel::onQuery,
+                    onClear = {
+                        viewModel.onQuery("")
+                        focus.clearFocus()
+                    },
+                    onSearch = {
+                        val exact = PhoneSearch.exactApp(state.hits.apps, query)
+                        if (exact != null) openApp(context, exact) else openVeil(context, query)
+                        focus.clearFocus()
+                    },
+                )
                 Spacer(Modifier.height(14.dp))
                 if (query.isNotEmpty()) {
-                    Box(Modifier.weight(1f)) {
-                        AppGrid(
-                            apps = results,
-                            state = searchGrid,
-                            empty = "No matching apps.",
-                            showPage = true,
-                            onOpen = { openApp(context, it) },
-                            onInfo = { openInfo(context, it) },
-                        )
-                    }
+                    SearchResults(
+                        query = query,
+                        hits = state.hits,
+                        onApp = { openApp(context, it) },
+                        onVeil = { openVeil(context, query) },
+                        onContact = { openContact(context, it) },
+                        onCall = { openTel(context, it) },
+                        onMessage = { openSms(context, it) },
+                        onSetting = { openSetting(context, it) },
+                        onFile = { openFile(context, it) },
+                        onAllowContacts = { contactsPermission.launch(Manifest.permission.READ_CONTACTS) },
+                        modifier = Modifier.weight(1f),
+                    )
                 } else {
                     val scope = rememberCoroutineScope()
                     Row(
@@ -421,8 +446,12 @@ private fun CallButton(onClick: () -> Unit) {
 }
 
 @Composable
-private fun SearchField(value: String, onValueChange: (String) -> Unit) {
-    val focus = LocalFocusManager.current
+private fun SearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onClear: () -> Unit,
+    onSearch: () -> Unit,
+) {
     TextField(
         value = value,
         onValueChange = onValueChange,
@@ -431,6 +460,18 @@ private fun SearchField(value: String, onValueChange: (String) -> Unit) {
         singleLine = true,
         textStyle = Brand.copy(fontSize = 16.sp, color = ThroneInk),
         shape = RoundedCornerShape(14.dp),
+        trailingIcon = {
+            if (value.isNotEmpty()) {
+                Text(
+                    "Clear",
+                    style = Brand.copy(fontSize = 13.sp),
+                    color = ThroneMuted,
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                        .clickable(onClick = onClear),
+                )
+            }
+        },
         colors = TextFieldDefaults.colors(
             focusedContainerColor = SearchFill,
             unfocusedContainerColor = SearchFill,
@@ -442,9 +483,186 @@ private fun SearchField(value: String, onValueChange: (String) -> Unit) {
             focusedTextColor = ThroneInk,
             unfocusedTextColor = ThroneInk,
         ),
-        keyboardOptions = KeyboardOptions.Default,
-        keyboardActions = KeyboardActions(onDone = { focus.clearFocus() }),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = { onSearch() }),
     )
+}
+
+@Composable
+private fun SearchResults(
+    query: String,
+    hits: SearchHits,
+    onApp: (AppEntry) -> Unit,
+    onVeil: () -> Unit,
+    onContact: (ContactHit) -> Unit,
+    onCall: (ContactHit) -> Unit,
+    onMessage: (ContactHit) -> Unit,
+    onSetting: (SettingHit) -> Unit,
+    onFile: (FileHit) -> Unit,
+    onAllowContacts: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 128.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        item(key = "veil") {
+            Text(
+                text = "Search with VEIL — \"$query\"",
+                style = Brand.copy(fontSize = 15.sp),
+                color = ThroneInk,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onVeil)
+                    .padding(vertical = 12.dp),
+            )
+        }
+        if (hits.apps.isNotEmpty()) {
+            item(key = "apps-label") { SectionLabel("Apps") }
+            items(hits.apps, key = { "app:${it.key}" }) { app ->
+                ResultRow(
+                    title = app.label,
+                    icon = {
+                        HydratedTile(
+                            productId = app.productId,
+                            fallback = app.icon,
+                            contentDescription = app.label,
+                            colorIcon = app.colorIcon,
+                            modifier = Modifier.size(40.dp),
+                        )
+                    },
+                    onClick = { onApp(app) },
+                )
+            }
+        }
+        if (hits.askContacts) {
+            item(key = "contacts-ask") {
+                ResultRow(
+                    title = "Contacts",
+                    detail = "Allow to search names and numbers",
+                    icon = { LetterMark("C") },
+                    onClick = onAllowContacts,
+                )
+            }
+        }
+        if (hits.contacts.isNotEmpty()) {
+            item(key = "contacts-label") { SectionLabel("Contacts") }
+            items(hits.contacts, key = { "contact:${it.id}" }) { contact ->
+                ContactRow(contact, onContact, onCall, onMessage)
+            }
+        }
+        if (hits.settings.isNotEmpty()) {
+            item(key = "settings-label") { SectionLabel("Settings") }
+            items(hits.settings, key = { "setting:${it.action}" }) { setting ->
+                ResultRow(
+                    title = setting.title,
+                    icon = { LetterMark(setting.title.take(1)) },
+                    onClick = { onSetting(setting) },
+                )
+            }
+        }
+        if (hits.files.isNotEmpty()) {
+            item(key = "files-label") { SectionLabel("Files") }
+            items(hits.files, key = { "file:${it.uri}" }) { file ->
+                ResultRow(
+                    title = file.name,
+                    icon = { LetterMark("F") },
+                    onClick = { onFile(file) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = Brand.copy(fontSize = 12.sp),
+        color = ThroneMuted,
+        modifier = Modifier.padding(top = 10.dp, bottom = 4.dp),
+    )
+}
+
+@Composable
+private fun ResultRow(
+    title: String,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit,
+    detail: String? = null,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        icon()
+        Column(Modifier.padding(start = 14.dp)) {
+            Text(title, style = Brand.copy(fontSize = 16.sp), color = ThroneInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (detail != null) {
+                Text(detail, style = Brand.copy(fontSize = 12.sp), color = ThroneMuted, maxLines = 1)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContactRow(
+    contact: ContactHit,
+    onOpen: (ContactHit) -> Unit,
+    onCall: (ContactHit) -> Unit,
+    onMessage: (ContactHit) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpen(contact) }
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LetterMark(contact.name.take(1).uppercase())
+        Column(Modifier.weight(1f).padding(start = 14.dp)) {
+            Text(contact.name, style = Brand.copy(fontSize = 16.sp), color = ThroneInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (!contact.number.isNullOrBlank()) {
+                Text(contact.number, style = Brand.copy(fontSize = 12.sp), color = ThroneMuted, maxLines = 1)
+            }
+        }
+        if (!contact.number.isNullOrBlank()) {
+            Text(
+                "Call",
+                style = Brand.copy(fontSize = 13.sp),
+                color = ThroneInk,
+                modifier = Modifier
+                    .clickable { onCall(contact) }
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+            )
+            Text(
+                "Message",
+                style = Brand.copy(fontSize = 13.sp),
+                color = ThroneInk,
+                modifier = Modifier
+                    .clickable { onMessage(contact) }
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun LetterMark(letter: String) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(RoundedCornerShape(22))
+            .background(Color.White)
+            .border(0.75.dp, Color.Black.copy(alpha = 0.07f), RoundedCornerShape(22)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(letter, style = Brand.copy(fontWeight = FontWeight.Medium, fontSize = 16.sp), color = ThroneInk)
+    }
 }
 
 @Composable
@@ -658,6 +876,71 @@ private fun openMessages(context: android.content.Context, message: MessageDock)
         context.startActivity(sendTo)
     } catch (_: ActivityNotFoundException) {
         // No messaging app can be opened.
+    }
+}
+
+private fun openVeil(context: android.content.Context, query: String) {
+    if (query.isBlank()) return
+    val uri = PhoneSearch.veilUri(query)
+    val targeted = Intent(Intent.ACTION_VIEW, uri)
+        .setPackage(PhoneSearch.VEIL_PACKAGE)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    val veilInstalled = context.packageManager.resolveActivity(targeted, PackageManager.MATCH_DEFAULT_ONLY) != null
+    val intent = if (veilInstalled) targeted else Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        context.startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        // No browser can take the address.
+    }
+}
+
+private fun openContact(context: android.content.Context, contact: ContactHit) {
+    val uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_URI, contact.id.toString())
+    val intent = Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        context.startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        // The contacts app is unavailable.
+    }
+}
+
+private fun openTel(context: android.content.Context, contact: ContactHit) {
+    val number = contact.number ?: return
+    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$number")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        context.startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        // No dialer is installed.
+    }
+}
+
+private fun openSms(context: android.content.Context, contact: ContactHit) {
+    val number = contact.number ?: return
+    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$number")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        context.startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        // No messaging app is installed.
+    }
+}
+
+private fun openSetting(context: android.content.Context, setting: SettingHit) {
+    val intent = Intent(setting.action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        context.startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        // This settings page is not on the device.
+    }
+}
+
+private fun openFile(context: android.content.Context, file: FileHit) {
+    val intent = Intent(Intent.ACTION_VIEW)
+        .setData(Uri.parse(file.uri))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    try {
+        context.startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        // Nothing can open this file.
     }
 }
 

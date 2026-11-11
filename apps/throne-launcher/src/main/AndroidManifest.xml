@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
@@ -17,6 +19,7 @@
             <data android:scheme="sms" />
         </intent>
         <package android:name="com.transsion.camera" />
+        <package android:name="app.infinitum.veil.browser" />
         <intent>
             <action android:name="android.media.action.STILL_IMAGE_CAMERA" />
         </intent>

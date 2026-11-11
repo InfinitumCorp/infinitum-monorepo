@@ -17,6 +17,8 @@ import com.infinitum.throne.core.home.HomeCatalog
 import com.infinitum.throne.core.home.HomePage
 import com.infinitum.throne.core.home.Launchable
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -53,9 +55,13 @@ data class LauncherUiState(
     val infinitum: List<AppEntry> = emptyList(),
     val others: List<AppEntry> = emptyList(),
     val messages: MessageDock? = null,
+    val hits: SearchHits = SearchHits(),
+    val contactsDismissed: Boolean = false,
 )
 
 class LauncherViewModel(app: Application) : AndroidViewModel(app) {
+    private var searchJob: Job? = null
+
     var state = androidx.compose.runtime.mutableStateOf(
         LauncherUiState(edition = EditionPolicy.parse(BuildConfig.EDITION)),
     )
@@ -70,11 +76,54 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
                 others = loaded.others,
                 messages = loaded.messages,
             )
+            if (state.value.query.isNotBlank()) runSearch(state.value.query)
         }
     }
 
     fun onQuery(value: String) {
-        state.value = state.value.copy(query = value.take(80))
+        val query = value.take(80)
+        state.value = state.value.copy(query = query)
+        runSearch(query)
+    }
+
+    fun dismissContactsPrompt() {
+        state.value = state.value.copy(contactsDismissed = true, hits = state.value.hits.copy(askContacts = false))
+    }
+
+    fun onContactsGranted() {
+        state.value = state.value.copy(contactsDismissed = false)
+        runSearch(state.value.query)
+    }
+
+    private fun runSearch(query: String) {
+        searchJob?.cancel()
+        val trimmed = query.trim()
+        if (trimmed.isEmpty()) {
+            state.value = state.value.copy(hits = SearchHits())
+            return
+        }
+        val apps = state.value.infinitum + state.value.others
+        val askContacts = !PhoneSearch.canReadContacts(getApplication()) && !state.value.contactsDismissed
+        searchJob = viewModelScope.launch {
+            val hits = withContext(Dispatchers.IO) {
+                SearchHits(
+                    apps = apps
+                        .filter { it.packageName != "com.infinitum.throne.guard" }
+                        .filter {
+                            PhoneSearch.matches(it.label, trimmed) ||
+                                (it.packageName != null && PhoneSearch.matches(it.packageName, trimmed))
+                        }
+                        .sortedBy { PhoneSearch.rank(it.label, trimmed) },
+                    contacts = PhoneSearch.contacts(getApplication(), trimmed),
+                    settings = PhoneSearch.settings.filter { PhoneSearch.matches(it.title, trimmed) },
+                    files = PhoneSearch.files(getApplication(), trimmed),
+                    askContacts = askContacts,
+                )
+            }
+            if (isActive && state.value.query.trim() == trimmed) {
+                state.value = state.value.copy(hits = hits)
+            }
+        }
     }
 
     fun openAbout() {
