@@ -1,12 +1,19 @@
 package com.infinitum.throne.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +31,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -63,7 +71,13 @@ private val ThroneColors = lightColorScheme(
 )
 
 private val BaseType = Typography()
-private val Sans = TextStyle(fontFamily = FontFamily.SansSerif)
+
+/** Liberation Sans, the OFL stand-in for the site stack Helvetica Neue / Helvetica / Arial. */
+private val BrandSans = FontFamily(
+    Font(R.font.liberation_sans, FontWeight.Normal),
+    Font(R.font.liberation_sans_bold, FontWeight.Bold),
+)
+private val Sans = TextStyle(fontFamily = BrandSans)
 
 private val ThroneType = BaseType.copy(
     headlineLarge = BaseType.headlineLarge.merge(Sans).copy(fontWeight = FontWeight.Light, letterSpacing = 0.4.sp),
@@ -163,32 +177,38 @@ fun throneFieldColors() = OutlinedTextFieldDefaults.colors(
 )
 
 @Composable
-fun Wordmark(edition: String, kicker: String) {
-    Column {
-        LatticeMark()
-        Text(
-            text = "INFINITUM",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(top = 18.dp),
+fun Wordmark(
+    edition: String,
+    kicker: String,
+    onMarkClick: (() -> Unit)? = null,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        val mark = Modifier.height(48.dp)
+        Image(
+            painter = painterResource(R.drawable.infinitum_mark),
+            contentDescription = "Infinitum",
+            contentScale = ContentScale.Fit,
+            modifier = if (onMarkClick == null) mark else mark.clickable(onClick = onMarkClick),
         )
-        Text(
-            text = "THRONE][OS™",
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(top = 6.dp),
-        )
-        if (kicker.isNotEmpty()) {
+        Column(Modifier.padding(start = 14.dp)) {
             Text(
-                text = kicker,
-                style = MaterialTheme.typography.bodyMedium,
+                text = "THRONE][OS™",
+                style = MaterialTheme.typography.headlineLarge,
+            )
+            if (kicker.isNotEmpty()) {
+                Text(
+                    text = kicker,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ThroneMuted,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+            Text(
+                text = edition,
+                style = MaterialTheme.typography.bodySmall,
                 color = ThroneMuted,
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
-        Text(
-            text = "Edition $edition. Debug build. Not a certified release.",
-            style = MaterialTheme.typography.bodySmall,
-            color = ThroneMuted,
-            modifier = Modifier.padding(top = 10.dp),
-        )
     }
 }

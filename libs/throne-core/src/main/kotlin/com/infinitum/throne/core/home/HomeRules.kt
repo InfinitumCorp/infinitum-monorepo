@@ -22,14 +22,16 @@ object EditionPolicy {
     const val LAUNCHER_PACKAGE = "com.infinitum.throne.launcher"
 
     /**
-     * Order is the INFINITUM page. Packages that are not installed are skipped.
-     * Cumulus ID is the civilian identity app named in the design.
+     * Fallback order when the product catalog asset cannot be read.
+     * The launcher INFINITUM page otherwise follows apps/throne-suite products.json.
+     * Packages that are not installed are skipped.
      * Guard and Vault are this layer. They are not military apps.
      */
     val infinitumOrder: List<String> = listOf(
         "com.infinitum.veilvpn",
         "app.cumuluscloud.mail",
         "app.scalvs",
+        "app.infinitumfabric.client",
         "com.infinitum.fabric",
         "com.infinitum.aether",
         "com.infinitum.architect",

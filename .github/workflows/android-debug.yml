@@ -44,6 +44,8 @@ jobs:
             apps/throne-launcher/build/outputs/apk/keter/debug/*.apk
             apps/throne-guard/build/outputs/apk/keter/debug/*.apk
             apps/throne-vault-notes/build/outputs/apk/keter/debug/*.apk
+            apps/throne-suite/build/outputs/apk/keter/debug/*.apk
+            apps/nether/build/outputs/apk/keter/debug/*.apk
             apps/eidetic-cam/build/outputs/apk/keter/debug/*.apk
             apps/hrvst-cam/build/outputs/apk/keter/debug/*.apk
 
@@ -56,5 +58,7 @@ jobs:
             apps/throne-launcher/build/outputs/apk/archangel/debug/*.apk
             apps/throne-guard/build/outputs/apk/archangel/debug/*.apk
             apps/throne-vault-notes/build/outputs/apk/archangel/debug/*.apk
+            apps/throne-suite/build/outputs/apk/archangel/debug/*.apk
+            apps/nether/build/outputs/apk/archangel/debug/*.apk
             apps/eidetic-cam/build/outputs/apk/archangel/debug/*.apk
             apps/hrvst-cam/build/outputs/apk/archangel/debug/*.apk
