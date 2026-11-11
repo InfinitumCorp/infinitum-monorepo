@@ -27,7 +27,21 @@ test("Worker relay requires actual CID bearer, bounds bodies and cannot spoof pr
   const reply = await proxyLabyrinthRequest(make({ authorization: "Bearer real-session", cookie: "private", "cf-access-jwt-assertion": "not-cid" }), "https://cid.example/api/labyrinth", "odin", async (_url, init) => {
     const headers = new Headers(init?.headers); assert.equal(headers.get("authorization"), "Bearer real-session");
     assert.equal(headers.get("cookie"), null); assert.equal(headers.get("cf-access-jwt-assertion"), null);
-    assert.equal(JSON.parse(String(init?.body)).product, "odin"); assert.equal(init?.redirect, "error"); return Response.json({ ok: true });
+    assert.equal(JSON.parse(String(init?.body)).product, "odin"); assert.equal(init?.redirect, "manual"); return Response.json({ ok: true });
   }); assert.equal(reply.status, 200);
   assert.equal((await proxyLabyrinthRequest(make({ authorization: "Bearer token" }, { huge: "x".repeat(2 * 1024 * 1024) }), "https://cid.example/api/labyrinth", "odin")).status, 413);
+});
+
+test("Worker relay works on Cloudflare's fetch, which rejects redirect: error, and never follows a redirect", async () => {
+  const make = () => new Request("https://product.example/api/labyrinth", { method: "POST", headers: { authorization: "Bearer real-session", "content-type": "application/json", "x-labyrinth": "1" }, body: JSON.stringify({ action: "list" }) });
+  // workerd: "Invalid redirect value, must be one of \"follow\" or \"manual\""
+  const workerd = (reply: () => Response) => (async (_url: string | URL | Request, init?: RequestInit) => {
+    if (init?.redirect !== "follow" && init?.redirect !== "manual") throw new TypeError("Invalid redirect value");
+    return reply();
+  }) as typeof fetch;
+  assert.equal((await proxyLabyrinthRequest(make(), "https://cid.example/api/labyrinth", "odin", workerd(() => Response.json([], { status: 200 })))).status, 200);
+  assert.equal((await proxyLabyrinthRequest(make(), "https://cid.example/api/labyrinth", "odin", workerd(() => Response.json({ error: "no" }, { status: 401 })))).status, 401);
+  const redirected = await proxyLabyrinthRequest(make(), "https://cid.example/api/labyrinth", "odin", workerd(() => new Response(null, { status: 302, headers: { location: "https://evil.example/" } })));
+  assert.equal(redirected.status, 502);
+  assert.equal(redirected.headers.get("location"), null);
 });
