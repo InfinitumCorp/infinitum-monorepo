@@ -3,6 +3,8 @@ package com.infinitum.throne.launcher
 import android.app.Application
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Telephony
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -25,10 +27,22 @@ data class AppEntry(
     val label: String,
     val page: HomePage,
     val icon: ImageBitmap?,
+    val colorIcon: Boolean = false,
     val kind: EntryKind,
     val packageName: String?,
     val className: String?,
     val productId: String?,
+)
+
+data class MessageDock(
+    val packageName: String,
+    val icon: ImageBitmap?,
+)
+
+private data class LoadedHome(
+    val infinitum: List<AppEntry>,
+    val others: List<AppEntry>,
+    val messages: MessageDock?,
 )
 
 data class LauncherUiState(
@@ -38,6 +52,7 @@ data class LauncherUiState(
     val showAbout: Boolean = false,
     val infinitum: List<AppEntry> = emptyList(),
     val others: List<AppEntry> = emptyList(),
+    val messages: MessageDock? = null,
 )
 
 class LauncherViewModel(app: Application) : AndroidViewModel(app) {
@@ -51,8 +66,9 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
             val loaded = withContext(Dispatchers.Default) { load() }
             state.value = state.value.copy(
                 loading = false,
-                infinitum = loaded.first,
-                others = loaded.second,
+                infinitum = loaded.infinitum,
+                others = loaded.others,
+                messages = loaded.messages,
             )
         }
     }
@@ -70,22 +86,25 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     @Suppress("DEPRECATION")
-    private fun load(): Pair<List<AppEntry>, List<AppEntry>> {
+    private fun load(): LoadedHome {
         val pm = getApplication<Application>().packageManager
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         val resolved = pm.queryIntentActivities(intent, PackageManager.MATCH_ALL)
         val glyphs = HashMap<String, ImageBitmap?>()
+        val colorIcons = HashMap<String, ImageBitmap?>()
         val launchables = resolved.map { info ->
             val packageName = info.activityInfo.packageName
             val className = info.activityInfo.name
             val rawLabel = info.loadLabel(pm)?.toString().orEmpty().ifBlank { packageName }
             val label = shortLabel(packageName, null, rawLabel)
             val key = "$packageName/$className"
-            glyphs[key] = try {
-                info.loadIcon(pm)?.let { IconGlyphs.toGlyph(it, 144) }
+            val drawable = try {
+                info.loadIcon(pm)
             } catch (_: Throwable) {
                 null
             }
+            glyphs[key] = drawable?.let { IconGlyphs.toGlyph(it, 256) }
+            colorIcons[key] = drawable?.let { IconGlyphs.foreground(it, 256) }
             Launchable(packageName, className, label)
         }
         val products = loadCatalog()
@@ -95,20 +114,31 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
                 edition = state.value.edition,
                 selfPackage = EditionPolicy.LAUNCHER_PACKAGE,
             )
-            fun entries(apps: List<Launchable>, page: HomePage) = apps.map { app ->
+            fun entries(
+                apps: List<Launchable>,
+                page: HomePage,
+                ink: Map<String, ImageBitmap?>,
+                color: Map<String, ImageBitmap?>,
+            ) = apps.map { app ->
                 val key = "${app.packageName}/${app.className}"
+                val others = page == HomePage.OTHERS
                 AppEntry(
                     key = key,
                     label = app.label,
                     page = page,
-                    icon = glyphs[key],
+                    icon = if (others) color[key] else ink[key],
+                    colorIcon = others,
                     kind = EntryKind.NATIVE,
                     packageName = app.packageName,
                     className = app.className,
                     productId = null,
                 )
             }
-            return entries(arranged.infinitum, HomePage.INFINITUM) to entries(arranged.others, HomePage.OTHERS)
+            return LoadedHome(
+                entries(arranged.infinitum, HomePage.INFINITUM, glyphs, colorIcons),
+                entries(arranged.others, HomePage.OTHERS, glyphs, colorIcons),
+                resolveMessages(pm),
+            )
         }
         val shelf = ShelfArranger.arrange(
             products = products,
@@ -143,14 +173,35 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
                 key = key,
                 label = app.label,
                 page = HomePage.OTHERS,
-                icon = glyphs[key],
+                icon = colorIcons[key],
+                colorIcon = true,
                 kind = EntryKind.NATIVE,
                 packageName = app.packageName,
                 className = app.className,
                 productId = null,
             )
         }
-        return infinitum to others
+        return LoadedHome(infinitum, others, resolveMessages(pm))
+    }
+
+    private fun resolveMessages(pm: PackageManager): MessageDock? {
+        val packages = LinkedHashSet<String>()
+        Telephony.Sms.getDefaultSmsPackage(getApplication())?.trim()?.takeIf { it.isNotEmpty() }?.let { packages += it }
+        packages += "com.google.android.apps.messaging"
+        val sendTo = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:"))
+        pm.queryIntentActivities(sendTo, PackageManager.MATCH_ALL).forEach { info ->
+            packages += info.activityInfo.packageName
+        }
+        for (pkg in packages) {
+            if (pm.getLaunchIntentForPackage(pkg) == null) continue
+            val icon = try {
+                pm.getApplicationIcon(pkg).let { IconGlyphs.foreground(it, 256) }
+            } catch (_: Throwable) {
+                null
+            }
+            return MessageDock(pkg, icon)
+        }
+        return null
     }
 
     private fun loadCatalog() = try {

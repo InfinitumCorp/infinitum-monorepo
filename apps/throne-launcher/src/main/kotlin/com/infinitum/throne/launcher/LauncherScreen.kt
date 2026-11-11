@@ -45,14 +45,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
@@ -63,9 +59,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
@@ -119,7 +113,6 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
     val infinitumGrid = rememberLazyGridState()
     val othersGrid = rememberLazyGridState()
     val searchGrid = rememberLazyGridState()
-    var gridHeight by remember { mutableIntStateOf(0) }
     val pagerState = rememberPagerState(pageCount = { 2 })
     Box(
         modifier = Modifier
@@ -164,11 +157,7 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
                 SearchField(value = state.query, onValueChange = viewModel::onQuery)
                 Spacer(Modifier.height(14.dp))
                 if (query.isNotEmpty()) {
-                    Box(
-                        Modifier
-                            .weight(1f)
-                            .onSizeChanged { gridHeight = it.height },
-                    ) {
+                    Box(Modifier.weight(1f)) {
                         AppGrid(
                             apps = results,
                             state = searchGrid,
@@ -203,11 +192,7 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
                         }
                     }
                     PageDots(pagerState.currentPage, Modifier.padding(top = 10.dp, bottom = 4.dp))
-                    Box(
-                        Modifier
-                            .weight(1f)
-                            .onSizeChanged { gridHeight = it.height },
-                    ) {
+                    Box(Modifier.weight(1f)) {
                         HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                             val apps = if (page == 0) state.infinitum else state.others
                             val empty = if (state.loading) {
@@ -230,32 +215,10 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
                 }
             }
         }
-        val backdropApps = when {
-            state.showAbout -> emptyList()
-            query.isNotEmpty() -> results
-            pagerState.currentPage == 0 -> state.infinitum
-            else -> state.others
-        }
-        val backdropState = when {
-            query.isNotEmpty() -> searchGrid
-            pagerState.currentPage == 0 -> infinitumGrid
-            else -> othersGrid
-        }
         FrostedCallDock(
-            showBlur = !state.showAbout && gridHeight > 0,
-            gridHeightPx = gridHeight,
-            backdrop = {
-                AppGrid(
-                    apps = backdropApps,
-                    state = backdropState,
-                    empty = "",
-                    showPage = query.isNotEmpty(),
-                    interactive = false,
-                    onOpen = {},
-                    onInfo = {},
-                )
-            },
-            onClick = { openDialer(context) },
+            messages = state.messages,
+            onCall = { openDialer(context) },
+            onMessages = { message -> openMessages(context, message) },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
@@ -308,20 +271,18 @@ private fun AboutScreen(edition: String, onBack: () -> Unit, modifier: Modifier 
 
 @Composable
 private fun FrostedCallDock(
-    showBlur: Boolean,
-    gridHeightPx: Int,
-    backdrop: @Composable () -> Unit,
-    onClick: () -> Unit,
+    messages: MessageDock?,
+    onCall: () -> Unit,
+    onMessages: (MessageDock) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val density = LocalDensity.current
     val absorb = remember { MutableInteractionSource() }
     Box(
         modifier
             .padding(horizontal = 28.dp)
             .padding(bottom = 10.dp)
             .fillMaxWidth()
-            .height(84.dp)
+            .height(92.dp)
             .shadow(
                 elevation = 16.dp,
                 shape = DockShape,
@@ -329,45 +290,58 @@ private fun FrostedCallDock(
                 spotColor = Color(0x12000000),
             )
             .clip(DockShape)
+            .background(Glass)
             .clickable(interactionSource = absorb, indication = null, onClick = {}),
         contentAlignment = Alignment.Center,
     ) {
-        if (showBlur) {
-            Box(
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(with(density) { gridHeightPx.toDp() })
-                    .blur(22.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded),
-            ) {
-                backdrop()
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (messages != null) {
+                HydratedTile(
+                    productId = null,
+                    fallback = messages.icon,
+                    contentDescription = "Messages",
+                    colorIcon = messages.icon != null,
+                    modifier = Modifier
+                        .size(TileSize)
+                        .semantics { contentDescription = "Messages" }
+                        .clickable { onMessages(messages) },
+                )
+                Spacer(Modifier.size(18.dp))
+            }
+            CallButton(onCall)
+            if (messages != null) {
+                Spacer(Modifier.size(18.dp))
+                Spacer(Modifier.size(TileSize))
             }
         }
-        Box(Modifier.matchParentSize().background(Glass))
-        Box(
-            modifier = Modifier
-                .size(58.dp)
-                .shadow(8.dp, CircleShape, ambientColor = Color(0x22000000), spotColor = Color(0x18000000))
-                .background(ThroneInk, CircleShape)
-                .semantics { contentDescription = "Call" }
-                .clickable(onClick = onClick),
-            contentAlignment = Alignment.Center,
-        ) {
-            Canvas(Modifier.size(24.dp)) {
-                val stroke = Stroke(width = 1.7.dp.toPx())
-                drawRoundRect(
-                    color = Color.White,
-                    topLeft = Offset(size.width * 0.28f, size.height * 0.06f),
-                    size = Size(size.width * 0.44f, size.height * 0.88f),
-                    cornerRadius = CornerRadius(5.dp.toPx(), 5.dp.toPx()),
-                    style = stroke,
-                )
-                drawCircle(
-                    color = Color.White,
-                    radius = 1.5.dp.toPx(),
-                    center = Offset(size.width / 2f, size.height * 0.78f),
-                )
-            }
+    }
+}
+
+@Composable
+private fun CallButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(58.dp)
+            .shadow(8.dp, CircleShape, ambientColor = Color(0x22000000), spotColor = Color(0x18000000))
+            .background(ThroneInk, CircleShape)
+            .semantics { contentDescription = "Call" }
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(Modifier.size(24.dp)) {
+            val stroke = Stroke(width = 1.7.dp.toPx())
+            drawRoundRect(
+                color = Color.White,
+                topLeft = Offset(size.width * 0.28f, size.height * 0.06f),
+                size = Size(size.width * 0.44f, size.height * 0.88f),
+                cornerRadius = CornerRadius(5.dp.toPx(), 5.dp.toPx()),
+                style = stroke,
+            )
+            drawCircle(
+                color = Color.White,
+                radius = 1.5.dp.toPx(),
+                center = Offset(size.width / 2f, size.height * 0.78f),
+            )
         }
     }
 }
@@ -529,6 +503,7 @@ private fun AppTile(
             productId = app.productId,
             fallback = app.icon,
             contentDescription = app.label,
+            colorIcon = app.colorIcon,
             modifier = Modifier.size(TileSize),
         )
         Text(
@@ -550,6 +525,27 @@ private fun AppTile(
                 maxLines = 1,
             )
         }
+    }
+}
+
+private fun openMessages(context: android.content.Context, message: MessageDock) {
+    val launch = context.packageManager.getLaunchIntentForPackage(message.packageName)
+        ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    if (launch != null) {
+        try {
+            context.startActivity(launch)
+            return
+        } catch (_: ActivityNotFoundException) {
+            // Fall through to the smsto handler.
+        }
+    }
+    val sendTo = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:"))
+        .setPackage(message.packageName)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        context.startActivity(sendTo)
+    } catch (_: ActivityNotFoundException) {
+        // No messaging app can be opened.
     }
 }
 

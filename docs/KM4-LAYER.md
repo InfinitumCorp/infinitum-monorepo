@@ -55,7 +55,7 @@ Checked on 10 Nov 2026. Sibling InfinitumCorp repositories were not readable fro
 
 "Opens as" is the kind when that native package is not installed. An installed package opens as native instead.
 
-Home icons sit in white rounded-squircle tiles. Catalog marks already in the tree stay as supplied: VEIL VPN is V | ™, FABRIC++ is ++™, Architect is a single entry, and the launcher adaptive icon is the supplied T]™ mark. The bundled face is Liberation Sans. Other installed apps use the monochrome layer painted black, or a black threshold when that layer is missing. A frosted dock keeps the call button centered at the bottom of every launcher screen, including both pages, search, and About. The button opens the dialer with `ACTION_DIAL` and does not request `CALL_PHONE`.
+Home icons sit in white rounded-squircle tiles. Catalog marks already in the tree stay as supplied: VEIL VPN is V | ™, FABRIC++ is ++™, Architect is a single entry, and the launcher adaptive icon is the supplied T]™ mark. The bundled face is Liberation Sans. Other installed apps use the monochrome layer painted black, or a black threshold when that layer is missing. A dock stays at the bottom of every launcher screen, including both pages, search, and About. The call button stays centered and opens the dialer with `ACTION_DIAL`. It does not request `CALL_PHONE`. Messages sits to the left of that button and opens the default SMS app (`Telephony.Sms.getDefaultSmsPackage`, then Google Messages, then any `smsto:` handler). Grid and dock tiles are the same white squircle. Catalog marks stay the supplied black artwork. Other apps draw their adaptive-icon foreground inside that tile.
 
 ## Build
 

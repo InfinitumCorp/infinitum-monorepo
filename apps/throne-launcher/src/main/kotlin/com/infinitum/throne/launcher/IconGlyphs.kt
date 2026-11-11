@@ -31,6 +31,12 @@ object IconGlyphs {
         return blackInk(out)
     }
 
+    /** Adaptive-icon foreground, or the whole drawable, without a grayscale pass. */
+    fun foreground(drawable: Drawable, sizePx: Int): ImageBitmap {
+        val source = (drawable as? AdaptiveIconDrawable)?.foreground ?: drawable
+        return draw(source, sizePx, forceInk = false).asImageBitmap()
+    }
+
     /** Pure black ink. Themed-icon fallbacks stay black, never a gray tint. */
     private fun blackInk(bitmap: Bitmap): ImageBitmap {
         val width = bitmap.width

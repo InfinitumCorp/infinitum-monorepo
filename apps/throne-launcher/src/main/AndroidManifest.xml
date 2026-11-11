@@ -7,6 +7,15 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
         <package android:name="com.infinitum.throne.suite" />
+        <package android:name="com.google.android.apps.messaging" />
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="smsto" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="sms" />
+        </intent>
     </queries>
 
     <application
