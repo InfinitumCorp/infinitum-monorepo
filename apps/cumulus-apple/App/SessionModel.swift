@@ -78,6 +78,10 @@ final class CumulusSession: ObservableObject {
         self.api = CumulusAPI(configuration: configuration, http: HTTPClient(), tokens: store)
         if CommandLine.arguments.contains("-CumulusPreview") {
             loadPreview()
+            // UI tests can open a product directly: -CumulusProduct cloud
+            if let start = UserDefaults.standard.string(forKey: "CumulusProduct").flatMap(Product.init(rawValue:)) {
+                product = start
+            }
         } else {
         tokens = try? store.load()
         }
