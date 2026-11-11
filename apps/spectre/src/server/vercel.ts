@@ -20,7 +20,8 @@ import { RemoteState, HttpGateway, type NexusGateway } from "./remote.ts";
  *   FIRMAMENT_SIGNER_KEY   base64 PKCS#8 Ed25519 key that signs ledger entries (keep secret)
  *   NEXUS_STORE_URL        https://<project>.supabase.co/functions/v1/nexus-store
  *   NEXUS_STORE_KEY        gateway key; its SHA-256 is listed in nexus_gateway_keys
- * Optional: OMNIROUTE_API_KEY (or another open-model host), USE_METATRON, CUMULUS_ROOT_DOMAIN, CUMULUS_ID_HOST,
+ * Optional: the Workers AI binding `AI` (free tier, tried first on the Worker), OMNIROUTE_API_KEY
+ * or OMNIROUTE_BASE_URL (fallback), USE_METATRON, CUMULUS_ROOT_DOMAIN, CUMULUS_ID_HOST,
  * CUMULUS_KEYCLOAK_REALM, CUMULUS_CLOUD_HOST, CUMULUS_MAIL_HOST, CUMULUS_MAIL_ORIGIN,
  * and the social sign-in variables (see main.ts). CID_OIDC_SIGNING_KEY is optional; when it is
  * unset, OpenID Connect stays off and sign-in still works. See docs/cumulus-id.md.
@@ -110,6 +111,7 @@ function build() {
     publicDir: publicDir(), // static files are served by the CDN (Vercel) or Workers static assets
     secureCookies: origin.startsWith("https://"),
     origin,
+    mirrorOrigins: origins.slice(1),
     providers: providersFromEnv(),
     cronSecret: process.env.CRON_SECRET,
     twilioAuthToken: process.env.TWILIO_AUTH_TOKEN,
