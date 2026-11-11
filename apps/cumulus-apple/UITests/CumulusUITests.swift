@@ -51,9 +51,9 @@ final class CumulusUITests: XCTestCase {
 
     override func record(_ issue: XCTIssue) {
         // Print what is actually on screen so a CI failure can be read from the log.
-        print("UI-TREE-BEGIN
-\(XCUIApplication().debugDescription)
-UI-TREE-END")
+        print("UI-TREE-BEGIN")
+        print(XCUIApplication().debugDescription)
+        print("UI-TREE-END")
         super.record(issue)
     }
 
