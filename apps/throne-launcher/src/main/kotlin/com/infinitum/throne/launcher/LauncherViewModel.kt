@@ -203,7 +203,7 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         }
         val metatron = AppEntry(
             key = "product:metatron",
-            label = "METATRON",
+            label = "METATRON¹⁰⁰",
             page = HomePage.INFINITUM,
             icon = null,
             colorIcon = false,
@@ -277,7 +277,7 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         val SHORT_BY_PRODUCT = mapOf(
             "eidetic" to "EIDETIC",
             "hrvst" to "HRVST",
-            "metatron" to "METATRON",
+            "metatron" to "METATRON¹⁰⁰",
         )
         const val GUARD_PACKAGE = "com.infinitum.throne.guard"
         const val VAULT_PACKAGE = "com.infinitum.throne.vault"
