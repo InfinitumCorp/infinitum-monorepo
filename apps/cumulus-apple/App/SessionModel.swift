@@ -164,6 +164,11 @@ final class CumulusSession: ObservableObject {
         }
     }
 
+    /// Reloads the current Drive view and shows any error, for buttons that can't throw.
+    func refreshDrive() async {
+        await run { try await self.reloadDrive() }
+    }
+
     func openFolder(_ id: String?, name: String) async {
         folderID = id
         if id == nil {

@@ -100,7 +100,7 @@ struct DownloadView: View {
 
     private func card(_ title: String, _ body: String, link: String, path: String) -> some View {
         let root = mailAPI.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        card(title, body, link: link, url: URL(string: root + "/download/" + path)!)
+        return card(title, body, link: link, url: URL(string: root + "/download/" + path)!)
     }
 
     private func card(_ title: String, _ body: String, link: String, url: URL) -> some View {
