@@ -266,6 +266,50 @@ export const ANCHOR_BUYERS: AnchorBuyer[] = [
 
 export const getAnchorBuyer = (id: string) => ANCHOR_BUYERS.find((b) => b.id === id);
 
+/**
+ * A company that licenses opted-in web traffic. Prospective only.
+ * VEIL</> VPN is not a source: it does not sell browsing history.
+ * A packet is aggregated (site host and referral, no query string) and only exists after opt-in.
+ */
+export interface TrafficBuyer {
+  id: string;
+  name: string;
+  site: string;
+  products: ProductId[];
+  purposes: string[];
+  status: "prospective";
+}
+
+export const TRAFFIC_BUYERS: TrafficBuyer[] = [
+  {
+    id: "similarweb",
+    name: "Similarweb",
+    site: "https://www.similarweb.com",
+    products: ["cumulus"],
+    purposes: ["opt_in_site_traffic", "aggregated_referral"],
+    status: "prospective",
+  },
+  {
+    id: "comscore",
+    name: "Comscore",
+    site: "https://www.comscore.com",
+    products: ["cumulus"],
+    purposes: ["opt_in_audience_measurement"],
+    status: "prospective",
+  },
+  {
+    id: "nielsen",
+    name: "Nielsen",
+    site: "https://www.nielsen.com",
+    products: ["cumulus"],
+    purposes: ["opt_in_digital_audience"],
+    status: "prospective",
+  },
+];
+
+export const getTrafficBuyer = (id: string) => TRAFFIC_BUYERS.find((b) => b.id === id);
+
+
 export const freePlanFor = (product: ProductId) =>
   PLANS.find((p) => p.product === product && p.priceCents === 0 && p.channel === "self_serve" && !p.overage);
 
