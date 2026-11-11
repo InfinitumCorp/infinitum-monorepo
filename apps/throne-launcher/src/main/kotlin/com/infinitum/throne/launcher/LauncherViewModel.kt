@@ -222,7 +222,12 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         }
         home.removeAll { it.packageName == GUARD_PACKAGE }
         rest.removeAll { it.packageName == GUARD_PACKAGE }
-        return home to rest
+        return home.map(::markHrvst) to rest.map(::markHrvst)
+    }
+
+    private fun markHrvst(entry: AppEntry): AppEntry {
+        if (entry.packageName != HRVST_PACKAGE && entry.productId != "hrvst") return entry
+        return entry.copy(productId = "hrvst", colorIcon = false)
     }
 
     private fun resolveMessages(pm: PackageManager): MessageDock? {
@@ -268,6 +273,7 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         )
         const val GUARD_PACKAGE = "com.infinitum.throne.guard"
         const val VAULT_PACKAGE = "com.infinitum.throne.vault"
+        const val HRVST_PACKAGE = "com.infinitum.hrvst.cam"
 
         fun shortLabel(packageName: String?, productId: String?, fallback: String): String {
             SHORT_BY_PRODUCT[productId]?.let { return it }
