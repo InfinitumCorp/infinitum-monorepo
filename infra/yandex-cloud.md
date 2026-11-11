@@ -137,7 +137,7 @@ Not copied to Russia: defense products (AETHER, ARGUS, ODIN, E(O)N, infinitumdef
 
 **labyrinth-russia** (Labyrinth's Russia server, created 2026-11-12 on William's OK)
 - VM `labyrinth-russia`, ru-central1-e, standard-v3 2 vCPU 100%, 4 GB, 20 GB network-ssd, Ubuntu 24.04, `infinitum-product-sg`, labels `product=labyrinth,region=russia`. Nothing installed yet.
-- IP 93.77.163.222 (dynamic: `labyrinth-russia-ip` could not be reserved, the static-IP quota is still 2). Internal 10.131.0.27. Boot disk `bg0ocj0s5kgur9d6uo2n`.
+- IP 93.77.161.140 (dynamic: `labyrinth-russia-ip` could not be reserved, the static-IP quota is still 2). The first NAT IP, 93.77.163.222, never took inbound traffic from the internet (only from inside Yandex), even after a restart; on 2026-11-12 the NAT was removed and re-added, and the new IP answers from outside. Same security group throughout (`infinitum-product-sg`, 80/443 open). Internal 10.131.0.27. Boot disk `bg0ocj0s5kgur9d6uo2n`.
 - SSH: `ssh labyrinth-russia`. Direct SSH to the public IP times out from William's PC (the VM is fine, cloud-init finished and the key is in place), so the ssh config jumps through `russia-web` to the internal IP. Switch it back to the public IP once a static IP is attached and reachable.
 - Zone ru-central1-e is now full for the default quota (6 vCPU, 50 GB SSD: product-3, russia-web, labyrinth-russia).
 
