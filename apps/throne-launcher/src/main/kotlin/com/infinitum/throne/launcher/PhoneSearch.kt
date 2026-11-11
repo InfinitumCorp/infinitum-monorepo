@@ -64,17 +64,8 @@ object PhoneSearch {
         val haystack = text.lowercase()
         val needle = query.trim().lowercase()
         if (needle.isEmpty()) return false
-        if (haystack == needle || haystack.startsWith(needle) || haystack.contains(needle)) return true
-        if (haystack.split(' ', '.', '/', '-').any { it.startsWith(needle) }) return true
-        if (needle.length < 2) return false
-        var index = 0
-        for (char in haystack) {
-            if (char == needle[index]) {
-                index++
-                if (index == needle.length) return true
-            }
-        }
-        return false
+        if (haystack == needle || haystack.startsWith(needle)) return true
+        return haystack.split(' ', '.', '/', '-', '_').any { it.startsWith(needle) }
     }
 
     fun rank(label: String, query: String): Int {
@@ -83,9 +74,8 @@ object PhoneSearch {
         return when {
             name == needle -> 0
             name.startsWith(needle) -> 1
-            name.split(' ', '.', '/', '-').any { it.startsWith(needle) } -> 2
-            name.contains(needle) -> 3
-            else -> 4
+            name.split(' ', '.', '/', '-', '_').any { it.startsWith(needle) } -> 2
+            else -> 3
         }
     }
 
