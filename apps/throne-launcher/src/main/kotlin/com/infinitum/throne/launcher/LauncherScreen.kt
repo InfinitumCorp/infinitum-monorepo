@@ -80,6 +80,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.infinitum.throne.core.catalog.ProductCatalog
+import com.infinitum.throne.core.home.Edition
 import com.infinitum.throne.core.home.HomePage
 import com.infinitum.throne.ui.HydratedTile
 import com.infinitum.throne.ui.ThroneInk
@@ -141,7 +142,7 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = "THRONE][OS™",
-                    style = Brand.copy(fontWeight = FontWeight.Light, fontSize = 15.sp, letterSpacing = 0.4.sp),
+                    style = Brand.copy(fontWeight = FontWeight.Bold, fontSize = 15.sp, letterSpacing = 0.4.sp),
                     color = ThroneInk,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -149,7 +150,7 @@ fun LauncherScreen(viewModel: LauncherViewModel) {
                         .clickable(onClick = viewModel::openAbout),
                 )
                 Text(
-                    text = state.edition.label,
+                    text = if (state.edition == Edition.KETER) "^KETERv1" else state.edition.label,
                     style = Brand.copy(fontSize = 12.sp),
                     color = ThroneMuted,
                     textAlign = TextAlign.Center,
