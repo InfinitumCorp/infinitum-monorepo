@@ -1,0 +1,42 @@
+# CI for infinitum-revenue/ in the monorepo. Runs only when files under infinitum-revenue/ (or this workflow) change.
+# Ported from infinitum-revenue's own CI; its deploy workflows are not run from the monorepo.
+name: infinitum-revenue
+
+on:
+  pull_request:
+    paths:
+      - "infinitum-revenue/**"
+      - ".github/workflows/infinitum-revenue.yml"
+  push:
+    branches: [main]
+    paths:
+      - "infinitum-revenue/**"
+      - ".github/workflows/infinitum-revenue.yml"
+  workflow_dispatch:
+
+# A newer push to the same branch or PR cancels the older run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: infinitum-revenue
+
+jobs:
+  test:
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: infinitum-revenue/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
