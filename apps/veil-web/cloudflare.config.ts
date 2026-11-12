@@ -4,6 +4,8 @@ export default defineConfig({
   worker: {
     name: "infinitum-veil-web",
     compatibilityDate: "2026-11-08",
+    // Global users run on US servers (Ashburn, Virginia); Russia is served by the ru.* copies on Yandex Cloud.
+    placement: { region: "gcp:us-east4" },
     // public/ is served first: the VEIL site at /, the start page and search at /start/.
     // The Worker answers only POST /api/search (src/worker.js).
     entrypoint: "./src/worker.js",

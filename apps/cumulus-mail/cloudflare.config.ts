@@ -22,6 +22,8 @@ export default defineConfig({
     name: "cumulus-mail",
     entrypoint: "./src/worker.ts",
     compatibilityDate: "2026-11-01",
+    // Global users run on US servers (Ashburn, Virginia); Russia is served by the ru.* copies on Yandex Cloud.
+    placement: { region: "gcp:us-east4" },
     compatibilityFlags: ["nodejs_compat"],
     domains: [host],
     // The web app (public/: index.html, app.js, manifest, sw.js…) is served as static assets; the
