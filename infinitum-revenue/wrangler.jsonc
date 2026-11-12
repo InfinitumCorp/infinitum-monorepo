@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Infinitum revenue API on Cloudflare Workers (Hono). Secrets — DATABASE_URL,
+  // STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, ADMIN_API_KEY, LICENCE_SIGNING_KEY,
+  // CRON_SECRET — are set with `wrangler secret put`, never here. See README.
+  "name": "infinitum-revenue",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-11-01",
+  // Global users run on US servers (Ashburn, Virginia); Russia is served by the ru.* copies on Yandex Cloud.
+  "placement": { "region": "gcp:us-east4" },
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // Was a Vercel Cron: report metered usage to Stripe every 15 minutes.
+  "triggers": { "crons": ["*/15 * * * *"] },
+  "vars": {
+    "NODE_ENV": "production",
+    // Fallback Checkout / portal landing pages are served by this worker.
+    "PUBLIC_URL": "https://infinitum-revenue.infinitumcorp.workers.dev",
+    // Product domains apps may pass as returnUrl (and that get CORS on the customer API).
+    "RETURN_HOSTS": "rchtch.app,scalvs.app,cumuluscloud.app,mttrn.app,infinitumcorporation.ai,infinitumcorp.workers.dev",
+    "STRIPE_AUTOMATIC_TAX": "false",
+    "TOKEN_PAYOUTS_ENABLED": "false"
+  }
+}
