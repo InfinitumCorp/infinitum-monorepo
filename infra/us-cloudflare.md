@@ -34,6 +34,16 @@ Not changed:
 
 Check a deployed Worker: `curl -sI https://<domain>/<api path> | grep -i cf-placement`. `remote-IAD` (or another US airport code) means the request ran in the US.
 
+## Live status (2026-11-12)
+
+Placement `gcp:us-east4` was set on the live Workers through the API (settings only, same code): architect, firmament-launch, infinitum-revenue (Workers Builds), cumulus-id, cumulus-mail, cumulus-downloads, cumulus-cloud, cumulus-site, firm-wallet, infinitum-veil-web, veil-vpn-api, veil-vpn-site, infinitum-corporation-site, infinitum-app-hub, infinitum-developer-site, infinitum-payments-site, infinitum-intake, infinitum-extensions, metatron-site, fabric-site, aether-site, aether-mil-web, infinitum-defense-site, odin-daemon, eon.
+
+Not yet:
+
+- `scalvs-ai`: the newest uploaded versions are previews from `feat/web-search`, so a settings-only edit is refused (error 10214). `main` already has the placement setting; it takes effect with the next signed-off production deploy (`npm run deploy`). `main` also carries SCALVS Search (#25), which is not live yet.
+- `conjure-llm`: the settings edit is refused because the live script's `Budget` Durable Object class is not in its config (error 100402). Fix that config, then redeploy.
+- `odin`, `infinitum-academy`: not deployed on this account.
+
 ## Russia → Russia copies
 
 `infra/ru-geo-redirect.mjs` adds one Single Redirect rule per zone (ref `infinitum-ru-geo`): a request from Russia (`ip.src.country eq "RU"`) to the main hostname gets a 302 to the `ru.` copy; everyone else is untouched and stays on the US Workers. It keeps the zone's other redirect rules.
@@ -45,7 +55,7 @@ CLOUDFLARE_API_TOKEN=... node infra/ru-geo-redirect.mjs --apply  # write the rul
 
 Zones covered now (Russia copy live on `russia-web`): scalvs.app, infinitumcorporation.ai, infinitumveilvpn.app. Add a zone to `ROUTES` once its Russia copy answers.
 
-**Not applied yet:** this session had no Cloudflare token. Run the `--apply` command once with a token that has Single Redirect (Zone Rulesets) Edit on those zones.
+**Applied 2026-11-12** to all three zones (each zone had no other redirect rules). DNS for every `ru.` name checked first: A record to `russia-web` (93.77.163.229), DNS only.
 
 ## Still to do
 
