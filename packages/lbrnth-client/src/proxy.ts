@@ -1,4 +1,4 @@
-import { secureLabyrinthEndpoint } from "./client.ts";
+import { labyrinthEndpointFor, secureLabyrinthEndpoint } from "./client.ts";
 /** Thin Worker/browser-compatible relay. Access JWTs/product tokens are NOT CID identities. */
 export async function proxyLabyrinthRequest(request: Request, endpoint: string | undefined, product: string, fetcher: typeof fetch = fetch): Promise<Response> {
   const fail = (status: number, error: string) => Response.json({ error }, { status, headers: { "cache-control": "no-store" } });
@@ -8,7 +8,11 @@ export async function proxyLabyrinthRequest(request: Request, endpoint: string |
   if (!token || !/^Bearer [^\s]{1,512}$/.test(token)) return fail(401, "A Cumulus ID session bearer token is required");
   if (!request.headers.get("content-type")?.startsWith("application/json") || request.headers.get("x-labyrinth") !== "1") return fail(403, "Labyrinth JSON request header required");
   let url: string;
-  try { url = secureLabyrinthEndpoint(endpoint); } catch { return fail(503, "Invalid Labyrinth service configuration"); }
+  try {
+    const chosen = labyrinthEndpointFor(endpoint, request.headers.get("cf-ipcountry"));
+    if (!chosen) return fail(503, "Labyrinth is not configured");
+    url = secureLabyrinthEndpoint(chosen);
+  } catch { return fail(503, "Invalid Labyrinth service configuration"); }
   try {
     const reader = request.body?.getReader(); const chunks: Uint8Array[] = []; let size = 0;
     if (reader) while (true) {

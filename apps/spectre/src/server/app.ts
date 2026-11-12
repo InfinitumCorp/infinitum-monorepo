@@ -349,7 +349,10 @@ export function createApp(deps: AppDeps) {
     Redirect,
     HttpError,
     signer: oidc,
-    labyrinthDirectoryKeySha256: (deps.labyrinthDirectoryKeySha256 === undefined ? process.env.CID_DIRECTORY_KEY_SHA256 : deps.labyrinthDirectoryKeySha256) || undefined,
+    // CID_DIRECTORY_KEY_SHA256 (Russia host) plus CID_DIRECTORY_KEY_SHA256_US (US host, lbrnth-host-us).
+    labyrinthDirectoryKeySha256: (deps.labyrinthDirectoryKeySha256 === undefined
+      ? [process.env.CID_DIRECTORY_KEY_SHA256, process.env.CID_DIRECTORY_KEY_SHA256_US].filter(Boolean).join(",")
+      : deps.labyrinthDirectoryKeySha256) || undefined,
     exportKeySha256: (deps.cidExportKeySha256 === undefined ? process.env.CID_EXPORT_KEY_SHA256 : deps.cidExportKeySha256) || undefined,
   });
 
