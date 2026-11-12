@@ -20,4 +20,8 @@ git subtree pull --prefix=<folder> https://github.com/InfinitumCorp/<repo>.git m
 
 ## CI
 
-GitHub Actions only reads workflows from the root `.github/workflows/`, so the workflows inside each project folder do not run here yet. They still run in each original repo.
+Each project has its own workflow in the root `.github/workflows/` (for example `throne-os.yml`). A workflow runs only when files in its project folder change, and a newer push cancels the older run.
+
+The workflows inside each project folder are not used by the monorepo; GitHub only reads the root folder. Deploy, scheduled and macOS workflows were not carried over, so deploys still run from each original repo.
+
+To move Linux jobs to the self-hosted runners, set the repository variable `CI_RUNNER=infinitum-ci`.

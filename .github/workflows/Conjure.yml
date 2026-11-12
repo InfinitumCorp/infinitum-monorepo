@@ -1,0 +1,43 @@
+# CI for Conjure/ in the monorepo. Runs only when files under Conjure/ (or this workflow) change.
+# Ported from Conjure's own CI; its deploy workflows are not run from the monorepo.
+name: Conjure
+
+on:
+  pull_request:
+    paths:
+      - "Conjure/**"
+      - ".github/workflows/Conjure.yml"
+  push:
+    branches: [main]
+    paths:
+      - "Conjure/**"
+      - ".github/workflows/Conjure.yml"
+  workflow_dispatch:
+
+# A newer push to the same branch or PR cancels the older run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: Conjure
+
+jobs:
+  test:
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: Conjure/package-lock.json
+      - run: npm ci
+      # Node 22 cannot take a folder ("node --test test/"), so pass the files.
+      # The per-test timeout stops a test that waits on a live model from stalling CI.
+      - run: node --test --test-timeout=60000 test/*.test.js

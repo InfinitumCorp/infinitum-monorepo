@@ -1,0 +1,45 @@
+# CI for architect/ in the monorepo. Runs only when files under architect/ (or this workflow) change.
+# Ported from architect's own CI; its deploy workflows are not run from the monorepo.
+name: architect
+
+on:
+  pull_request:
+    paths:
+      - "architect/**"
+      - ".github/workflows/architect.yml"
+  push:
+    branches: [main]
+    paths:
+      - "architect/**"
+      - ".github/workflows/architect.yml"
+  workflow_dispatch:
+
+# A newer push to the same branch or PR cancels the older run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: architect
+
+jobs:
+  test:
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: architect/package-lock.json
+      - run: npm ci
+      # The browser instrument tests drive a real Chromium.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

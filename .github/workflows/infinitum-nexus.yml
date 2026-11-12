@@ -1,0 +1,56 @@
+# CI for infinitum-nexus/ in the monorepo. Runs only when files under infinitum-nexus/ (or this workflow) change.
+# Ported from infinitum-nexus's own CI; its deploy workflows are not run from the monorepo.
+name: infinitum-nexus
+
+on:
+  pull_request:
+    paths:
+      - "infinitum-nexus/**"
+      - ".github/workflows/infinitum-nexus.yml"
+  push:
+    branches: [main]
+    paths:
+      - "infinitum-nexus/**"
+      - ".github/workflows/infinitum-nexus.yml"
+  workflow_dispatch:
+
+# A newer push to the same branch or PR cancels the older run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: infinitum-nexus
+
+jobs:
+  verify:
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: infinitum-nexus/pnpm-lock.yaml
+      - name: Install from the lockfile
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Test
+        run: pnpm test
+      - name: Security evidence
+        run: bash scripts/labyrinth-security.sh "$RUNNER_TEMP/labyrinth-security"
+      - name: Pack Labyrinth packages
+        run: bash scripts/pack-labyrinth.sh "$RUNNER_TEMP/labyrinth-packages"
+      - name: Build Conductor image
+        run: docker build -f apps/cndctr/Dockerfile -t cndctr:ci .
+      - name: Smoke test Conductor
+        run: bash apps/cndctr/scripts/smoke.sh
