@@ -1,0 +1,22 @@
+{
+  "name": "@infinitum/aether",
+  "version": "0.2.0",
+  "description": "\u00c6THER mesh protocol core: signed packets, flooding with TTL, store-and-forward, receipts, simulator.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "typecheck": "tsc -p . --noEmit",
+    "test": "node --test --experimental-strip-types $(find src -name \"*.test.ts\" 2>/dev/null || true)",
+    "sim": "node --experimental-strip-types src/sim/cli.ts"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "@types/node": "^26.6.6"
+  },
+  "dependencies": {
+    "@infinitum/lbrnth-client": "workspace:*"
+  }
+}

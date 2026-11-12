@@ -1,0 +1,29 @@
+{
+  "name": "@infinitum/firm",
+  "version": "0.1.0",
+  "description": "FIRM ecosystem token, wallet, and DEX.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./suite": "./suite/firm-suite.js",
+    "./suite/firm-suite.css": "./suite/firm-suite.css"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "typecheck": "tsc -p . --noEmit",
+    "test": "node --test --experimental-strip-types $(find src suite -name \"*.test.ts\" 2>/dev/null || true)",
+    "compile": "bash scripts/compile.sh",
+    "deploy": "node scripts/deploy.ts",
+    "anchor": "node scripts/deploy-anchor.ts"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "@types/node": "^26.6.6"
+  },
+  "dependencies": {
+    "@infinitum/lbrnth-client": "workspace:*"
+  }
+}

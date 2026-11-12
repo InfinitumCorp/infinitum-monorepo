@@ -1,0 +1,53 @@
+/* FABRIC messaging layout. Tokens, shell and components come from app-shell.css. */
+
+[hidden] { display: none !important; }
+
+#signed-out { display: grid; justify-items: center; gap: 8px; }
+#signed-out h1 { font-size: var(--heading); }
+
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  border: 1px solid var(--line);
+  min-height: 70vh;
+}
+
+aside { padding: 20px; border-right: 1px solid var(--line); }
+
+.row { display: flex; gap: 8px; }
+
+#sessions { margin-top: 20px; }
+#sessions > li { padding: 0; }
+#sessions button {
+  width: 100%;
+  padding: 12px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+#sessions button:hover { color: var(--accent); }
+#sessions button[aria-current="true"] { border-left: 2px solid var(--ink); padding-left: 10px; }
+
+.session-name, .who { display: block; }
+.meta { display: block; margin-top: 2px; font-size: var(--text-sm); color: var(--muted); }
+
+.thread { display: flex; flex-direction: column; min-width: 0; }
+.thread-head { padding: 20px; border-bottom: 1px solid var(--line); }
+.thread-head h2 { margin: 0; font-size: var(--text-lg); }
+
+#messages { flex: 1; list-style: none; margin: 0; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+#messages li { max-width: 42rem; }
+#messages li.mine { align-self: end; text-align: right; }
+
+#send-form { display: flex; gap: 8px; align-items: end; padding: 20px; border-top: 1px solid var(--line); }
+#send-form textarea { min-height: 72px; }
+
+@media (max-width: 800px) {
+  .layout { grid-template-columns: 1fr; min-height: 0; }
+  aside { border-right: 0; border-bottom: 1px solid var(--line); }
+  #messages { min-height: 40vh; }
+}
+
+footer.firm { width: min(var(--column), calc(100% - 2rem)); margin-inline: auto; padding: 1.5rem 0 2rem; }
+sup.tm { font-size: .38em; vertical-align: super; line-height: 0; margin-left: .08em; letter-spacing: 0; font-weight: 400; }

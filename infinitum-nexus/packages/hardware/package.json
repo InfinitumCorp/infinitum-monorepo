@@ -1,0 +1,22 @@
+{
+  "name": "@infinitum/hardware",
+  "version": "0.1.0",
+  "description": "Hardware product interface stubs (tasking, telemetry, evidence).",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "typecheck": "tsc -p . --noEmit",
+    "test": "node --test --experimental-strip-types $(find src -name \"*.test.ts\" 2>/dev/null || true)"
+  },
+  "dependencies": {
+    "@infinitum/lbrnth-client": "workspace:*",
+    "@infinitum/sense": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "@types/node": "^26.6.6"
+  }
+}

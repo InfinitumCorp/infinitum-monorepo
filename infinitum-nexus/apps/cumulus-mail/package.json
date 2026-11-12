@@ -1,0 +1,34 @@
+{
+  "name": "@infinitum/cumulus-mail",
+  "version": "0.1.0",
+  "description": "Cumulus://Mail web client. Private email for every Cumulus://ID. Unlisted.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "node --experimental-strip-types src/server.ts",
+    "typecheck": "tsc -p . --noEmit",
+    "test": "node --test --experimental-strip-types $(find src -name \"*.test.ts\" 2>/dev/null || true)"
+  },
+  "dependencies": {
+    "@infinitum/ai": "workspace:*",
+    "@infinitum/billing": "workspace:*",
+    "@infinitum/cid": "workspace:*",
+    "@infinitum/cloud": "workspace:*",
+    "@infinitum/cumulus": "workspace:*",
+    "@infinitum/firm": "workspace:*",
+    "@infinitum/firmament": "workspace:*",
+    "@infinitum/lbrnth": "workspace:*",
+    "@infinitum/mail": "workspace:*",
+    "@infinitum/scalus": "workspace:*",
+    "postal-mime": "4.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "cf": "1.0.0-beta.28",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.158.0"
+  }
+}

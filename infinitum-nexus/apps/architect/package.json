@@ -1,0 +1,29 @@
+{
+  "name": "@infinitum/architect",
+  "version": "0.1.0",
+  "description": ":\\ARCHITECT\\ (Architect): intent in, verified outcome out.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./perform": "./src/perform.ts"
+  },
+  "scripts": {
+    "start": "node src/server.ts",
+    "typecheck": "tsc -p . --noEmit",
+    "test": "node --test --experimental-strip-types $(find src -name \"*.test.ts\" 2>/dev/null || true)"
+  },
+  "dependencies": {
+    "@infinitum/ai": "workspace:*",
+    "@infinitum/firmament": "workspace:*",
+    "@infinitum/lbrnth": "workspace:*",
+    "@infinitum/lbrnth-client": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "@types/node": "^26.6.6"
+  }
+}

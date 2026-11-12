@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@infinitum/scalus": ["../../packages/scalus/src/index.ts"],
+      "@infinitum/metatron": ["../../packages/metatron/src/index.ts"],
+      "@infinitum/eidetic": ["../../packages/eidetic/src/index.ts"],
+      "@infinitum/architect": ["../../apps/architect/src/index.ts"],
+      "@infinitum/veil/server": ["../../apps/veil/server/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

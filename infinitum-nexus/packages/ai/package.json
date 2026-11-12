@@ -1,0 +1,24 @@
+{
+  "name": "@infinitum/ai",
+  "version": "0.1.0",
+  "description": "Open-weight model router for every Infinitum backend: one chat API, instant automatic switching between models and hosts.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing.ts",
+    "./openclaw": "./src/openclaw/openclaw.mjs",
+    "./search": "./src/search/search.mjs"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "typecheck": "tsc -p . --noEmit",
+    "test": "node --test --experimental-strip-types $(find src -name \"*.test.ts\" 2>/dev/null || true)"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "@types/node": "^26.6.6"
+  }
+}

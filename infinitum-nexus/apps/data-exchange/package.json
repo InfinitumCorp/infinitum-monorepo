@@ -1,0 +1,23 @@
+{
+  "name": "@infinitum/data-exchange-api",
+  "version": "0.1.0",
+  "description": "HTTP API for the Cumulus Data Exchange.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "node --experimental-strip-types src/server.ts",
+    "typecheck": "tsc -p . --noEmit"
+  },
+  "dependencies": {
+    "@infinitum/data-exchange": "workspace:*",
+    "@infinitum/firmament": "workspace:*",
+    "@infinitum/lbrnth-client": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "@types/node": "^26.6.6"
+  }
+}

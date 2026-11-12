@@ -1,0 +1,22 @@
+{
+  "name": "@infinitum/hrvst",
+  "version": "0.1.0",
+  "description": "HRVST: permissioned observations into user-controlled data assets.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "typecheck": "tsc -p . --noEmit",
+    "test": "node --test --experimental-strip-types $(find src -name \"*.test.ts\" 2>/dev/null || true)"
+  },
+  "dependencies": {
+    "@infinitum/firmament": "workspace:*",
+    "@infinitum/lbrnth-client": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "@types/node": "^26.6.6"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "@infinitum/fabric",
+  "version": "0.1.0",
+  "description": "FABRIC++ encrypted messaging.",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "typecheck": "tsc -p . --noEmit",
+    "test": "node --test --experimental-strip-types $(find src -name \"*.test.ts\" 2>/dev/null || true)"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "@types/node": "^26.6.6"
+  },
+  "dependencies": {
+    "@infinitum/lbrnth-client": "workspace:*"
+  }
+}

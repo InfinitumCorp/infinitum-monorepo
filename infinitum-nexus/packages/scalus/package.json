@@ -1,0 +1,28 @@
+{
+  "name": "@infinitum/scalus",
+  "version": "0.1.0",
+  "description": "SCALVS.ai: AI workforce platform \u2014 agents that research, write, code and operate.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "node --experimental-strip-types src/server.ts",
+    "build": "node --experimental-strip-types scripts/build.ts",
+    "start:prod": "node dist/server.js",
+    "typecheck": "tsc -p . --noEmit",
+    "test": "node --test --experimental-strip-types $(find src -name \"*.test.ts\" 2>/dev/null || true)"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/node": "^26.6.6"
+  },
+  "dependencies": {
+    "@infinitum/ai": "workspace:*",
+    "@infinitum/lbrnth-client": "workspace:*"
+  }
+}

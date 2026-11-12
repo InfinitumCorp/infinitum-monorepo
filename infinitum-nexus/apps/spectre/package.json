@@ -1,0 +1,34 @@
+{
+  "name": "@infinitum/spectre",
+  "version": "0.1.0",
+  "description": "+SPCTR (Spectre): Infinitum's AI-powered intelligent CRM.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "node src/server/main.ts",
+    "typecheck": "tsc -p . --noEmit",
+    "test": "node --test --experimental-strip-types $(find src -name \"*.test.ts\" 2>/dev/null || true)"
+  },
+  "dependencies": {
+    "@infinitum/ai": "workspace:*",
+    "@infinitum/architect": "workspace:*",
+    "@infinitum/cid": "workspace:*",
+    "@infinitum/conjure": "workspace:*",
+    "@infinitum/cumulus": "workspace:*",
+    "@infinitum/drone-backend": "workspace:*",
+    "@infinitum/firmament": "workspace:*",
+    "@infinitum/lbrnth": "workspace:*",
+    "@infinitum/lbrnth-client": "workspace:*",
+    "@infinitum/metatron": "workspace:*",
+    "@infinitum/scalus": "workspace:*",
+    "@infinitum/veil": "workspace:*"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.3.14",
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  }
+}
