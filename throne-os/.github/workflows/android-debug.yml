@@ -1,0 +1,64 @@
+name: Android debug
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+# Repository variable CI_RUNNER may be a self-hosted runner label such as
+# infinitum-ci. An empty variable selects the GitHub-hosted runner.
+jobs:
+  debug-apks:
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # v3 installs the removed SDK package "tools" and fails. v4 does not.
+      # Packages are explicit so the job does not depend on that default.
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools platforms;android-35 build-tools;35.0.0
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Unit tests and debug APKs
+        run: ./gradlew test assembleDebug --stacktrace --no-daemon
+
+      - name: Upload ^KETER debug APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: throne-keter-debug-apks
+          if-no-files-found: error
+          path: |
+            apps/throne-launcher/build/outputs/apk/keter/debug/*.apk
+            apps/throne-guard/build/outputs/apk/keter/debug/*.apk
+            apps/throne-vault-notes/build/outputs/apk/keter/debug/*.apk
+            apps/throne-suite/build/outputs/apk/keter/debug/*.apk
+            apps/nether/build/outputs/apk/keter/debug/*.apk
+            apps/eidetic-cam/build/outputs/apk/keter/debug/*.apk
+            apps/hrvst-cam/build/outputs/apk/keter/debug/*.apk
+
+      - name: Upload ARCHANGEL debug APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: throne-archangel-debug-apks
+          if-no-files-found: error
+          path: |
+            apps/throne-launcher/build/outputs/apk/archangel/debug/*.apk
+            apps/throne-guard/build/outputs/apk/archangel/debug/*.apk
+            apps/throne-vault-notes/build/outputs/apk/archangel/debug/*.apk
+            apps/throne-suite/build/outputs/apk/archangel/debug/*.apk
+            apps/nether/build/outputs/apk/archangel/debug/*.apk
+            apps/eidetic-cam/build/outputs/apk/archangel/debug/*.apk
+            apps/hrvst-cam/build/outputs/apk/archangel/debug/*.apk
