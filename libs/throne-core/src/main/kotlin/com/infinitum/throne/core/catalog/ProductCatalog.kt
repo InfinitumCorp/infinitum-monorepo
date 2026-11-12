@@ -55,8 +55,9 @@ object ProductCatalog {
             if (!seen.add(id)) throw CatalogFormatException("Duplicate product id.")
             val name = item.optString("name").trim()
             if (name.isEmpty() || name.length > 80) throw CatalogFormatException("Bad product name.")
-            val summary = item.optString("summary").trim()
-            val url = item.optString("url").trim().ifEmpty { null }
+            val summary = if (item.isNull("summary")) "" else item.optString("summary").trim()
+            // Android's built-in org.json turns a JSON null into the text "null" in optString().
+            val url = if (item.isNull("url")) null else item.optString("url").trim().ifEmpty { null }
             if (url != null) requireHttps(url)
             val hosts = mutableListOf<String>()
             val hostArray = item.optJSONArray("hosts")
