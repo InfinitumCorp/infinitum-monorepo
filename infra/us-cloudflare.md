@@ -59,7 +59,7 @@ Zones covered now (Russia copy live on `russia-web`): scalvs.app, infinitumcorpo
 
 ## Still to do
 
-- **Supabase is in eu-west-1 (Ireland).** US Workers reach it across the Atlantic (~70–80 ms per query). For a fully US stack, create a US Supabase project (us-east-1) and move the schemas, then set every Worker's placement to that region.
+- **Data in Ireland, servers in the USA (decided 2026-11-12, William: "USE IRELAND AND USA").** Supabase stays in eu-west-1 (Ireland); the Workers run in us-east4. Each database round trip crosses the Atlantic (~70–80 ms), accepted. No US database is planned.
 - **Labyrinth (US host built 2026-11-12, not serving yet):** Worker `lbrnth-host-us` (infinitum-nexus `apps/lbrnth-host/src/worker.ts`, placement us-east4) on `lbrnth-us.cumuluscloud.app`. Postgres: Supabase schema `lbrnth` (migrations `20261111_lbrnth_store` and `_host_role_grants` applied), login role `lbrnth_host`, Hyperdrive `lbrnth-us-db` (`03a6e0f7…`, caching off). Secrets `LBRNTH_MASTER_KEY` (its own key, not Russia's) and `CID_DIRECTORY_KEY` are set on the Worker. Blocked on:
   1. Cloudflare Access: the account's "All Workers" Access app puts `lbrnth-us.cumuluscloud.app` behind a login, so relays get a 302. Either add a "(public)" bypass app for it like the other products, or give the relays an Access service token.
   2. Done 2026-11-12: `cumulus-id` redeployed from infinitum-nexus main (version `7dba2fe0`, which also shipped #143, #144, #145 and #147) with `CID_DIRECTORY_KEY_SHA256_US` set. Checked: OIDC discovery, providers and `/` answer 200; the US key passes the directory key check; a wrong key gets 401 "Unknown directory client".
