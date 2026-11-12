@@ -35,6 +35,20 @@ function Resolve-Adb {
     throw "adb was not found. Install Android platform-tools and add them to PATH."
 }
 
+function Resolve-DebugApk {
+    param(
+        [Parameter(Mandatory = $true)][string]$Module,
+        [Parameter(Mandatory = $true)][string]$Flavor
+    )
+    $dir = Join-Path $Root "apps\$Module\build\outputs\apk\$Flavor\debug"
+    $found = Get-ChildItem -Path $dir -Filter "*.apk" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notmatch "androidTest" } |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+    if (-not $found) { return $null }
+    return $found.FullName
+}
+
 function Invoke-Adb {
     param([Parameter(Mandatory = $true)][string[]]$ArgumentList)
     $output = & $script:AdbExe @script:AdbPrefix @ArgumentList 2>&1 | ForEach-Object { "$_" }
@@ -144,11 +158,26 @@ Android will not replace that copy. Vault is left installed. Do not uninstall it
     Write-Host $result.Text
 }
 
+$EideticApk = Resolve-DebugApk -Module "eidetic-cam" -Flavor $Edition
+$HrvstApk = Resolve-DebugApk -Module "hrvst-cam" -Flavor $Edition
+if (-not $EideticApk -or -not $HrvstApk) {
+    throw @"
+A camera debug APK is missing for edition '$Edition'.
+Build it first, from the repo root:
+  .\gradlew test assembleDebug
+Expected:
+  apps\eidetic-cam\build\outputs\apk\$Edition\debug\*.apk
+  apps\hrvst-cam\build\outputs\apk\$Edition\debug\*.apk
+"@
+}
+
 Install-One -Path $LauncherApk -Label $LauncherPackage
 Install-One -Path $GuardApk -Label $GuardPackage
 Install-One -Path $VaultApk -Label $VaultPackage
 Install-One -Path $SuiteApk -Label $SuitePackage
 Install-One -Path $NetherApk -Label $NetherPackage
+Install-One -Path $EideticApk -Label "com.infinitum.eidetic.cam"
+Install-One -Path $HrvstApk -Label "com.infinitum.hrvst.cam"
 
 Write-Host ""
 Write-Host "Trying to grant the Home role to $LauncherPackage"

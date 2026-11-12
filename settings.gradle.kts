@@ -26,4 +26,6 @@ include(
     ":apps:throne-vault-notes",
     ":apps:throne-suite",
     ":apps:nether",
+    ":apps:eidetic-cam",
+    ":apps:hrvst-cam",
 )

@@ -14,6 +14,8 @@ The product name is **THRONE][OS™**. The KM4 layer uses the white Infinitum fi
 | THRONE][OS™ Guard | `com.infinitum.throne.guard` | Local audit and settings links. One optional, user-started Private DNS reachability check. |
 | THRONE][OS™ Vault | `com.infinitum.throne.vault` | Encrypts text on the phone and can hand ciphertext to Google Messages. No network permission. |
 | THRONE][OS™ Suite | `com.infinitum.throne.suite` | Opens a catalog product in its installed app, a secure WebView of its site, or Coming soon. No tracker SDK. The launcher itself has no network permission. |
+| THRONE][OS™ Eidetic | `com.infinitum.eidetic.cam` | Consent-gated camera. Frames go to a human reviewer only after a loopback policy check. |
+| THRONE][OS™ Harvest | `com.infinitum.hrvst.cam` | Camera capture stored as a Harvest Packet in an encrypted Personal Silo. No network permission. |
 
 Editions are build flavors. **^KETER** is William's edition and includes the military catalog entries. **ARCH//ANGEL** hides those entries on both pages. A bad edition flag fails closed to ARCH//ANGEL. Debug APKs are signed with the Android debug key. They are not ^KETER signing keys, and those keys are not in this repository.
 
@@ -66,14 +68,17 @@ export ANDROID_HOME="$HOME/Android/Sdk"
 ./gradlew test assembleDebug
 ```
 
-Debug APKs:
+Debug APKs, flavor `keter`:
 
 - `apps/throne-launcher/build/outputs/apk/keter/debug/`
 - `apps/throne-guard/build/outputs/apk/keter/debug/`
 - `apps/throne-vault-notes/build/outputs/apk/keter/debug/`
 - `apps/throne-suite/build/outputs/apk/keter/debug/`
+- `apps/nether/build/outputs/apk/keter/debug/`
+- `apps/eidetic-cam/build/outputs/apk/keter/debug/`
+- `apps/hrvst-cam/build/outputs/apk/keter/debug/`
 
-^KETER APK names are `throne-launcher-keter-debug.apk`, `throne-guard-keter-debug.apk`, `throne-vault-notes-keter-debug.apk`, and `throne-suite-keter-debug.apk`. The `archangel` flavor writes the same layout with `archangel` in the path, including `throne-suite-archangel-debug.apk`. GitHub Actions (`.github/workflows/android-debug.yml`) runs the unit tests, assembles the debug APKs, and uploads `throne-keter-debug-apks` and `throne-archangel-debug-apks`. If the repository variable `CI_RUNNER` is set, the job uses that runner label (for example `infinitum-ci`). If it is empty, the job uses `ubuntu-latest`.
+^KETER APK names are `throne-launcher-keter-debug.apk`, `throne-guard-keter-debug.apk`, `throne-vault-notes-keter-debug.apk`, `throne-suite-keter-debug.apk`, `nether-keter-debug.apk`, `eidetic-cam-keter-debug.apk`, and `hrvst-cam-keter-debug.apk`. The `archangel` flavor writes the same layout with `archangel` in the path, including `throne-suite-archangel-debug.apk`. GitHub Actions (`.github/workflows/android-debug.yml`) runs the unit tests, assembles the debug APKs, and uploads `throne-keter-debug-apks` and `throne-archangel-debug-apks`, each including the camera apps. The camera apps use the same flavor ids and show **^KETER** and **ARCH//ANGEL**. If the repository variable `CI_RUNNER` is set, the job uses that runner label (for example `infinitum-ci`). If it is empty, the job uses `ubuntu-latest`.
 
 ## Install
 
@@ -83,7 +88,7 @@ On Windows, with one phone in `adb devices` and USB debugging on:
 powershell -ExecutionPolicy Bypass -File .\scripts\km4-apply.ps1
 ```
 
-`-Edition archangel` installs the ARCH//ANGEL debug APKs. The default is ^KETER, for William's KM4. The script installs the four debug APKs with `adb install -r`, tries to grant the Home role, and opens the Home picker if that grant fails. It prints the remaining manual steps.
+`-Edition archangel` installs the ARCH//ANGEL debug APKs. The default is ^KETER, for William's KM4. The script installs the debug APKs (launcher, Guard, Vault, Suite, Nether, Eidetic and Harvest) with `adb install -r`, tries to grant the Home role, and opens the Home picker if that grant fails. It does not grant the camera permission. It prints the remaining manual steps.
 
 It does not wipe the device, unlock the bootloader, root the phone, flash partitions, or remove packages. Debug APKs are signed with the shared debug key in `keystore/throne-debug.keystore` (alias `androiddebugkey`, store and key password `android`). That key is debug-only. CI and a local build produce the same signature, so a later build updates the installed app and Vault's data stays. The script does not uninstall. An APK already on the phone that was signed by an older one-off CI debug key cannot be replaced until that copy is removed by hand; Android rejects the signature change and leaves the app, including Vault, where it is.
 

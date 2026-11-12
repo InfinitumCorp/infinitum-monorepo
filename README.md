@@ -40,7 +40,9 @@ Infinitum Corporation® visual direction for THRONE][OS™, matching the other I
 
 ## Status
 
-The KM4 layer is source in this repository: `apps/throne-launcher`, `apps/throne-guard`, `apps/throne-vault-notes`, `apps/throne-suite`, and `apps/nether`. The suite catalog is `apps/throne-suite/src/main/assets/products.json`. It has not been flashed. There are no signing keys and no certification claims. Build and install steps are in [docs/KM4-LAYER.md](docs/KM4-LAYER.md).
+The KM4 layer is source in this repository: `apps/throne-launcher`, `apps/throne-guard`, `apps/throne-vault-notes`, `apps/throne-suite`, `apps/nether`, `apps/eidetic-cam`, and `apps/hrvst-cam`. The suite catalog is `apps/throne-suite/src/main/assets/products.json`. It has not been flashed. There are no signing keys and no certification claims. Build and install steps are in [docs/KM4-LAYER.md](docs/KM4-LAYER.md).
+
+Eidetic (`com.infinitum.eidetic.cam`) captures a frame only for an enrolled person with written consent on file, asks the loopback eidetic desk to check the declared purpose, and queues the frame for a human reviewer. Harvest (`com.infinitum.hrvst.cam`) stores a capture as a Harvest Packet in an encrypted Personal Silo and shares a packet only with an explicit grant. Both show ^KETER or ARCH//ANGEL. The camera is foreground-only, with a visible CAMERA ACTIVE line while it is bound.
 
 ## Nether
 
