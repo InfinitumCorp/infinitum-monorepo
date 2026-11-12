@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conjure</title>
+<meta name="description" content="Describe what you want. Conjure plans it, builds it and checks it.">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<style>
+  /* Infinitum build rules (//RULES//): five tokens, Helvetica stack, weight-400 headings,
+     hairline rules, square ink/white buttons, accent only for interaction. */
+  :root {
+    --paper: #ffffff; --ink: #111820; --muted: #52606b; --line: #d6dce1; --accent: #2454dd;
+    --ease: cubic-bezier(.22, 1, .36, 1);
+    --gutter: clamp(16px, 4vw, 48px);
+    color-scheme: light;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; color: var(--ink); background: var(--paper); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.55; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  h1, h2, h3 { font-weight: 400; margin: 0; }
+  a { color: inherit; }
+  a:hover { color: var(--accent); }
+  a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:focus-visible, li[role="button"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+  .skip-link { position: fixed; top: -100px; left: 20px; z-index: 1000; background: var(--paper); padding: 12px; }
+  .skip-link:focus { top: 10px; }
+  sup.tm { font-size: .38em; vertical-align: super; line-height: 0; margin-left: .08em; letter-spacing: 0; font-weight: 400; }
+  .small .tm, .topbar .tm, .foot .tm { font-size: .65em; }
+
+  /* Top bar */
+  .topbar { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 18px var(--gutter); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .topbar .brand { font-size: 18px; letter-spacing: -.02em; text-decoration: none; }
+  .mode { font-size: 13px; color: var(--muted); }
+
+  /* Hero: type only, one entrance */
+  .hero { padding: clamp(40px, 7vw, 96px) var(--gutter) clamp(28px, 4vw, 56px); border-bottom: 1px solid var(--line); }
+  .hero h1 { font-size: clamp(68px, 10vw, 158px); line-height: .98; letter-spacing: -.065em; animation: rise .9s var(--ease) both; }
+  .hero p { max-width: 34em; margin: 22px 0 0; font-size: clamp(18px, 1.6vw, 22px); color: var(--muted); letter-spacing: -.01em; animation: rise .9s .08s var(--ease) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+  /* Work area */
+  main { display: grid; grid-template-columns: minmax(340px, 5fr) 7fr; }
+  main > section { padding: clamp(24px, 3vw, 40px) var(--gutter); min-width: 0; display: flex; flex-direction: column; gap: 22px; }
+  .left { border-right: 1px solid var(--line); }
+  .label { font-size: 13px; color: var(--muted); letter-spacing: .01em; }
+  h2 { font-size: clamp(30px, 3.2vw, 44px); line-height: 1.05; letter-spacing: -.055em; }
+  h3 { font-size: 22px; letter-spacing: -.04em; line-height: 1.2; }
+
+  textarea { width: 100%; min-height: 120px; resize: vertical; padding: 16px; border: 1px solid var(--ink); border-radius: 0; background: var(--paper); font-size: 18px; line-height: 1.45; letter-spacing: -.01em; }
+  textarea.small { min-height: 84px; font-size: 16px; }
+  textarea::placeholder { color: var(--muted); }
+  textarea:focus { border-color: var(--accent); outline: none; }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .options { display: flex; gap: 20px; flex-wrap: wrap; }
+  label.check { font-size: 14px; color: var(--muted); display: inline-flex; gap: 8px; align-items: center; cursor: pointer; }
+  label.check input { accent-color: var(--ink); width: 16px; height: 16px; margin: 0; }
+
+  /* Buttons: ink on white or white on ink, accent on hover */
+  .btn-primary, .btn-secondary { display: inline-block; border-radius: 0; cursor: pointer; text-decoration: none; transition: background .2s, color .2s, border-color .2s; font-size: 16px; line-height: 1.2; }
+  .btn-primary { background: var(--ink); color: #fff; border: 1px solid var(--ink); padding: 17px 22px; }
+  .btn-primary:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-secondary { background: var(--paper); color: var(--ink); border: 1px solid var(--ink); padding: 13px 20px; }
+  .btn-secondary:hover:not(:disabled) { background: var(--ink); color: #fff; }
+  .btn-primary:disabled, .btn-secondary:disabled { opacity: .35; cursor: not-allowed; }
+  .btn-secondary[aria-disabled="true"] { opacity: .35; pointer-events: none; }
+
+  /* Build log: collapsible detail */
+  details.logwrap { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  details.logwrap > summary { cursor: pointer; padding: 14px 0; list-style: none; display: flex; justify-content: space-between; font-size: 15px; }
+  details.logwrap > summary::-webkit-details-marker { display: none; }
+  details.logwrap > summary::after { content: "+"; color: var(--muted); }
+  details.logwrap[open] > summary::after { content: "−"; }
+  .log { overflow: auto; padding: 0 0 16px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; min-height: 96px; max-height: 42vh; font-variant-numeric: tabular-nums; }
+  .log .phase { color: var(--ink); margin-top: 6px; }
+  .log .phase::before { content: ""; display: inline-block; width: 18px; border-top: 1px solid var(--ink); vertical-align: middle; margin-right: 8px; }
+  .log .ok { color: var(--ink); } .log .bad { color: var(--ink); font-weight: 700; } .log .dim { color: var(--muted); }
+
+  /* History: hairline rows */
+  ul.hist { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  ul.hist li { padding: 14px 0 14px 0; border-bottom: 1px solid var(--line); cursor: pointer; display: flex; justify-content: space-between; gap: 16px; transition: padding .2s var(--ease); }
+  ul.hist li:hover strong { color: var(--accent); }
+  ul.hist li.sel { box-shadow: inset 3px 0 0 var(--accent); padding-left: 14px; }
+  ul.hist li strong { display: block; font-weight: 400; font-size: 18px; letter-spacing: -.02em; line-height: 1.3; }
+  ul.hist li span.i { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+  ul.hist li > div { min-width: 0; }
+  .pill { font-size: 12px; white-space: nowrap; align-self: start; padding-top: 4px; color: var(--muted); }
+  .pill.fail { color: var(--ink); font-weight: 700; }
+  .empty { color: var(--muted); font-size: 14px; padding: 14px 0; }
+
+  /* Preview */
+  .bar { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+  .bar #what { font-size: 15px; }
+  .bar #links { font-size: 13px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+  .bar #links a { text-decoration: none; border-bottom: 1px solid var(--line); }
+  .bar #links a:hover { border-color: var(--accent); }
+  .preview { width: 100%; min-height: 440px; flex: 1; border: 1px solid var(--line); background: var(--paper); display: block; }
+
+  /* Refine */
+  .refine { border-top: 1px solid var(--ink); padding-top: 20px; display: none; flex-direction: column; gap: 14px; }
+  .refine.on { display: flex; }
+  .refine ol { margin: 0; padding-left: 20px; font-size: 14px; color: var(--muted); }
+  .meta { font-size: 13px; color: var(--muted); }
+
+  /* Footer */
+  .foot { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 22px var(--gutter); border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  .foot button { background: none; border: 0; padding: 0; color: var(--muted); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; font-size: 13px; }
+  .foot button:hover { color: var(--accent); }
+
+  .motion-paused *, .motion-paused *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::after { animation: none !important; transition: none !important; } }
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+    .left { border-right: 0; border-bottom: 1px solid var(--line); }
+    .preview { min-height: 380px; }
+  }
+</style>
+<link rel="stylesheet" href="/i18n/i18n.css" />
+<script type="module" src="/i18n/start.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#intent">Skip to the build box</a>
+<header class="topbar">
+  <a class="brand" href="/">Conjure<sup class="tm">™</sup></a>
+  <span class="mode" id="mode">Checking server…</span>
+</header>
+<section class="hero" aria-labelledby="hero-title">
+  <h1 id="hero-title">Conjure<sup class="tm">™</sup></h1>
+  <p>Describe what you want. Conjure plans it, builds it and checks it, then hands you working files.</p>
+</section>
+<main>
+  <section class="left" aria-labelledby="build-title">
+    <h2 id="build-title">Build</h2>
+    <label class="label" for="intent">What should Conjure build?</label>
+    <textarea id="intent" placeholder="A pomodoro timer with a task list that remembers tasks"></textarea>
+    <div class="row">
+      <button id="go" class="btn-primary">Conjure</button>
+      <button id="stop" class="btn-secondary" disabled>Stop</button>
+    </div>
+    <details class="logwrap" open>
+      <summary>Build log</summary>
+      <div class="log" id="log" aria-live="polite"></div>
+    </details>
+    <h2 id="hist-title">History</h2>
+    <ul class="hist" id="hist" aria-labelledby="hist-title"></ul>
+  </section>
+  <section class="right" aria-labelledby="preview-title">
+    <h2 id="preview-title">Preview</h2>
+    <div class="bar"><span id="what">Nothing built yet.</span><span id="links"></span></div>
+    <iframe class="preview" id="preview" title="Preview of the selected build"></iframe>
+    <div class="refine" id="refine">
+      <h3 id="refineTitle">Refine</h3>
+      <ol id="changes"></ol>
+      <label class="label" for="change">Describe a change</label>
+      <textarea id="change" class="small" placeholder="Add a reset button"></textarea>
+      <div class="row"><button id="apply" class="btn-primary">Apply change</button><a id="download" class="btn-secondary" href="#" download>Download .zip</a><span class="meta" id="selMeta"></span></div>
+    </div>
+  </section>
+</main>
+<footer class="foot">
+  <span>Conjure<sup class="tm">™</sup> · Infinitum Corporation</span>
+  <button type="button" id="motion" aria-pressed="false">Pause motion</button>
+</footer>
+<script>
+const $ = (id) => document.getElementById(id);
+const log = $("log");
+let previewOrigin = "";
+let selected = null;   // { dir, ... } from history
+let running = null;    // AbortController for the in-flight request
+let textEl = null;
+
+function line(text, cls) { textEl = null; const d = document.createElement("div"); if (cls) d.className = cls; d.textContent = text; log.appendChild(d); log.scrollTop = log.scrollHeight; }
+function stream(text) { if (!textEl) { textEl = document.createElement("span"); textEl.className = "dim"; log.appendChild(textEl); } textEl.textContent += text; log.scrollTop = log.scrollHeight; }
+const money = (c) => (c == null ? "" : `~$${c.toFixed(4)}`);
+
+function show(dir, m) {
+  const files = m.files || [];
+  const entry = files.includes("index.html") ? "index.html" : files[0];
+  const ok = m.verification?.ok ?? m.ok;
+  $("what").textContent = `${m.plan?.name ?? m.name ?? dir} · ${ok ? "verified" : "checks failing"}`;
+  $("links").innerHTML = "";
+  for (const f of files) { const a = document.createElement("a"); a.href = `${previewOrigin}/${encodeURIComponent(dir)}/${f}`; a.target = "_blank"; a.rel = "noopener"; a.textContent = f; $("links").append(a, " "); }
+  $("preview").src = entry ? `${previewOrigin}/${encodeURIComponent(dir)}/${entry}?t=${Date.now()}` : "about:blank";
+}
+
+function select(item) {
+  selected = item;
+  show(item.dir, item);
+  document.querySelectorAll("#hist li").forEach((li) => li.classList.toggle("sel", li.dataset.dir === item.dir));
+  $("refine").classList.add("on");
+  $("refineTitle").textContent = `Refine “${item.name ?? item.dir}”`;
+  $("download").href = `/api/download?dir=${encodeURIComponent(item.dir)}`;
+  $("changes").innerHTML = "";
+  for (const c of item.changes || []) { const li = document.createElement("li"); li.textContent = c; $("changes").append(li); }
+  $("selMeta").textContent = [item.provider, money(item.costUsd), `${(item.changes || []).length} change(s)`].filter(Boolean).join(" · ");
+}
+
+async function refresh(selectDir) {
+  const sr = await fetch("/api/status");
+  if (sr.status === 401) { location.href = "/login"; return; }
+  const s = await sr.json();
+  previewOrigin = s.previewOrigin;
+  $("mode").textContent = s.live ? `Live · ${String(s.model || "").replace(/^gpt:\/\/[^/]+\//, "").replace(/^@cf\/[^/]+\//, "")}` : "No live model is configured on this server";
+  $("go").disabled = !s.live;
+  watchServerRun(s);
+  const h = await (await fetch("/api/history")).json();
+  $("hist").innerHTML = "";
+  if (!h.length) { const li = document.createElement("li"); li.className = "empty"; li.textContent = "No builds yet. Describe one above."; $("hist").append(li); }
+  for (const item of h) {
+    const li = document.createElement("li"); li.dataset.dir = item.dir;
+    const left = document.createElement("div");
+    const strong = document.createElement("strong"); strong.textContent = item.name ?? item.dir;
+    const sub = document.createElement("span"); sub.className = "i"; sub.textContent = item.intent + (item.changes?.length ? ` · +${item.changes.length} change(s)` : "");
+    left.append(strong, sub);
+    const pill = document.createElement("span"); pill.className = item.ok ? "pill" : "pill fail"; pill.textContent = item.ok ? "✓ Verified" : "✗ Checks failing";
+    li.append(left, pill); li.onclick = () => select(item);
+    li.tabIndex = 0; li.setAttribute("role", "button");
+    li.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(item); } };
+    $("hist").append(li);
+  }
+  const want = selectDir ?? selected?.dir;
+  const again = h.find((x) => x.dir === want);
+  if (again) select(again);
+}
+
+function setBusy(b) { $("go").disabled = b; $("apply").disabled = b; $("stop").disabled = !b; }
+
+// A run started earlier (another tab, or before the phone's screen locked) keeps going on
+// the server. Show it, and refresh history once it finishes.
+let watching = null;
+function watchServerRun(s) {
+  if (running) return;
+  if (!s.busy) { if (watching) { clearTimeout(watching); watching = null; setBusy(false); } return; }
+  setBusy(true);
+  if (!watching) line(`A run is in progress on the server: ${s.job?.label ?? ""}`, "dim");
+  clearTimeout(watching);
+  watching = setTimeout(async () => {
+    try {
+      const st = await (await fetch("/api/status")).json();
+      if (st.busy) return watchServerRun(st);
+      watching = null; setBusy(false); line("✓ that run finished; its result is in History", "ok"); refresh();
+    } catch { watching = setTimeout(() => watchServerRun(s), 5000); }
+  }, 3000);
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden && !running) refresh(); });
+
+async function run(url, body) {
+  setBusy(true); log.textContent = ""; textEl = null;
+  running = new AbortController();
+  let doneDir = null;
+  try {
+    const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: running.signal });
+    if (!res.ok) { line(await res.text(), "bad"); return; }
+    const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = "";
+    for (;;) {
+      const { value, done } = await reader.read(); if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i; while ((i = buf.indexOf("\n\n")) >= 0) {
+        const chunk = buf.slice(0, i); buf = buf.slice(i + 2);
+        if (!chunk.startsWith("data: ")) continue;
+        const e = JSON.parse(chunk.slice(6));
+        if (e.type === "start") line(`provider=${e.provider} model=${e.model}`, "dim");
+        else if (e.type === "phase") line(`${e.phase[0].toUpperCase()}${e.phase.slice(1)}${e.attempt ? " #" + e.attempt : ""}`, "phase");
+        else if (e.type === "plan") { line(`${e.plan.name}: ${e.plan.summary}`); e.plan.files.forEach(f => line(`  · ${f.path} — ${f.purpose}`, "dim")); }
+        else if (e.type === "text" && e.phase === "forge") stream(e.text);
+        else if (e.type === "file") line(`wrote ${e.path} (${e.bytes} B)`);
+        else if (e.type === "verify") { const f = e.report.results.filter(r => !r.ok); if (f.length) { line(`✗ ${f.length} check(s) failed`, "bad"); f.forEach(r => line(`  ${r.file} [${r.check}] ${r.detail}`, "dim")); } else line(`✓ ${e.report.results.length} checks passed`, "ok"); }
+        else if (e.type === "done") {
+          const r = e.refinement ?? e.manifest; const ok = e.refinement ? e.refinement.ok : e.manifest.verification.ok;
+          line(`✓ done: ${r.summary || e.manifest.plan.name}`, ok ? "ok" : "bad");
+          const u = r.usage; line(`${(r.durationMs / 1000).toFixed(1)}s · ${u.input_tokens} in / ${u.output_tokens} out tokens ${money(r.costUsd)}`, "dim");
+          doneDir = e.dir;
+        }
+        else if (e.type === "cancelled") line("cancelled", "bad");
+        else if (e.type === "error") line(`error: ${e.message}`, "bad");
+      }
+    }
+  } catch (err) {
+    if (err.name === "AbortError") line("cancelled", "bad"); else line(String(err), "bad");
+  } finally {
+    running = null; setBusy(false); refresh(doneDir ?? undefined);
+  }
+}
+
+$("go").onclick = () => {
+  const intent = $("intent").value.trim();
+  if (!intent) return $("intent").focus();
+  run("/api/conjure", { intent });
+};
+$("apply").onclick = () => {
+  const change = $("change").value.trim();
+  if (!selected || !change) return $("change").focus();
+  $("change").value = "";
+  run("/api/refine", { dir: selected.dir, change });
+};
+$("stop").onclick = async () => {
+  await fetch("/api/cancel", { method: "POST" }).catch(() => {});
+  if (running) running.abort();
+  else setTimeout(refresh, 500); // a server-side run started elsewhere
+};
+$("intent").addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) $("go").click(); });
+$("change").addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) $("apply").click(); });
+// Pause motion (house rule: a visible control, plus prefers-reduced-motion).
+(() => {
+  const b = $("motion");
+  let paused = false;
+  try { paused = localStorage.getItem("conjure-motion") === "paused"; } catch {}
+  const apply = () => { document.documentElement.classList.toggle("motion-paused", paused); b.textContent = paused ? "Play motion" : "Pause motion"; b.setAttribute("aria-pressed", String(paused)); };
+  b.onclick = () => { paused = !paused; try { localStorage.setItem("conjure-motion", paused ? "paused" : "on"); } catch {} apply(); };
+  apply();
+})();
+refresh();
+</script>
+</body>
+</html>
