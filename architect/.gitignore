@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.architect/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+architect.triggers.json
+android/build/
+.wrangler/
+.dev.vars
+
+# Desktop build output
+desktop/app/
+desktop/web/
+*.upload.json
