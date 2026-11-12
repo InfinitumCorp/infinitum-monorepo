@@ -45,6 +45,8 @@ export default defineConfig({
       EMAIL: bindings.sendEmail(),
       MAIL_FILES: bindings.r2({ name: "cumulus-mail-files" }),
       DOWNLOADS_SITE: bindings.worker({ worker: "cumulus-downloads" }),
+      // US Labyrinth (Worker lbrnth-host-us), reached Worker-to-Worker so Cloudflare Access never applies.
+      LBRNTH_US: bindings.worker({ worker: "lbrnth-host-us" }),
       GOOGLE_CLIENT_ID: bindings.secret(),
       GOOGLE_CLIENT_SECRET: bindings.secret(),
       // Hosted Labyrinth relay target (https://<cloud-run-host>/api/labyrinth), set with wrangler secret put.

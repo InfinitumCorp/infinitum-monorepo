@@ -33,5 +33,7 @@
   },
   "durable_objects": { "bindings": [{ "name": "NEXUS_STATE", "class_name": "NexusStore" }] },
   "ai": { "binding": "AI" },
+  // US Labyrinth (Worker lbrnth-host-us), reached Worker-to-Worker so Cloudflare Access on its hostname never applies.
+  "services": [{ "binding": "LBRNTH_US", "service": "lbrnth-host-us" }],
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["NexusStore"] }]
 }
